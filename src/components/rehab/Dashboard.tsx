@@ -7,7 +7,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
 import { HistoryCard } from "./HistoryCard";
 import { SupportAlertsPanel } from "@/components/alerts/SupportAlertsPanel";
-import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
+import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, stageProgress, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
@@ -304,20 +304,9 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
   const cdH = Math.floor((editing?.cooldown_minutes ?? 0) / 60);
   const cdM = (editing?.cooldown_minutes ?? 0) % 60;
 
-  return (
-    <section className="glass p-5 lg:col-span-2" aria-labelledby="ex-h">
-      <div className="flex items-center justify-between gap-2">
-        <h2 id="ex-h" className="text-xl">My prescribed exercises</h2>
-        <div className="flex items-center gap-2">
-          <Button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", weekly_mode: "days", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
-            <Plus className="h-4 w-4" /> Add
-          </Button>
-        </div>
-      </div>
-      <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.</p>
-
-      {editing && !editing.id && editPanel()}
-      {false && (
+  function editPanel() {
+    if (!editing) return null;
+    return (
         <div className="mt-4 space-y-3 rounded-2xl border bg-card p-4">
           <label className="block text-sm font-semibold">Exercise name
             <input className="field mt-1" value={editing.name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="e.g. Heel slides" />
@@ -402,7 +391,22 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
             <Button variant="outline" className="btn-soft" onClick={() => setEditing(null)}><X className="h-4 w-4" /> Cancel</Button>
           </div>
         </div>
-      )}
+    );
+  }
+
+  return (
+    <section className="glass p-5 lg:col-span-2" aria-labelledby="ex-h">
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="ex-h" className="text-xl">My prescribed exercises</h2>
+        <div className="flex items-center gap-2">
+          <Button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", weekly_mode: "days", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.</p>
+
+      {editing && !editing.id && editPanel()}
 
       <ul className="mt-4 divide-y divide-input">
         {exercises.length === 0 && <li className="py-2 text-sm text-muted-foreground">No exercises yet.</li>}
@@ -417,7 +421,6 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
             : [];
           return (
             <li key={ex.id} className="py-4">
-              {editing?.id === ex.id && <div className="mb-3">{editPanel()}</div>}
               <div className="flex flex-wrap items-center gap-2">
                 <div className={`group relative min-w-0 flex-1 ${scheduledToday ? "" : "opacity-60"}`}>
                   <p className="break-words font-bold">
@@ -439,6 +442,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                   <Button variant="outline" size="icon" className="rounded-full text-destructive" title="Remove exercise" aria-label={`Remove ${ex.name}`} onClick={() => remove(ex.id)}><Trash2 /></Button>
                 </div>
               </div>
+              {editing?.id === ex.id && editPanel()}
               {interval && !scheduledToday && <p className="mt-2 text-xs text-muted-foreground">{available.gap ? `Please wait ${available.gap} more day${available.gap === 1 ? "" : "s"}.` : "All weekly occurrences are complete."} Upcoming</p>}
               {waitNotes[ex.id] && <p className="mt-2 rounded-xl bg-secondary px-3 py-1.5 text-xs font-semibold text-secondary-foreground" role="status">{waitNotes[ex.id]}</p>}
               {!daily && (

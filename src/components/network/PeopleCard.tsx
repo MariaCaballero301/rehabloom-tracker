@@ -211,26 +211,38 @@ export function PeopleCard({
         </div>
       ))}
 
-      <BuddyBubble empty={buddyContacts.length === 0 && supportingOnly.length === 0} count={buddyContacts.length + supportingOnly.length}>
+      <BuddyBubble
+        empty={buddyContacts.length === 0 && supportingOnly.length === 0}
+        total={buddyContacts.length + supportingOnly.length}
+        page={buddyPage}
+        onPrev={() => setBuddyPage((p) => p - 1)}
+        onNext={() => setBuddyPage((p) => p + 1)}
+      >
         <ul className="buddy-people">
-          {buddyContacts.map((c) => (
-            <li key={c.id} className="buddy-person">
-              <div className="flex flex-col items-center gap-1 text-center">
-                <ProfileAvatar userId={c.connected_user_id} name={c.name} />
-                <p className="w-full break-words font-bold leading-tight">{c.name}</p>
-                <span className="text-[0.7em] font-semibold text-muted-foreground">{KIND_LABEL[c.kind] ?? c.kind}</span>
-              </div>
-              <BuddyMetrics stats={buddyStats.find((s) => s.user_id === c.connected_user_id)} error={statsError} />
-              <div className="mt-2 flex justify-center gap-1.5">
-                <IconAction label="Send encouragement" onClick={() => setOpen(open === c.id ? null : c.id)}><MessageCircleHeart /></IconAction>
-                <IconAction label={c.notify_on_missed ? "Alerts on: tap to stop alerting them if I miss sessions" : "Alert them if I miss sessions"} pressed={c.notify_on_missed} onClick={() => toggleNotify(c)}><BellRing /></IconAction>
-                <IconAction label="Disconnect" onClick={() => remove(c)}><UserMinus /></IconAction>
-                <IconAction label="Block" onClick={() => { if (c.connected_user_id) void block(c.connected_user_id, c.name); }}><Ban /></IconAction>
-              </div>
-              {open === c.id && c.connected_user_id && <Encourage to={c.connected_user_id} name={c.name} onDone={() => { setOpen(null); onChange(); }} />}
-            </li>
-          ))}
-          {supportingOnly.map((s) => {
+          {(() => {
+            const total = buddyContacts.length + supportingOnly.length;
+            const idx = ((buddyPage % total) + total) % total;
+            if (idx < buddyContacts.length) {
+              const c = buddyContacts[idx];
+              return (
+                <li key={c.id} className="buddy-person">
+                  <div className="flex flex-col items-center gap-1 text-center">
+                    <ProfileAvatar userId={c.connected_user_id} name={c.name} />
+                    <p className="w-full break-words font-bold leading-tight">{c.name}</p>
+                    <span className="text-[0.7em] font-semibold text-muted-foreground">{KIND_LABEL[c.kind] ?? c.kind}</span>
+                  </div>
+                  <BuddyMetrics stats={buddyStats.find((s) => s.user_id === c.connected_user_id)} error={statsError} />
+                  <div className="mt-2 flex justify-center gap-1.5">
+                    <IconAction label="Send encouragement" onClick={() => setOpen(open === c.id ? null : c.id)}><MessageCircleHeart /></IconAction>
+                    <IconAction label={c.notify_on_missed ? "Alerts on: tap to stop alerting them if I miss sessions" : "Alert them if I miss sessions"} pressed={c.notify_on_missed} onClick={() => toggleNotify(c)}><BellRing /></IconAction>
+                    <IconAction label="Disconnect" onClick={() => remove(c)}><UserMinus /></IconAction>
+                    <IconAction label="Block" onClick={() => { if (c.connected_user_id) void block(c.connected_user_id, c.name); }}><Ban /></IconAction>
+                  </div>
+                  {open === c.id && c.connected_user_id && <Encourage to={c.connected_user_id} name={c.name} onDone={() => { setOpen(null); onChange(); }} />}
+                </li>
+              );
+            }
+            const s = supportingOnly[idx - buddyContacts.length];
             const key = `s-${s.user_id}`;
             return (
               <li key={key} className="buddy-person">
@@ -248,7 +260,7 @@ export function PeopleCard({
                 {open === key && <Encourage to={s.user_id} name={s.name} onDone={() => { setOpen(null); onChange(); }} />}
               </li>
             );
-          })}
+          })()}
         </ul>
       </BuddyBubble>
 

@@ -19,6 +19,8 @@ import { SupportPopups } from "@/components/alerts/SupportPopups";
 import { HomeInbox } from "@/components/network/HomeInbox";
 import { SessionsBubble } from "@/components/sessions/SessionsBubble";
 import { useSessionUser } from "@/hooks/use-session-user";
+import { installBubbleSounds } from "@/lib/bubble-sound";
+import { hasMixedReactVersions } from "@/lib/stale-react";
 
 function NotFoundComponent() {
   return (
@@ -135,6 +137,20 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { user } = useSessionUser();
 
+  useEffect(() => installBubbleSounds(), []);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || typeof PerformanceObserver === "undefined") return;
+    const check = () => {
+      const resources = performance.getEntriesByType("resource").map((entry) => entry.name);
+      if (hasMixedReactVersions(resources)) reloadForStaleChunk();
+    };
+    check();
+    const observer = new PerformanceObserver(check);
+    observer.observe({ type: "resource", buffered: true });
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     const onPreload = (e: Event) => { if (reloadForStaleChunk()) e.preventDefault(); };
     const onRejection = (e: PromiseRejectionEvent) => {
@@ -151,7 +167,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      {user ? <HomeInbox key={user.id} userId={user.id}><Outlet /><SessionsBubble userId={user.id} /></HomeInbox> : <Outlet />}
+      {user ? <><HomeInbox key={user.id} userId={user.id}><Outlet /></HomeInbox><SessionsBubble key={`sessions-${user.id}`} userId={user.id} /></> : <Outlet />}
       <Toaster position="top-center" richColors />
       <XpFishLayer />
       <SupportPopups />

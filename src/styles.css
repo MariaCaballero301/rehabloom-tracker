@@ -297,6 +297,10 @@
 
 /* Sessions bubble sits above the Inbox bubble and opens a matching side panel. */
 .sessions-trigger { bottom: 6rem; }
+.inbox-panel-open .inbox-trigger,
+.sessions-panel-open .inbox-trigger,
+.inbox-panel-open .sessions-trigger,
+.sessions-panel-open .sessions-trigger { display: none; }
 .sessions-panel-open .home-inbox-content { margin-left: clamp(340px, 34%, 520px); }
 @media (max-width: 767px) {
   .sessions-panel-open .home-inbox-content { visibility: hidden; margin-left: 0; height: 100dvh; overflow: hidden; }

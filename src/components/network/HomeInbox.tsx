@@ -27,6 +27,10 @@ export function HomeInbox({ userId, children, initiallyOpen = false }: { userId:
     return () => window.removeEventListener("rehabloom:panel-open", onPanel);
   }, []);
   useEffect(() => {
+    document.body.classList.toggle("inbox-panel-open", open);
+    return () => document.body.classList.remove("inbox-panel-open");
+  }, [open]);
+  useEffect(() => {
     if (!open) return;
     window.dispatchEvent(new CustomEvent("rehabloom:panel-open", { detail: "inbox" }));
     close.current?.focus();

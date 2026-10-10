@@ -232,7 +232,7 @@ function CheckinCard({ existing, todayKey, onSaved }: { existing: Checkin | unde
         <legend className="text-sm font-semibold">Motivation</legend>
         <div className="mt-2 flex gap-1.5">
           {[1, 2, 3, 4, 5].map((m) => (
-            <Button key={m} type="button" aria-pressed={motivation === m} onClick={() => setMotivation(m)}
+            <Button variant="outline" key={m} type="button" aria-pressed={motivation === m} onClick={() => setMotivation(m)}
               className={`h-10 flex-1 rounded-full border font-bold ${motivation === m ? "btn-aqua min-h-0 p-0" : "bg-card"}`}>
               {m}
             </Button>
@@ -243,7 +243,7 @@ function CheckinCard({ existing, todayKey, onSaved }: { existing: Checkin | unde
         <legend className="text-sm font-semibold">Today</legend>
         <div className="mt-2 grid grid-cols-3 gap-1.5 text-sm">
           {([["normal", "On track"], ["rest", "Rest day"], ["unable", "Unable"]] as const).map(([v, l]) => (
-            <Button key={v} type="button" aria-pressed={status === v} onClick={() => setStatus(v)}
+            <Button variant="outline" key={v} type="button" aria-pressed={status === v} onClick={() => setStatus(v)}
               className={`min-h-10 rounded-full border px-2 font-semibold ${status === v ? "btn-aqua btn-leaf min-h-10 px-2" : "bg-card"}`}>
               {l}
             </Button>
@@ -330,7 +330,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
             <legend className="text-sm font-semibold">Frequency</legend>
             <div className="mt-1 grid grid-cols-2 gap-1.5">
               {(["daily", "weekly"] as const).map((f) => (
-                <Button key={f} type="button" aria-pressed={freq === f} onClick={() => setEditing({ ...editing, frequency: f, occurrences: 1 })}
+                <Button variant="outline" key={f} type="button" aria-pressed={freq === f} onClick={() => setEditing({ ...editing, frequency: f, occurrences: 1 })}
                   className={`h-auto min-h-10 whitespace-normal rounded-full border font-bold ${freq === f ? "btn-aqua min-h-10" : "btn-soft"}`}>
                   {f === "daily" ? "Daily Occurrence" : "Weekly Occurrence"}
                 </Button>
@@ -343,7 +343,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                 <legend className="text-sm font-semibold">Times per day</legend>
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <Button key={n} type="button" aria-pressed={editing.occurrences === n} onClick={() => setEditing({ ...editing, occurrences: n })}
+                    <Button variant="outline" key={n} type="button" aria-pressed={editing.occurrences === n} onClick={() => setEditing({ ...editing, occurrences: n })}
                       className={`h-10 w-10 rounded-full border text-sm font-bold ${editing.occurrences === n ? "btn-aqua btn-leaf min-h-0 p-0" : "btn-soft min-h-0 p-0"}`}>
                       {n}
                     </Button>
@@ -397,7 +397,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
           )}
           <div className="flex gap-2">
             <Button className="btn-aqua" onClick={save}>Save</Button>
-            <Button className="btn-soft" onClick={() => setEditing(null)}><X className="h-4 w-4" /> Cancel</Button>
+            <Button variant="outline" className="btn-soft" onClick={() => setEditing(null)}><X className="h-4 w-4" /> Cancel</Button>
           </div>
         </div>
       )}
@@ -454,11 +454,11 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                           {record && <span className={record.status === "complete" ? "font-semibold text-success" : "text-muted-foreground"}>{record.status === "complete" ? "Completed" : "Skipped"}</span>}
                         </span>
                         <span className="flex gap-1">
-                          <Button type="button" disabled={saving || !canTrack} aria-pressed={record?.status === "complete"} onClick={() => onTrack(ex, line.day, "complete", line.occ)}
+                          <Button variant="outline" type="button" disabled={saving || !canTrack} aria-pressed={record?.status === "complete"} onClick={() => onTrack(ex, line.day, "complete", line.occ)}
                             className={`rounded-full border px-2.5 py-1 font-semibold disabled:cursor-not-allowed ${record?.status === "complete" ? "border-success bg-accent text-accent-foreground" : "bg-card"}`}>
                             Mark as complete
                           </Button>
-                          <Button type="button" disabled={saving || !canTrack} aria-pressed={record?.status === "skip"} onClick={() => onTrack(ex, line.day, "skip", line.occ)}
+                          <Button variant="outline" type="button" disabled={saving || !canTrack} aria-pressed={record?.status === "skip"} onClick={() => onTrack(ex, line.day, "skip", line.occ)}
                             className={`rounded-full border px-2.5 py-1 font-semibold disabled:cursor-not-allowed ${record?.status === "skip" ? "border-primary bg-secondary text-secondary-foreground" : "bg-card"}`}>
                             Skip for today
                           </Button>

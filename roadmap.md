@@ -1,4 +1,4 @@
-- [ ] Separate weekly weekdays from occurrence-count and positive gap scheduling.
-- [ ] Collapse saved daily check-ins with editing and no duplicate XP.
-- [ ] Add dated weekly/monthly history and account-aware empty states.
-- [ ] Test rules and verify the signed-in flows.
+- [x] Separate weekly weekdays from occurrence-count and positive gap scheduling.
+- [x] Collapse saved daily check-ins with editing and no duplicate XP.
+- [x] Add dated weekly/monthly history and account-aware empty states.
+- [x] Test rules and verify the signed-in flows.

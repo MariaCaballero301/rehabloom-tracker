@@ -16,7 +16,7 @@ if (typeof window !== "undefined") {
   const sim = window.localStorage.getItem(KEY);
   if (sim && /^\d{4}-\d{2}-\d{2}$/.test(sim)) {
     const real = new RealDate();
-    const [y, m, d] = sim.split("-").map(Number);
+    const [y = 0, m = 1, d = 1] = sim.split("-").map(Number);
     const target = new RealDate(y, m - 1, d, real.getHours(), real.getMinutes(), real.getSeconds());
     const offset = target.getTime() - real.getTime();
     class SimDate extends RealDate {
@@ -24,7 +24,7 @@ if (typeof window !== "undefined") {
         if (args.length === 0) super(RealDate.now() + offset);
         else super(...(args as [string]));
       }
-      static now() {
+      static override now() {
         return RealDate.now() + offset;
       }
     }

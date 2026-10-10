@@ -10,4 +10,5 @@
 - [x] Add profile photo picking, saving, replacement and removal; verify saved photos after reopening Support.
 - [x] Add expandable Home Inbox with unread message/request alerts, named conversations, timestamps, history and custom/preset replies.
 - [x] Make Inbox available across signed-in pages and separate non-account contacts from deduplicated Rehab buddies.
+- [x] Move Reminders directly under Daily check-in on Home; stretch Invite family & friends full width on Support.
 - [ ] Verify sending/receiving in Jaiden's maria conversation; blocked until Jaiden signs in through the preview (current session belongs to another account).

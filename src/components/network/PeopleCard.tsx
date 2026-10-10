@@ -6,6 +6,8 @@ import { KIND_LABEL, MAX_ENCOURAGEMENT_LENGTH, QUICK_ENCOURAGEMENTS } from "@/li
 import { db, rpc, type Block, type Contact, type Supported } from "./useNetwork";
 import { ProfileAvatar } from "./ProfileAvatar";
 import { supportGroups } from "@/lib/support-groups";
+import { BuddyBubble, BuddyMetrics } from "./BuddyBubble";
+import type { BuddyStats } from "@/lib/buddy-stats";
 
 function Encourage({ to, name, onDone }: { to: string; name: string; onDone: () => void }) {
   const [text, setText] = useState("");
@@ -61,11 +63,15 @@ export function PeopleCard({
   supporting,
   blocks,
   onChange,
+  buddyStats = [],
+  statsError = false,
 }: {
   contacts: Contact[];
   supporting: Supported[];
   blocks: Block[];
   onChange: () => void;
+  buddyStats?: BuddyStats[];
+  statsError?: boolean;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const { familyFriends, buddyContacts, supportingOnly } = supportGroups(contacts, supporting);
@@ -141,7 +147,6 @@ export function PeopleCard({
 
       {[
         { title: "Family & friends", people: familyFriends, empty: "No family or friends yet." },
-        { title: "Rehab buddies", people: buddyContacts, empty: "No rehab buddies yet." },
       ].map((group) => (
         <div key={group.title}>
         <h3 className="mt-5 text-sm font-bold text-muted-foreground">{group.title}</h3>
@@ -201,19 +206,36 @@ export function PeopleCard({
         </div>
       ))}
 
-      {supportingOnly.length > 0 && (
-        <>
-          <ul className="mt-2 space-y-2">
+      <BuddyBubble empty={buddyContacts.length === 0 && supportingOnly.length === 0}>
+        <ul className="grid gap-4 md:grid-cols-2">
+          {buddyContacts.map((c) => (
+            <li key={c.id} className="buddy-person min-w-0 p-5 text-sm">
+              <div className="flex flex-col items-center gap-2 text-center">
+                <ProfileAvatar userId={c.connected_user_id} name={c.name} large />
+                <p className="w-full break-words text-lg font-bold">{c.name}</p>
+                <span className="text-xs font-semibold text-muted-foreground">{KIND_LABEL[c.kind] ?? c.kind}</span>
+              </div>
+              <BuddyMetrics stats={buddyStats.find((s) => s.user_id === c.connected_user_id)} error={statsError} />
+              <label className="mt-4 flex items-center gap-2 text-xs font-semibold"><input type="checkbox" className="h-4 w-4" checked={c.notify_on_missed} onChange={() => toggleNotify(c)} />Alert them if I miss sessions</label>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button className="btn-soft text-sm" onClick={() => setOpen(open === c.id ? null : c.id)}><MessageCircleHeart className="h-4 w-4" /> Send encouragement</button>
+                <button className="btn-soft text-sm" onClick={() => remove(c)}><UserMinus className="h-4 w-4" /> Disconnect</button>
+                <button className="btn-soft text-sm" onClick={() => { if (c.connected_user_id) void block(c.connected_user_id, c.name); }}><Ban className="h-4 w-4" /> Block</button>
+              </div>
+              {open === c.id && c.connected_user_id && <Encourage to={c.connected_user_id} name={c.name} onDone={() => { setOpen(null); onChange(); }} />}
+            </li>
+          ))}
             {supportingOnly.map((s) => {
               const key = `s-${s.user_id}`;
               return (
-                <li key={key} className="rounded-2xl border bg-popover p-3 text-sm">
-                  <div className="flex items-center gap-2"><ProfileAvatar userId={s.user_id} name={s.name} /><p className="min-w-0 break-words font-semibold">
+                <li key={key} className="buddy-person min-w-0 p-5 text-sm">
+                  <div className="flex flex-col items-center gap-2 text-center"><ProfileAvatar userId={s.user_id} name={s.name} large /><p className="min-w-0 break-words text-lg font-semibold">
                     {s.name}{" "}
                     <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-bold">
                       {s.kind === "mentor" ? "You're their mentor" : KIND_LABEL[s.kind]}
                     </span>
                   </p></div>
+                  <BuddyMetrics stats={buddyStats.find((stat) => stat.user_id === s.user_id)} error={statsError} />
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button
                       className="btn-soft text-sm"
@@ -232,14 +254,13 @@ export function PeopleCard({
                     </button>
                   </div>
                   {open === key && (
-                    <Encourage to={s.user_id} name={s.name} onDone={() => setOpen(null)} />
+                    <Encourage to={s.user_id} name={s.name} onDone={() => { setOpen(null); onChange(); }} />
                   )}
                 </li>
               );
             })}
           </ul>
-        </>
-      )}
+      </BuddyBubble>
 
       {blocks.length > 0 && (
         <details className="mt-5 text-sm">

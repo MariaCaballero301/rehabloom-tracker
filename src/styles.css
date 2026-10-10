@@ -78,6 +78,9 @@
   --shadow-glass: 0 8px 32px oklch(0.45 0.1 240 / 0.15), inset 0 1px 0 oklch(1 0 0 / 0.9);
   --shadow-button: 0 3px 10px oklch(0.45 0.14 240 / 0.3), inset 0 1px 0 oklch(1 0 0 / 0.6);
   --aero-background-opacity: 0.42;
+  --buddy-shell: radial-gradient(ellipse at 30% 18%, oklch(1 0 0 / 0.98) 0%, oklch(1 0 0 / 0.3) 25%, transparent 50%), conic-gradient(from 25deg, oklch(0.85 0.09 215 / 0.65), oklch(0.96 0.06 150 / 0.6), oklch(0.76 0.12 230 / 0.65), oklch(0.97 0.025 215 / 0.8), oklch(0.85 0.09 215 / 0.65));
+  --buddy-surface: linear-gradient(180deg, var(--popover), var(--secondary));
+  --buddy-shadow: inset 0 5px 12px oklch(1 0 0 / 0.9), inset 0 -12px 24px oklch(0.55 0.13 235 / 0.22), 0 14px 36px oklch(0.55 0.1 230 / 0.18);
   --aero-background-mask: linear-gradient(180deg, oklch(0 0 0 / 0.3) 0%, oklch(0 0 0 / 0.3) 55%, oklch(0 0 0 / 0.6) 78%, oklch(0 0 0) 100%);
 }
 
@@ -215,6 +218,16 @@
 }
 
 .home-inbox-layout { min-height: 100vh; }
+.buddy-bubble { position: relative; isolation: isolate; padding: 2.5rem; overflow: hidden; border-radius: 5rem; min-height: 18rem; }
+.buddy-bubble-shell { position: absolute; inset: 0; pointer-events: none; z-index: -1; border-radius: inherit; background: var(--buddy-shell); box-shadow: var(--buddy-shadow); border: 2px solid var(--border); }
+.buddy-bubble-shell::before { content: ""; position: absolute; inset: -40%; background: var(--buddy-shell); border-radius: 50%; animation: buddy-spin 90s linear infinite; }
+.buddy-bubble-shell::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--buddy-shadow); }
+.buddy-bubble-paused .buddy-bubble-shell::before { animation-play-state: paused; }
+.buddy-bubble-content { position: relative; }
+.buddy-person { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-glass); }
+.buddy-progress-bar { background: var(--buddy-surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-button); }
+@keyframes buddy-spin { to { transform: rotate(360deg); } }
+@media (max-width: 639px) { .buddy-bubble { padding: 1.25rem 0.75rem; border-radius: 2.5rem; } }
 .home-inbox-content { min-width: 0; transition: margin-left 0.25s ease; }
 .inbox-sidebar {
   position: fixed;

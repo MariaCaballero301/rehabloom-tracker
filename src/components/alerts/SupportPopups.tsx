@@ -37,7 +37,7 @@ export function SupportPopups() {
       .then(({ data }) => active && setNotes(data ?? []));
 
     const channel = supabase
-      .channel(`support-notes-${userId}`)
+      .channel(`support-notes-${userId}-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {

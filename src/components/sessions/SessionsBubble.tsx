@@ -2,7 +2,7 @@
 // sessions together and invites waiting for a reply. Mounted once in the root layout.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { CalendarClock, CalendarDown, CalendarHeart, CalendarPlus, Check, HeartHandshake, MessageCircleHeart, Phone, Video, X } from "lucide-react";
+import { CalendarClock, CalendarPlus2, CalendarHeart, CalendarPlus, Check, HeartHandshake, MessageCircleHeart, Phone, Video, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { db, rpc } from "@/components/network/useNetwork";
@@ -281,7 +281,7 @@ export function SessionsBubble({ userId }: { userId: string }) {
                           <button className="btn-soft text-sm" disabled><Video className="h-4 w-4" /> Link opens 15 min before</button>
                         ))}
                         <button className="btn-soft text-sm" onClick={() => setPlan({ id: other.id, name: other.name, session: s })}><CalendarClock className="h-4 w-4" /> Reschedule</button>
-                        <button className="btn-soft text-sm" onClick={() => downloadIcs(s, userId)}><CalendarDown className="h-4 w-4" /> Add to calendar</button>
+                        <button className="btn-soft text-sm" onClick={() => downloadIcs(s, userId)}><CalendarPlus2 className="h-4 w-4" /> Add to calendar</button>
                         <button className="btn-soft text-sm" onClick={() => { if (confirm(`Cancel your session with ${other.name}?`)) void act("cancel_rehab_session", { p_id: s.id }, "Session cancelled"); }}><X className="h-4 w-4" /> Cancel</button>
                       </div>
                     </li>

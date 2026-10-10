@@ -21,3 +21,6 @@
 ## Inbox
 - Reuse encouragements and send_encouragement for human conversations so historical messages, connection authorization, limits and cheer XP stay consistent; never invent contacts or history.
 - Keep Inbox as a Home side panel and a directly accessible page, with Realtime plus periodic refresh, recipient-only read markers and paginated bidirectional history.
+
+## Background
+- Render the shared decorative landscape in the root shell behind all content with pointer events disabled; this keeps the appearance consistent without interfering with controls.

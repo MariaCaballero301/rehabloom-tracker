@@ -11,6 +11,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import aeroLandscape from "@/assets/aero-landscape.jpg";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { SupportPopups } from "@/components/alerts/SupportPopups";
@@ -104,6 +105,9 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <div className="aero-background" aria-hidden="true">
+          <img src={aeroLandscape} alt="" width={1536} height={1024} />
+        </div>
         {children}
         <Scripts />
       </body>

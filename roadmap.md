@@ -26,5 +26,6 @@
 - [x] Fix Sessions placement, hide both floating bubbles during either panel, and verify mobile/desktop exclusivity and toast Open.
 - [x] Diagnose reported mixed-version React crash; add guarded preview recovery and verify signed-in Support navigation.
 - [x] Add subtle bubble-pop sounds on appropriate active bubble clicks and verify playback.
-- [ ] Increase received-message contrast and add private, live three-dot typing indicators; test and verify.
-- [ ] Sessions alerts: remove Call and its handler; keep primary Do a session together and soft Send encouragement only.
+- [x] Increase received-message contrast and add private, live three-dot typing indicators; tests pass and signed-in start/stop requests verified.
+- [ ] Verify incoming typing between two signed-in accounts — blocked by absence of an authorized second-account session.
+- [x] Sessions alerts: remove Call and its handler; keep primary Do a session together and soft Send encouragement only.

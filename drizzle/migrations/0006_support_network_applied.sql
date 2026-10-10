@@ -1,0 +1,1 @@
+COMMENT ON TABLE public.support_contacts IS 'Support network contacts; read by the daily missed-session alert job.';

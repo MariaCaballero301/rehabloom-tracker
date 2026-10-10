@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_events: {
+        Row: {
+          channel: string
+          contact_id: string
+          created_at: string
+          delivery_status: string
+          error: string
+          id: string
+          missed_days: number
+          patient_id: string
+          streak_start: string
+          token: string
+        }
+        Insert: {
+          channel?: string
+          contact_id: string
+          created_at?: string
+          delivery_status: string
+          error?: string
+          id?: string
+          missed_days: number
+          patient_id: string
+          streak_start: string
+          token?: string
+        }
+        Update: {
+          channel?: string
+          contact_id?: string
+          created_at?: string
+          delivery_status?: string
+          error?: string
+          id?: string
+          missed_days?: number
+          patient_id?: string
+          streak_start?: string
+          token?: string
+        }
+        Relationships: []
+      }
+      blocks: {
+        Row: {
+          blocked_id: string
+          blocked_name: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocked_name?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocked_name?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       checkins: {
         Row: {
           created_at: string
@@ -82,6 +142,72 @@ export type Database = {
           },
         ]
       }
+      connection_requests: {
+        Row: {
+          created_at: string
+          from_name: string
+          from_user: string
+          id: string
+          kind: string
+          message: string
+          status: string
+          to_name: string
+          to_user: string
+        }
+        Insert: {
+          created_at?: string
+          from_name?: string
+          from_user: string
+          id?: string
+          kind: string
+          message?: string
+          status?: string
+          to_name?: string
+          to_user: string
+        }
+        Update: {
+          created_at?: string
+          from_name?: string
+          from_user?: string
+          id?: string
+          kind?: string
+          message?: string
+          status?: string
+          to_name?: string
+          to_user?: string
+        }
+        Relationships: []
+      }
+      encouragements: {
+        Row: {
+          created_at: string
+          from_name: string
+          from_user: string
+          id: string
+          message: string
+          read_at: string | null
+          to_user: string
+        }
+        Insert: {
+          created_at?: string
+          from_name?: string
+          from_user: string
+          id?: string
+          message: string
+          read_at?: string | null
+          to_user: string
+        }
+        Update: {
+          created_at?: string
+          from_name?: string
+          from_user?: string
+          id?: string
+          message?: string
+          read_at?: string | null
+          to_user?: string
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           cooldown_minutes: number
@@ -127,6 +253,81 @@ export type Database = {
         }
         Relationships: []
       }
+      invite_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          relationship: string
+          used_at: string | null
+          used_by: string | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          relationship: string
+          used_at?: string | null
+          used_by?: string | null
+          user_id?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          relationship?: string
+          used_at?: string | null
+          used_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      network_profiles: {
+        Row: {
+          availability: string[]
+          created_at: string
+          discoverable: boolean
+          display_name: string
+          finished_therapy: boolean
+          is_mentor: boolean
+          languages: string[]
+          mentor_bio: string
+          rehab_area: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          availability?: string[]
+          created_at?: string
+          discoverable?: boolean
+          display_name?: string
+          finished_therapy?: boolean
+          is_mentor?: boolean
+          languages?: string[]
+          mentor_bio?: string
+          rehab_area?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          availability?: string[]
+          created_at?: string
+          discoverable?: boolean
+          display_name?: string
+          finished_therapy?: boolean
+          is_mentor?: boolean
+          languages?: string[]
+          mentor_bio?: string
+          rehab_area?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       preferences: {
         Row: {
           partner_email: string
@@ -151,12 +352,146 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_sessions: {
+        Row: {
+          alert_id: string
+          contact_id: string
+          contact_name: string
+          created_at: string
+          id: string
+          note: string
+          patient_id: string
+          proposed_for: string
+          status: string
+        }
+        Insert: {
+          alert_id: string
+          contact_id: string
+          contact_name?: string
+          created_at?: string
+          id?: string
+          note?: string
+          patient_id: string
+          proposed_for: string
+          status?: string
+        }
+        Update: {
+          alert_id?: string
+          contact_id?: string
+          contact_name?: string
+          created_at?: string
+          id?: string
+          note?: string
+          patient_id?: string
+          proposed_for?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_sessions_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alert_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_contacts: {
+        Row: {
+          connected_user_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          notify_on_missed: boolean
+          phone: string
+          user_id: string
+        }
+        Insert: {
+          connected_user_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          name: string
+          notify_on_missed?: boolean
+          phone?: string
+          user_id?: string
+        }
+        Update: {
+          connected_user_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          notify_on_missed?: boolean
+          phone?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      support_profiles: {
+        Row: {
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          phone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          phone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      block_person: { Args: { p_other: string }; Returns: undefined }
+      cancel_connection_request: { Args: { p_id: string }; Returns: undefined }
+      create_invite_code: { Args: { p_relationship: string }; Returns: string }
+      disconnect_person: { Args: { p_other: string }; Returns: undefined }
+      network_directory: {
+        Args: never
+        Returns: {
+          availability: string[]
+          discoverable: boolean
+          display_name: string
+          is_mentor: boolean
+          languages: string[]
+          mentor_bio: string
+          rehab_area: string
+          user_id: string
+        }[]
+      }
+      network_display_name: { Args: { u: string }; Returns: string }
+      network_is_blocked: { Args: { a: string; b: string }; Returns: boolean }
+      people_i_support: {
+        Args: never
+        Returns: {
+          kind: string
+          name: string
+          user_id: string
+        }[]
+      }
+      redeem_invite_code: { Args: { p_code: string }; Returns: string }
+      respond_connection_request: {
+        Args: { p_accept: boolean; p_id: string }
+        Returns: undefined
+      }
+      send_connection_request: {
+        Args: { p_kind: string; p_message?: string; p_to: string }
+        Returns: string
+      }
+      send_encouragement: {
+        Args: { p_message: string; p_to: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

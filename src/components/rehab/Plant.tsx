@@ -3,7 +3,7 @@ export function Plant({ stage }: { stage: number }) {
     <svg viewBox="0 0 120 120" className="h-32 w-32" role="img" aria-label={`Plant growth stage ${stage + 1} of 4`}>
       <ellipse cx="60" cy="112" rx="34" ry="4" className="fill-foreground/10" />
       {stage === 0 && <ellipse cx="60" cy="80" rx="7" ry="5" className="fill-soil" />}
-      {stage >= 1 && <path d="M60 82 V{h}".replace("{h}", String(stage === 1 ? 64 : stage === 2 ? 46 : 36))} className="stroke-leaf-dark" strokeWidth="4" strokeLinecap="round" fill="none" />}
+      {stage >= 1 && <path d={`M60 82 V${stage === 1 ? 64 : stage === 2 ? 46 : 36}`} className="stroke-leaf-dark" strokeWidth="4" strokeLinecap="round" fill="none" />}
       {stage >= 1 && (
         <>
           <path d="M60 68 C48 58 40 62 42 70 C50 72 56 72 60 68Z" className="fill-leaf" />

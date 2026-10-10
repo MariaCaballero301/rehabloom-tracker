@@ -20,7 +20,7 @@ export function stageFor(xp: number) {
     if (xp >= s.min) i = idx;
   });
   const next = STAGES[i + 1];
-  return { index: i, name: STAGES[i]!.name, nextAt: next?.min ?? null };
+  return { index: i, name: STAGES[i]?.name ?? "Seed", nextAt: next?.min ?? null };
 }
 
 export function dayKey(d: Date) {
@@ -41,3 +41,19 @@ export function lastNDays(n: number, from = new Date()) {
 }
 
 export const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export type ExerciseStatus = "complete" | "skip";
+
+export function completedRecords<T extends { status: string }>(records: T[]) {
+  return records.filter((record) => record.status === "complete");
+}
+
+export function currentWeek(from = new Date()) {
+  const end = new Date(from);
+  end.setDate(end.getDate() - end.getDay() + 6);
+  return lastNDays(7, end);
+}
+
+export function nextExerciseStatus(current: string | undefined, requested: ExerciseStatus) {
+  return current === requested ? null : requested;
+}

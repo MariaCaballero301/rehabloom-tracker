@@ -289,7 +289,7 @@
 .xp-fish-bob { position: relative; width: 15rem; animation: xp-fish-bob 0.9s ease-in-out infinite; }
 .xp-fish-img { width: 100%; height: auto; filter: drop-shadow(0 10px 14px oklch(0.4 0.1 230 / 0.3)); }
 .xp-fish-flip { transform: scaleX(-1); }
-.xp-fish-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 2.5rem; text-align: center; font-weight: 800; font-size: 1rem; line-height: 1.15; color: var(--foreground); text-shadow: 0 0 6px var(--background), 0 0 12px var(--background), 0 0 3px var(--background); }
+.xp-fish-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 1.25rem; text-align: center; font-family: var(--font-display); font-weight: 900; font-size: clamp(1.7rem, 4.5vw, 2.5rem); line-height: 1; letter-spacing: -0.01em; color: var(--leaf-dark); text-shadow: 0 0 7px var(--background), 0 0 16px var(--background), 0 0 4px var(--background), 0 2px 0 oklch(1 0 0 / 0.9); }
 @keyframes xp-fish-swim { from { transform: translateX(-16rem); } to { transform: translateX(calc(100vw + 1rem)); } }
 @keyframes xp-fish-bob { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-14px) rotate(2deg); } }
 @media (prefers-reduced-motion: reduce) { .xp-fish-swim { left: 50%; transform: translateX(-50%); } }

@@ -454,8 +454,9 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                             disabled={saving || !isToday || !scheduled || !scheduledToday}
                             aria-label={label}
                             aria-pressed={status === "complete"}
-                            title={past ? "Past — can no longer be edited" : future ? "Upcoming — it's not this day yet! Check this off when you complete it on the appropriate date." : isToday ? "Mark as complete" : label}
-                            onClick={() => isToday && onTrack(ex, key, "complete", 1)}
+                            title={past ? "Past — can no longer be edited" : future ? "Upcoming — it's not this day yet! Check this off when you complete it on the appropriate date." : isToday ? (status ? "Right-click to undo" : "Mark as complete") : label}
+                            onClick={() => isToday && !status && onTrack(ex, key, "complete", 1)}
+                            onContextMenu={(e) => { e.preventDefault(); if (isToday && status) onTrack(ex, key, status as ExerciseStatus, 1); }}
                             className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 text-[10px] font-bold transition sm:h-11 sm:w-11 ${
                               status === "complete" ? "border-success bg-card text-success"
                               : status === "skip" ? "border-warning bg-warning/25 text-foreground"
@@ -466,10 +467,16 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                             {past && status !== "complete" && status !== "skip" && <span aria-hidden className="absolute h-0.5 w-8 rotate-45 rounded bg-muted-foreground/60" />}
                             {status === "complete" ? <Check className="h-5 w-5" /> : status === "skip" ? <span className="leading-none">Skipped</span> : <span className={past ? "opacity-0" : ""}>{d.getDate()}</span>}
                           </button>
-                          {isToday && scheduled && scheduledToday && (
+                          {isToday && scheduled && scheduledToday && !status && (
                             <button type="button" disabled={saving} onClick={() => onTrack(ex, key, "skip", 1)}
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${status === "skip" ? "bg-warning text-foreground" : "text-muted-foreground underline hover:text-foreground"}`}>
+                              className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-muted-foreground underline hover:text-foreground">
                               Skip
+                            </button>
+                          )}
+                          {isToday && status && (
+                            <button type="button" disabled={saving} onClick={() => onTrack(ex, key, status as ExerciseStatus, 1)}
+                              className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-muted-foreground underline hover:text-foreground">
+                              Undo
                             </button>
                           )}
                           {isToday && <span className="text-[10px] font-bold text-primary">Today</span>}

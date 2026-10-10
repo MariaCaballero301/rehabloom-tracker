@@ -1,7 +1,7 @@
 // Pure helpers for the Gemini monthly summary. Only anonymous numbers ever leave the app.
 import { dayKey, scheduledCount } from "@/lib/rehab";
 
-export const GEMINI_MODEL = "gemini-2.5-flash-lite";
+export const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 type Ex = { created_at: string; frequency: string; occurrences: number; days: number[]; weekly_mode?: string };
 type Co = { day: string; status: string };

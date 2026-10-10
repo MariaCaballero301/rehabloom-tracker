@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, Pencil, Trash2, Plus, LogOut, Bell, X } from "lucide-react";
+import { Check, Pencil, Trash2, Plus, Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
-import { HistoryCard } from "./HistoryCard";
-import { SupportAlertsPanel } from "@/components/alerts/SupportAlertsPanel";
-import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, stageProgress, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
+import { AppNav } from "@/components/AppNav";
+import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, stageProgress, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN, XP_PER_CHEER, MAX_XP_CHEERS_PER_DAY, cheerCount } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
 type Checkin = Tables<"checkins">;
 type Prefs = Tables<"preferences">;
 
-export function Dashboard({ userId, email, joinedAt }: { userId: string; email: string; joinedAt: string }) {
+export function Dashboard({ userId, email }: { userId: string; email: string; joinedAt?: string }) {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [prefs, setPrefs] = useState<Prefs | null>(null);
+  const [cheers, setCheers] = useState<{ created_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -26,12 +26,14 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
   const todayKey = dayKey(today);
 
   const load = useCallback(async () => {
-    const [ex, co, ci, pr] = await Promise.all([
+    const [ex, co, ci, pr, ch] = await Promise.all([
       supabase.from("exercises").select("*").order("created_at"),
       supabase.from("completions").select("*"),
       supabase.from("checkins").select("*"),
       supabase.from("preferences").select("*").maybeSingle(),
+      supabase.from("encouragements").select("created_at").eq("from_user", userId),
     ]);
+    setCheers(ch.data ?? []);
     setExercises(ex.data ?? []);
     setCompletions(co.data ?? []);
     setCheckins(ci.data ?? []);
@@ -44,7 +46,7 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
   // Exercises the user undid today: undo restores eligibility so they can redo it.
   const [undone, setUndone] = useState<Set<string>>(() => new Set());
   const completed = completedRecords(completions);
-  const xp = computeXp(completed.length, checkinCount(checkins));
+  const xp = computeXp(completed.length, checkinCount(checkins), cheerCount(cheers));
   const stage = stageFor(xp);
   const sorted = sortExercises(exercises);
   const todays = sorted.filter((e) => scheduledCount(e, today) > 0 && (e.weekly_mode !== "interval" || e.frequency === "daily" || weeklyAvailability(e, completions, today).available || undone.has(e.id)));
@@ -104,46 +106,26 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
 
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6">
-      <header className="mb-5 flex items-center justify-between gap-3">
-        <h1 className="text-2xl text-primary sm:text-3xl">Rehabloom</h1>
-        <div className="flex items-center gap-2">
-          <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
-          <button className="btn-soft" onClick={() => supabase.auth.signOut()} aria-label="Sign out">
-            <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Sign out</span>
-          </button>
-        </div>
-      </header>
+      <AppNav email={email} />
 
       <p className="mb-5 rounded-2xl bg-secondary/70 px-4 py-2 text-xs text-secondary-foreground">
         Rehabloom helps you follow your therapist's plan. It doesn't give medical advice. If pain increases, stop and contact your physical therapist.
       </p>
 
       <div className="grid gap-5 lg:grid-cols-3">
-        <section className="glass flex flex-col items-center p-6 text-center lg:col-span-3" aria-labelledby="plant-h">
-          <h2 id="plant-h" className="text-xl">Your plant</h2>
-          <Plant stage={stage.index} size="lg" />
-          <p className="font-bold">{stage.name}</p>
-          <p className="text-2xl font-extrabold text-success">{xp} XP</p>
-          {stage.nextAt !== null ? (
-            <>
-              <div className="mt-2 h-3 w-full max-w-md overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={xp - stage.min} aria-valuemin={0} aria-valuemax={stage.nextAt - stage.min}>
-                <div className="h-full rounded-full bg-success" style={{ width: `${stageProgress(xp) * 100}%` }} />
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{stage.nextAt - xp} XP to next stage</p>
-            </>
-          ) : (
-            <p className="text-xs text-muted-foreground">Fully grown!</p>
-          )}
-          <p className="mt-3 text-xs text-muted-foreground">
-            +{XP_PER_EXERCISE} per exercise, +{XP_PER_CHECKIN} per check-in (rest days included). Pain level never changes XP.
-          </p>
-        </section>
-
-        <section className="glass p-5 lg:col-span-2" aria-labelledby="today-h">
-          <h2 id="today-h" className="text-xl">Today's exercises</h2>
-          <p className="text-sm text-muted-foreground">
-            {today.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-          </p>
+        <section className="glass p-5 sm:p-6 lg:col-span-3" aria-labelledby="plant-h">
+          <div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:items-start">
+            <div className="flex flex-col items-center text-center">
+              <h2 id="plant-h" className="text-xl">Your plant</h2>
+              <Plant stage={stage.index} size="lg" />
+              <p className="font-bold">{stage.name}</p>
+              <p className="text-2xl font-extrabold text-success">{xp} XP</p>
+            </div>
+            <div className="min-w-0">
+              <h2 id="today-h" className="text-xl">Today's exercises</h2>
+              <p className="text-sm text-muted-foreground">
+                {today.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+              </p>
           {todayCheckin && todayCheckin.status !== "normal" && (
             <p className="mt-3 rounded-xl bg-accent px-3 py-2 text-sm text-accent-foreground">
               You marked today as {todayCheckin.status === "rest" ? "a rest day" : "unable to complete"}. That's okay — listening to your body counts.
@@ -175,13 +157,28 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
               );
             })}
           </ul>
+            </div>
+          </div>
+          <div className="mt-5 border-t pt-4 text-center">
+            {stage.nextAt !== null ? (
+              <>
+                <div className="h-3 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="XP to next stage" aria-valuenow={xp - stage.min} aria-valuemin={0} aria-valuemax={stage.nextAt - stage.min}>
+                  <div className="h-full rounded-full bg-success" style={{ width: `${stageProgress(xp) * 100}%` }} />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{stage.nextAt - xp} XP to next stage</p>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">Fully grown!</p>
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">
+              +{XP_PER_EXERCISE} per exercise, +{XP_PER_CHECKIN} per check-in (rest days included), +{XP_PER_CHEER} per cheer sent to a rehab buddy (up to {MAX_XP_CHEERS_PER_DAY} a day). Pain level never changes XP.
+            </p>
+          </div>
         </section>
 
         <CheckinCard existing={todayCheckin} todayKey={todayKey} onSaved={load} />
-        <HistoryCard exercises={exercises} completions={completed} checkins={checkins} joinedAt={joinedAt} />
         <ExerciseManager exercises={sorted} completions={completions} todayKey={todayKey} saving={saving} waitNotes={waitNotes} undone={undone} onTrack={track} onChange={load} />
         {prefs && <SettingsCard prefs={prefs} email={email} onSaved={load} />}
-        <SupportAlertsPanel userId={userId} />
       </div>
     </div>
   );
@@ -398,7 +395,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
   return (
     <section className="glass p-5 lg:col-span-2" aria-labelledby="ex-h">
       <div className="flex items-center justify-between gap-2">
-        <h2 id="ex-h" className="text-xl">My prescribed exercises</h2>
+        <h2 id="ex-h" className="text-xl">Prescribed exercises</h2>
         <div className="flex items-center gap-2">
           <Button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", weekly_mode: "days", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
             <Plus className="h-4 w-4" /> Add

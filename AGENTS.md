@@ -17,3 +17,7 @@
 ## Profile photos
 - Keep profile photos in private Cloud Storage under the owner's UUID folder and save only their path on network_profiles; signed URLs and authorized photo-only RPCs preserve existing network visibility and blocking rules.
 - Stage photo edits until Save profile, clean replaced uploads after saving, and keep optional photo failures from preventing profile edits.
+
+## Inbox
+- Reuse encouragements and send_encouragement for human conversations so historical messages, connection authorization, limits and cheer XP stay consistent; never invent contacts or history.
+- Keep Inbox as a Home side panel and a directly accessible page, with Realtime plus periodic refresh, recipient-only read markers and paginated bidirectional history.

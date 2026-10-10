@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useSessionUser } from "@/hooks/use-session-user";
 import { AuthCard } from "@/components/rehab/AuthCard";
 import { Dashboard } from "@/components/rehab/Dashboard";
+import { HomeInbox } from "@/components/network/HomeInbox";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,5 +22,5 @@ function Index() {
   const { user, ready } = useSessionUser();
   if (!ready) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
   if (!user) return <AuthCard />;
-  return <Dashboard key={user.id} userId={user.id} email={user.email ?? ""} />;
+  return <HomeInbox key={user.id} userId={user.id}><Dashboard userId={user.id} email={user.email ?? ""} /></HomeInbox>;
 }

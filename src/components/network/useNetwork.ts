@@ -26,6 +26,7 @@ export type ConnectionRequest = {
   kind: string;
   message: string;
   created_at: string;
+  read_at?: string | null;
 };
 export type Encouragement = {
   id: string;

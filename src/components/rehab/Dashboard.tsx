@@ -68,16 +68,14 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
   }
 
   async function track(ex: Exercise, day: string, requested: ExerciseStatus, occurrence = 1): Promise<void> {
-    if (saving || day !== todayKey || scheduledCount(ex, today) === 0) return;
+    if (saving || scheduledCount(ex, today) === 0) return;
     const existing = completions.find((c) => c.exercise_id === ex.id && c.day === day && c.occurrence === occurrence);
     const status = nextExerciseStatus(existing?.status, requested);
+    if (day !== todayKey && status !== null) return; // past/future days: undo only
     if (status === "complete") {
       const reason = blockReason(ex, occurrence);
-      if (reason && waitNotes[ex.id] !== reason) {
-        setWaitNotes((n) => ({ ...n, [ex.id]: `${reason} Tap again to do it anyway.` }));
-        return;
-      }
-      setWaitNotes((n) => ({ ...n, [ex.id]: "" }));
+      setWaitNotes((n) => ({ ...n, [ex.id]: reason ?? "" }));
+      if (reason) return;
     }
     setSaving(true);
     try {

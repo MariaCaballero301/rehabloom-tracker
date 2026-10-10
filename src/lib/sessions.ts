@@ -80,3 +80,56 @@ export function localDateInput(d: Date) {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
+
+/** Red badge on the Sessions bubble: open alerts + invites waiting for my answer. */
+export function sessionsBadgeCount(
+  alerts: number,
+  sessions: RehabSession[],
+  sharedProposed: number,
+  me: string,
+  now: Date,
+) {
+  return alerts + splitSessions(sessions, me, now).invites.length + sharedProposed;
+}
+
+/** "{name} suggested a new time · {when}" for rescheduled invites, otherwise "{name} · {when}". */
+export function inviteLabel(s: RehabSession, rescheduled: ReadonlySet<string>, now: Date) {
+  const name = s.organizer_name || "Someone";
+  const when = formatWhen(s.starts_at, now);
+  return rescheduled.has(s.id) ? `${name} suggested a new time · ${when}` : `${name} · ${when}`;
+}
+
+export type DaySession = { id: string; day: string; startsAt: string; name: string; mode: string; status: string };
+
+/** Status text shown on the Progress calendar. */
+export function sessionStatusLabel(status: string, startsAt: string, now: Date) {
+  if (status === "completed") return "Done together";
+  if (status === "proposed") return "Waiting for reply";
+  return new Date(startsAt).getTime() < now.getTime() ? "Planned" : "Scheduled";
+}
+
+const icsDate = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+const icsText = (t: string) => t.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/([,;])/g, "\\$1");
+
+/** A one-hour calendar event (.ics) for a session. */
+export function buildIcs(s: RehabSession, me: string, stamp = new Date()) {
+  const other = otherPerson(s, me).name;
+  const start = new Date(s.starts_at);
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const where = s.mode === "video" ? s.meeting_url : s.place;
+  const desc = [s.mode === "video" ? `Video call: ${s.meeting_url}` : `In person${s.place ? `: ${s.place}` : ""}`, s.note].filter(Boolean).join("\n");
+  return [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Rehabloom//Sessions//EN", "BEGIN:VEVENT",
+    `UID:${s.id}@rehabloom`, `DTSTAMP:${icsDate(stamp)}`, `DTSTART:${icsDate(start)}`, `DTEND:${icsDate(end)}`,
+    `SUMMARY:${icsText(`Rehab session with ${other}`)}`,
+    `DESCRIPTION:${icsText(desc)}`,
+    ...(where ? [`LOCATION:${icsText(where)}`] : []),
+    "END:VEVENT", "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+/** Accepted sessions starting within the next 15 minutes (for the one-time reminder toast). */
+export function startingSoon(rows: RehabSession[], now: Date) {
+  const t = now.getTime();
+  return rows.filter((s) => s.status === "accepted" && startMs(s) > t && startMs(s) - t <= JOIN_EARLY_MS);
+}

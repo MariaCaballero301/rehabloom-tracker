@@ -33,4 +33,8 @@
 - Rotate only the buddy bubble's decorative shell, keeping its contents stationary and honoring reduced motion so names and controls stay readable.
 
 ## Sessions together
+ - Mount Sessions as a sibling after the Inbox wrapper and use body panel classes to hide both floating triggers while either panel is open; mobile content hiding must not hide the panel itself.
 - Keep session splitting, join windows and time formatting in the pure src/lib/sessions.ts helpers, and change rehab_sessions only through its SECURITY DEFINER RPCs; Home and the tests then share one set of rules, and clients can only read rows.
+
+## AI summaries
+- Use shared pure period helpers for monthly and Monday–Sunday weekly ranges; persist period metadata in the existing private summary stats JSON to preserve old monthly history without duplicating reports.

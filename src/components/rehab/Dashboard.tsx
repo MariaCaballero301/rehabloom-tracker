@@ -6,8 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
 import { HistoryCard } from "./HistoryCard";
-import { ChevronRight, ChevronLeft } from "lucide-react";
-import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, longDate, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
+import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
@@ -265,8 +264,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
   onChange: () => void;
 }) {
   const [editing, setEditing] = useState<Partial<Exercise> | null>(null);
-  const [weekOffset, setWeekOffset] = useState(0);
-  const week = weekAt(weekOffset);
+  const week = weekAt(0);
   const today = new Date();
 
   async function save(): Promise<void> {
@@ -308,12 +306,9 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
           <Button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", weekly_mode: "days", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
             <Plus className="h-4 w-4" /> Add
           </Button>
-          <Button variant="outline" size="icon" className="rounded-full" aria-label={weekOffset ? "Show this week" : "Show next week"} title={weekOffset ? "Back to this week" : "Show next week's schedule"} onClick={() => setWeekOffset(weekOffset ? 0 : 1)}>
-            {weekOffset ? <ChevronLeft /> : <ChevronRight />}
-          </Button>
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.{weekOffset ? " Showing next week's schedule." : ""}</p>
+      <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.</p>
 
       {editing && (
         <div className="mt-4 space-y-3 rounded-2xl border bg-card p-4">
@@ -410,8 +405,8 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
           const available = weeklyAvailability(ex, completions, today);
           const scheduledToday = scheduledCount(ex, today) > 0 && (!interval || available.available);
           const lines = daily
-            ? (weekOffset ? [] : Array.from({ length: ex.occurrences }, (_, i) => ({ key: `o${i + 1}`, label: `Occurrence ${i + 1}`, day: todayKey, occ: i + 1, date: new Date() })))
-            : (interval ? week : week.filter((d) => ex.days.includes(d.getDay()))).map((d) => ({ key: dayKey(d), label: longDate(d), day: dayKey(d), occ: 1, date: d }));
+            ? Array.from({ length: ex.occurrences }, (_, i) => ({ key: `o${i + 1}`, label: `Occurrence ${i + 1}`, day: todayKey, occ: i + 1, date: new Date() }))
+            : [];
           return (
             <li key={ex.id} className="py-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -437,6 +432,51 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
               </div>
               {interval && !scheduledToday && <p className="mt-2 text-xs text-muted-foreground">{available.gap ? `Please wait ${available.gap} more day${available.gap === 1 ? "" : "s"}.` : "All weekly occurrences are complete."} Upcoming</p>}
               {waitNotes[ex.id] && <p className="mt-2 rounded-xl bg-secondary px-3 py-1.5 text-xs font-semibold text-secondary-foreground" role="status">{waitNotes[ex.id]}</p>}
+              {!daily && (
+                <div className="mt-3 rounded-2xl border bg-card/60 p-3">
+                  <div className="grid grid-cols-7 gap-1.5 sm:gap-2" role="group" aria-label={`${ex.name} schedule this week`}>
+                    {week.map((d) => {
+                      const key = dayKey(d);
+                      const isToday = key === todayKey;
+                      const past = key < todayKey;
+                      const future = key > todayKey;
+                      const scheduled = interval ? true : ex.days.includes(d.getDay());
+                      const record = completions.find((c) => c.exercise_id === ex.id && c.day === key);
+                      const status = record?.status;
+                      const label = `${d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}${isToday ? ", today" : ""}${past ? ", past — can no longer be edited" : future ? ", upcoming" : ""}${status === "complete" ? ", completed" : status === "skip" ? ", skipped" : ""}`;
+                      return (
+                        <div key={key} className="flex flex-col items-center gap-1">
+                          <span className={`text-[10px] font-semibold ${isToday ? "text-primary" : "text-muted-foreground"}`}>{DAY_LABELS[d.getDay()]}</span>
+                          <button
+                            type="button"
+                            disabled={saving || !isToday || !scheduled || !scheduledToday}
+                            aria-label={label}
+                            aria-pressed={status === "complete"}
+                            title={past ? "Past — can no longer be edited" : future ? "Upcoming — it's not this day yet! Check this off when you complete it on the appropriate date." : isToday ? "Mark as complete" : label}
+                            onClick={() => isToday && onTrack(ex, key, "complete", 1)}
+                            className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 text-[10px] font-bold transition sm:h-11 sm:w-11 ${
+                              status === "complete" ? "border-success bg-success text-success-foreground"
+                              : status === "skip" ? "border-warning bg-warning text-foreground"
+                              : isToday && scheduled ? "border-primary bg-card text-primary shadow-sm hover:bg-accent"
+                              : "border-input bg-muted text-muted-foreground"
+                            } ${!isToday || !scheduled ? "cursor-not-allowed opacity-60" : ""}`}
+                          >
+                            {past && status !== "complete" && status !== "skip" && <span aria-hidden className="absolute h-0.5 w-8 rotate-45 rounded bg-muted-foreground/60" />}
+                            {status === "complete" ? <Check className="h-5 w-5" /> : status === "skip" ? <span className="leading-none">Skipped</span> : <span className={past ? "opacity-0" : ""}>{d.getDate()}</span>}
+                          </button>
+                          {isToday && scheduled && scheduledToday && (
+                            <button type="button" disabled={saving} onClick={() => onTrack(ex, key, "skip", 1)}
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${status === "skip" ? "bg-warning text-foreground" : "text-muted-foreground underline hover:text-foreground"}`}>
+                              Skip
+                            </button>
+                          )}
+                          {isToday && <span className="text-[10px] font-bold text-primary">Today</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {lines.length > 0 && (
                 <ul className="mt-2 space-y-1 rounded-2xl border bg-card/60 p-2 text-xs">
                   {lines.map((line) => {

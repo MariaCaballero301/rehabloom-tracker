@@ -88,9 +88,9 @@ function People({ userId, email, initialCode }: { userId: string; email: string;
             </div>
             <div className="space-y-4">
               <DiscoverCard profile={n.profile} directory={n.directory} excluded={excluded} onChange={n.reload} />
-              <InviteCard invites={n.invites} initialCode={initialCode} onChange={n.reload} />
             </div>
           </div>
+          <InviteCard invites={n.invites} initialCode={initialCode} onChange={n.reload} />
         </div>
       )}
     </div>

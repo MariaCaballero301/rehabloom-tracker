@@ -181,9 +181,11 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
           </div>
         </section>
 
-        <CheckinCard existing={todayCheckin} todayKey={todayKey} onSaved={load} />
+        <div className="space-y-5 lg:col-span-1">
+          <CheckinCard existing={todayCheckin} todayKey={todayKey} onSaved={load} />
+          {prefs && <SettingsCard prefs={prefs} email={email} onSaved={load} />}
+        </div>
         <ExerciseManager exercises={sorted} completions={completions} todayKey={todayKey} saving={saving} waitNotes={waitNotes} undone={undone} onTrack={track} onChange={load} />
-        {prefs && <SettingsCard prefs={prefs} email={email} onSaved={load} />}
       </div>
     </div>
   );

@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { HomeInbox } from "@/components/network/HomeInbox";
 import { Dashboard } from "@/components/rehab/Dashboard";
 import { AuthCard } from "@/components/rehab/AuthCard";
 import { useSessionUser } from "@/hooks/use-session-user";
@@ -19,5 +18,5 @@ function InboxPage() {
   const { user, ready } = useSessionUser();
   if (!ready) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
   if (!user) return <AuthCard />;
-  return <HomeInbox key={user.id} userId={user.id} initiallyOpen><Dashboard userId={user.id} email={user.email ?? ""} /></HomeInbox>;
+  return <Dashboard userId={user.id} email={user.email ?? ""} />;
 }

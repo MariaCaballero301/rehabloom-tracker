@@ -98,3 +98,13 @@ describe("weekly scheduling and history rules", () => {
     expect(weeks.every((week) => week.length === 7)).toBe(true);
   });
 });
+
+import { stageProgress } from "@/lib/rehab";
+describe("stage progress bar", () => {
+  it("starts empty at each new stage and carries spillover", () => {
+    expect(stageProgress(50)).toBe(0);
+    expect(stageProgress(60)).toBe(0.1);
+    expect(stageProgress(150)).toBe(0);
+    expect(stageProgress(25)).toBe(0.5);
+  });
+});

@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
-import { CalendarHeart, Check, Users, X } from "lucide-react";
+import { CalendarHeart, Check, Pencil, Users, X } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePhone } from "@/lib/alerts";
@@ -22,6 +22,8 @@ type Session = {
 
 export function SupportAlertsPanel({ userId }: { userId: string }) {
   const [phone, setPhone] = useState("");
+  const [savedPhone, setSavedPhone] = useState("");
+  const [editingPhone, setEditingPhone] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
 
   const load = useCallback(async () => {
@@ -35,7 +37,9 @@ export function SupportAlertsPanel({ userId }: { userId: string }) {
         .gte("proposed_for", since)
         .order("proposed_for"),
     ]);
-    setPhone((profile.data as { phone?: string } | null)?.phone ?? "");
+    const saved = (profile.data as { phone?: string } | null)?.phone ?? "";
+    setPhone(saved);
+    setSavedPhone(saved);
     setSessions((list.data ?? []) as Session[]);
   }, [userId]);
 
@@ -50,6 +54,8 @@ export function SupportAlertsPanel({ userId }: { userId: string }) {
       .upsert({ user_id: userId, phone: clean, updated_at: new Date().toISOString() });
     if (error) return void toast.error(error.message);
     setPhone(clean);
+    setSavedPhone(clean);
+    setEditingPhone(false);
     toast.success("Phone saved");
   }
 
@@ -75,6 +81,20 @@ export function SupportAlertsPanel({ userId }: { userId: string }) {
         <Users className="h-4 w-4" /> Your people
       </Link>
 
+      {savedPhone && !editingPhone ? (
+        <div className="mt-3">
+          <p className="text-sm font-semibold">Your phone (so they can call you)</p>
+          <div className="mt-1 flex items-center gap-2">
+            <div className="flex flex-1 items-center justify-between gap-2 rounded-2xl border-2 border-success bg-success/15 px-3 py-2 text-sm" role="status">
+              <span className="truncate font-semibold">{savedPhone}</span>
+              <span className="flex shrink-0 items-center gap-1 font-bold text-success"><Check className="h-4 w-4" /> Saved</span>
+            </div>
+            <button className="btn-soft shrink-0" aria-label="Edit phone number" title="Edit phone number" onClick={() => setEditingPhone(true)}>
+              <Pencil className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      ) : (
       <label className="mt-3 block text-sm font-semibold">
         Your phone (so they can call you)
         <div className="mt-1 flex gap-2">
@@ -90,6 +110,7 @@ export function SupportAlertsPanel({ userId }: { userId: string }) {
           </button>
         </div>
       </label>
+      )}
 
       <h3 className="mt-4 text-sm font-bold uppercase text-muted-foreground">Session invites</h3>
       {sessions.length === 0 ? (

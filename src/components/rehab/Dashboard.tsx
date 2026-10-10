@@ -7,7 +7,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
 import { HistoryCard } from "./HistoryCard";
 import { SupportAlertsPanel } from "@/components/alerts/SupportAlertsPanel";
-import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
+import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, stageProgress, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
@@ -45,9 +45,11 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
   const xp = computeXp(completed.length, checkinCount(checkins));
   const stage = stageFor(xp);
   const sorted = sortExercises(exercises);
-  const todays = sorted.filter((e) => scheduledCount(e, today) > 0 && (e.weekly_mode !== "interval" || e.frequency === "daily" || weeklyAvailability(e, completions, today).available));
+  const todays = sorted.filter((e) => scheduledCount(e, today) > 0 && (e.weekly_mode !== "interval" || e.frequency === "daily" || weeklyAvailability(e, completions, today).available || undone.has(e.id)));
   const todayCheckin = checkins.find((c) => c.day === todayKey);
   const [waitNotes, setWaitNotes] = useState<Record<string, string>>({});
+  // Exercises the user undid today: undo restores eligibility so they can redo it.
+  const [undone, setUndone] = useState<Set<string>>(() => new Set());
 
   function blockReason(ex: Exercise, occurrence: number): string | null {
     const mine = completed.filter((c) => c.exercise_id === ex.id);
@@ -57,7 +59,7 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
       const ms = cooldownRemainingMs(last, ex.cooldown_minutes);
       return ms > 0 ? `Please wait ${formatWait(ms)} before the next occurrence.` : null;
     }
-    if (ex.weekly_mode === "days") return null;
+    if (ex.weekly_mode === "days" || undone.has(ex.id)) return null;
     const available = weeklyAvailability(ex, completions, today);
     if (available.count >= ex.occurrences && !mine.some((c) => c.day === todayKey)) return "All weekly occurrences are complete. Your next week starts Sunday.";
     const lastDay = mine.filter((c) => c.day < todayKey).map((c) => c.day).sort().at(-1);
@@ -80,6 +82,7 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
         ? await supabase.from("completions").delete().eq("exercise_id", ex.id).eq("day", day).eq("occurrence", occurrence)
         : await supabase.from("completions").upsert({ exercise_id: ex.id, day, occurrence, status, created_at: new Date().toISOString() }, { onConflict: "exercise_id,day,occurrence" });
       if (error) return void toast.error(error.message);
+      if (status === null) setUndone((u) => new Set(u).add(ex.id));
       if (status === "complete") toast.success(`+${XP_PER_EXERCISE} XP — nice work!`);
       else toast.success(status === "skip" ? "Skipped for today" : "Exercise reset");
       await load();
@@ -122,8 +125,8 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
           <p className="text-2xl font-extrabold text-success">{xp} XP</p>
           {stage.nextAt !== null ? (
             <>
-              <div className="mt-2 h-3 w-full max-w-md overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={xp} aria-valuemax={stage.nextAt}>
-                <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, (xp / stage.nextAt) * 100)}%` }} />
+              <div className="mt-2 h-3 w-full max-w-md overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={xp - stage.min} aria-valuemin={0} aria-valuemax={stage.nextAt - stage.min}>
+                <div className="h-full rounded-full bg-success" style={{ width: `${stageProgress(xp) * 100}%` }} />
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{stage.nextAt - xp} XP to next stage</p>
             </>
@@ -175,7 +178,7 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
 
         <CheckinCard existing={todayCheckin} todayKey={todayKey} onSaved={load} />
         <HistoryCard exercises={exercises} completions={completed} checkins={checkins} joinedAt={joinedAt} />
-        <ExerciseManager exercises={sorted} completions={completions} todayKey={todayKey} saving={saving} waitNotes={waitNotes} onTrack={track} onChange={load} />
+        <ExerciseManager exercises={sorted} completions={completions} todayKey={todayKey} saving={saving} waitNotes={waitNotes} undone={undone} onTrack={track} onChange={load} />
         {prefs && <SettingsCard prefs={prefs} email={email} onSaved={load} />}
         <SupportAlertsPanel userId={userId} />
       </div>
@@ -256,7 +259,8 @@ function CheckinCard({ existing, todayKey, onSaved }: { existing: Checkin | unde
   );
 }
 
-function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, onTrack, onChange }: {
+function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, undone, onTrack, onChange }: {
+  undone: Set<string>;
   exercises: Exercise[];
   completions: Completion[];
   todayKey: string;
@@ -300,19 +304,9 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
   const cdH = Math.floor((editing?.cooldown_minutes ?? 0) / 60);
   const cdM = (editing?.cooldown_minutes ?? 0) % 60;
 
-  return (
-    <section className="glass p-5 lg:col-span-2" aria-labelledby="ex-h">
-      <div className="flex items-center justify-between gap-2">
-        <h2 id="ex-h" className="text-xl">My prescribed exercises</h2>
-        <div className="flex items-center gap-2">
-          <Button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", weekly_mode: "days", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
-            <Plus className="h-4 w-4" /> Add
-          </Button>
-        </div>
-      </div>
-      <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.</p>
-
-      {editing && (
+  function editPanel() {
+    if (!editing) return null;
+    return (
         <div className="mt-4 space-y-3 rounded-2xl border bg-card p-4">
           <label className="block text-sm font-semibold">Exercise name
             <input className="field mt-1" value={editing.name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="e.g. Heel slides" />
@@ -397,14 +391,30 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
             <Button variant="outline" className="btn-soft" onClick={() => setEditing(null)}><X className="h-4 w-4" /> Cancel</Button>
           </div>
         </div>
-      )}
+    );
+  }
+
+  return (
+    <section className="glass p-5 lg:col-span-2" aria-labelledby="ex-h">
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="ex-h" className="text-xl">My prescribed exercises</h2>
+        <div className="flex items-center gap-2">
+          <Button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", weekly_mode: "days", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.</p>
+
+      {editing && !editing.id && editPanel()}
 
       <ul className="mt-4 divide-y divide-input">
         {exercises.length === 0 && <li className="py-2 text-sm text-muted-foreground">No exercises yet.</li>}
         {exercises.map((ex) => {
           const daily = ex.frequency === "daily";
           const interval = !daily && ex.weekly_mode === "interval";
-          const available = weeklyAvailability(ex, completions, today);
+          const avail = weeklyAvailability(ex, completions, today);
+          const available = undone.has(ex.id) ? { ...avail, gap: 0, available: true } : avail;
           const scheduledToday = scheduledCount(ex, today) > 0 && (!interval || available.available);
           const lines = daily
             ? Array.from({ length: ex.occurrences }, (_, i) => ({ key: `o${i + 1}`, label: `Occurrence ${i + 1}`, day: todayKey, occ: i + 1, date: new Date() }))
@@ -432,6 +442,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                   <Button variant="outline" size="icon" className="rounded-full text-destructive" title="Remove exercise" aria-label={`Remove ${ex.name}`} onClick={() => remove(ex.id)}><Trash2 /></Button>
                 </div>
               </div>
+              {editing?.id === ex.id && editPanel()}
               {interval && !scheduledToday && <p className="mt-2 text-xs text-muted-foreground">{available.gap ? `Please wait ${available.gap} more day${available.gap === 1 ? "" : "s"}.` : "All weekly occurrences are complete."} Upcoming</p>}
               {waitNotes[ex.id] && <p className="mt-2 rounded-xl bg-secondary px-3 py-1.5 text-xs font-semibold text-secondary-foreground" role="status">{waitNotes[ex.id]}</p>}
               {!daily && (

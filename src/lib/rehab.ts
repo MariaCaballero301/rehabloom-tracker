@@ -20,7 +20,14 @@ export function stageFor(xp: number) {
     if (xp >= s.min) i = idx;
   });
   const next = STAGES[i + 1];
-  return { index: i, name: STAGES[i]?.name ?? "Seed", nextAt: next?.min ?? null };
+  return { index: i, name: STAGES[i]?.name ?? "Seed", min: STAGES[i]?.min ?? 0, nextAt: next?.min ?? null };
+}
+
+/** 0–1 progress within the current stage; each stage's bar starts empty. */
+export function stageProgress(xp: number) {
+  const s = stageFor(xp);
+  if (s.nextAt === null) return 1;
+  return Math.min(1, Math.max(0, (xp - s.min) / (s.nextAt - s.min)));
 }
 
 export function dayKey(d: Date) {

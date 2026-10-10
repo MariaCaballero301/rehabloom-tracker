@@ -457,7 +457,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                       const scheduled = interval ? true : ex.days.includes(d.getDay());
                       const record = completions.find((c) => c.exercise_id === ex.id && c.day === key);
                       const status = record?.status;
-                      const blocked = isToday && scheduled && !status && !undone.has(ex.id) && blockReason(ex, 1) !== null;
+                      const blocked = isToday && scheduled && !status && interval && !undone.has(ex.id) && !weeklyAvailability(ex, completions, d).available;
                       const label = `${d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}${isToday ? ", today" : ""}${past ? ", past" : future ? ", upcoming" : ""}${blocked ? ", waiting period — not available yet" : ""}${status === "complete" ? ", completed" : status === "skip" ? ", skipped" : ""}`;
                       return (
                         <div key={key} className="flex flex-col items-center gap-1">

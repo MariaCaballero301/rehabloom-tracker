@@ -56,13 +56,13 @@ export function HomeInbox({ userId, children, initiallyOpen = false }: { userId:
           {inbox.channels.map((c) => <Button key={c.user_id} variant="ghost" className="flex h-auto w-full justify-start gap-3 rounded-none border-b px-4 py-4" onClick={() => setSelected(c.user_id)}>
             <ProfileAvatar userId={c.user_id} name={c.name} />
             <span className="min-w-0 flex-1 whitespace-normal break-words text-left">{c.name}</span>
-            {inbox.unreadByChannel[c.user_id] > 0 && <span className="rounded-full bg-destructive px-2 py-0.5 text-xs text-destructive-foreground">{inbox.unreadByChannel[c.user_id]}</span>}
+            {(inbox.unreadByChannel[c.user_id] ?? 0) > 0 && <span className="rounded-full bg-destructive px-2 py-0.5 text-xs text-destructive-foreground">{inbox.unreadByChannel[c.user_id]}</span>}
           </Button>)}
           {!inbox.error && inbox.channels.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted-foreground">No conversations yet. Connect with your people on Support 🌱</p>}
         </nav>}
       </aside>}
       <main className="home-inbox-content">{children}</main>
-      {!open && <Button ref={trigger} variant="ghost" className={`bubble inbox-trigger relative rounded-full p-0 text-primary ${inbox.count > 0 ? "inbox-attention" : ""}`} aria-label={inbox.count ? `Open Inbox, ${inbox.count} unread` : "Open Inbox"} title="Inbox" aria-expanded={open} aria-controls="home-inbox" onClick={() => setOpen(true)}>
+      {!open && <Button ref={trigger} variant="ghost" className={`bubble inbox-trigger rounded-full p-0 text-primary ${inbox.count > 0 ? "inbox-attention" : ""}`} aria-label={inbox.count ? `Open Inbox, ${inbox.count} unread` : "Open Inbox"} title="Inbox" aria-expanded={open} aria-controls="home-inbox" onClick={() => setOpen(true)}>
         <Inbox className="size-7" />
         {inbox.count > 0 && <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-popover bg-destructive px-1 text-xs font-bold text-destructive-foreground">{inbox.count > 99 ? "99+" : inbox.count}</span>}
       </Button>}

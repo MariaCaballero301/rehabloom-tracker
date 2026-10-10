@@ -47,7 +47,7 @@ describe("frequency rules", () => {
     expect(scheduledCount({ frequency: "weekly", occurrences: 1, days: [1] }, new Date(2026, 9, 10))).toBe(0);
   });
   it("next week starts the following Sunday and dates read like Saturday, Oct. 10th", () => {
-    expect(dayKey(weekAt(1, new Date(2026, 9, 10))[0])).toBe("2026-10-11");
+    expect(dayKey(weekAt(1, new Date(2026, 9, 10))[0]!)).toBe("2026-10-11");
     expect(longDate(new Date(2026, 9, 10))).toBe("Saturday, Oct. 10th");
   });
 });

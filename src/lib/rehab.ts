@@ -86,7 +86,7 @@ export function cooldownRemainingMs(lastCompletedAt: string | undefined, cooldow
 }
 
 function dayNumber(key: string) {
-  const [y, m, d] = key.split("-").map(Number);
+  const [y = 0, m = 1, d = 1] = key.split("-").map(Number);
   return Math.round(Date.UTC(y, m - 1, d) / 86_400_000);
 }
 

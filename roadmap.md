@@ -21,4 +21,4 @@
 - [ ] Add phone links and separate-tab video calls; refresh Session room state on return and verify the flow — blocked until existing session feature is merged.
 - [x] Sessions bubble, Progress session markers, reschedule, .ics, reminders (Mariacab spec)
 - [x] Weekly progress & PT report card below Progress history (Ines)
-- [ ] Gemini AI monthly summary on Progress (Jaiden) — needs GEMINI_API_KEY
+- [x] Gemini AI monthly summary on Progress (Jaiden)

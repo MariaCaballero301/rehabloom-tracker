@@ -52,8 +52,8 @@ npm run dev
 ## Google Gemini API (Monthly AI summary)
 
 - **Where:** Progress page → "Monthly AI summary" → **Generate AI Summary**.
-- **Model:** `gemini-2.5-flash-lite` (free tier), called directly via Google's REST API
-  (`generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent`).
+- **Model:** `gemini-3.5-flash-lite` (free tier), called directly via Google's REST API
+  (`generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent`).
 - **Code:** `src/lib/ai-summary.functions.ts` (server-only call; key read from the `GEMINI_API_KEY` secret),
   `src/lib/monthly-report.ts` (statistics + prompt), `src/components/rehab/MonthlySummaryCard.tsx` (UI).
 - **Privacy:** all numbers are computed in the app first; only anonymous counts and averages are sent — no names, emails or diagnoses.

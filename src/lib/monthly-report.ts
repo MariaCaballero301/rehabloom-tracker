@@ -1,7 +1,7 @@
 // Pure helpers for the Gemini monthly summary. Only anonymous numbers ever leave the app.
 import { dayKey, scheduledCount } from "@/lib/rehab";
 
-export const GEMINI_MODEL = "gemini-2.5-flash-lite";
+export const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 type Ex = { created_at: string; frequency: string; occurrences: number; days: number[]; weekly_mode?: string };
 type Co = { day: string; status: string };
@@ -12,7 +12,7 @@ export type MonthStats = {
   completionRatePct: number | null; daysWithAllDone: number; checkinDays: number; daysWithoutCheckin: number;
   restDays: number; unableDays: number; avgPain: number | null; minPain: number | null; maxPain: number | null;
   firstHalfAvgPain: number | null; secondHalfAvgPain: number | null; avgMotivation: number | null;
-  sessionsTogetherAccepted: number; sessionsTogetherProposed: number;
+  sessionsTogetherScheduled: number; sessionsTogetherStillAwaitingReply: number;
 };
 
 const avg = (a: number[]) => (a.length ? Math.round((a.reduce((s, x) => s + x, 0) / a.length) * 10) / 10 : null);
@@ -49,8 +49,8 @@ export function monthStats(month: string, exercises: Ex[], completions: Co[], ch
     firstHalfAvgPain: avg(normal.filter((c) => dayNum(c.day) <= half).map((c) => c.pain)),
     secondHalfAvgPain: avg(normal.filter((c) => dayNum(c.day) > half).map((c) => c.pain)),
     avgMotivation: avg(normal.map((c) => c.motivation)),
-    sessionsTogetherAccepted: sessions.filter((s) => s.status === "accepted" || s.status === "completed").length,
-    sessionsTogetherProposed: sessions.filter((s) => s.status === "proposed").length,
+    sessionsTogetherScheduled: sessions.filter((s) => s.status === "accepted" || s.status === "completed").length,
+    sessionsTogetherStillAwaitingReply: sessions.filter((s) => s.status === "proposed").length,
   };
 }
 
@@ -59,7 +59,7 @@ export function demoStats(month: string): MonthStats {
   return {
     month, daysInPeriod: 30, scheduledExercises: 90, completedExercises: 71, skippedExercises: 6, completionRatePct: 79,
     daysWithAllDone: 19, checkinDays: 24, daysWithoutCheckin: 6, restDays: 3, unableDays: 1, avgPain: 3.4, minPain: 1,
-    maxPain: 6, firstHalfAvgPain: 4.1, secondHalfAvgPain: 2.8, avgMotivation: 3.9, sessionsTogetherAccepted: 2, sessionsTogetherProposed: 1,
+    maxPain: 6, firstHalfAvgPain: 4.1, secondHalfAvgPain: 2.8, avgMotivation: 3.9, sessionsTogetherScheduled: 2, sessionsTogetherStillAwaitingReply: 1,
   };
 }
 
@@ -70,7 +70,7 @@ export function buildPrompt(s: MonthStats) {
     "Use ONLY the numbers below. Do not invent, round differently, or estimate any statistic.",
     "Do not diagnose, do not interpret causes, and do not recommend any change to exercises or treatment.",
     "If a value is null or a count is low, say plainly that the data is missing or limited.",
-    "Pain is self-reported on a 0-10 scale; motivation on a 1-5 scale. 'Sessions together' are exercise sessions planned with a support person.",
+    "Pain is self-reported on a 0-10 scale; motivation on a 1-5 scale. 'Sessions together' are exercise sessions planned with a support person; 'Scheduled' and 'StillAwaitingReply' are separate, non-overlapping counts.",
     "End by suggesting the patient discuss these self-reported figures with their physical therapist.",
     "Data (JSON):",
     JSON.stringify(s),

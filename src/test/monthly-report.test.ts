@@ -12,7 +12,7 @@ describe("monthStats", () => {
     expect(s.skippedExercises).toBe(1);
     expect(s.avgPain).toBeNull();
     expect(s.daysWithoutCheckin).toBe(4);
-    expect(s.sessionsTogetherAccepted).toBe(1);
+    expect(s.sessionsTogetherScheduled).toBe(1);
   });
 });
 

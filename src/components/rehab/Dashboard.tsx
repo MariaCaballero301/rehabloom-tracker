@@ -496,9 +496,12 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                         </div>
                       );
                     })}
-                  </div>
-                </div>
-              )}
+                   </div>
+                   {interval && !undone.has(ex.id) && !completions.some((c) => c.exercise_id === ex.id && c.day === todayKey) && !weeklyAvailability(ex, completions, today).available && (
+                     <p className="mt-2 text-xs font-semibold text-muted-foreground" role="status">Please wait one more day before doing this exercise.</p>
+                   )}
+                 </div>
+               )}
               {lines.length > 0 && (
                 <ul className="mt-2 space-y-1 rounded-2xl border bg-card/60 p-2 text-xs">
                   {lines.map((line) => {

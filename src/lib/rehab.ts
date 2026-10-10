@@ -20,7 +20,7 @@ export function stageFor(xp: number) {
     if (xp >= s.min) i = idx;
   });
   const next = STAGES[i + 1];
-  return { index: i, name: STAGES[i].name, nextAt: next?.min ?? null };
+  return { index: i, name: STAGES[i]!.name, nextAt: next?.min ?? null };
 }
 
 export function dayKey(d: Date) {

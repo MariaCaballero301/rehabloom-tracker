@@ -43,12 +43,12 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
   const doneToday = new Set(completions.filter((c) => c.day === todayKey).map((c) => c.exercise_id));
   const todayCheckin = checkins.find((c) => c.day === todayKey);
 
-  async function toggle(ex: Exercise) {
+  async function toggle(ex: Exercise): Promise<void> {
     if (doneToday.has(ex.id)) {
       await supabase.from("completions").delete().eq("exercise_id", ex.id).eq("day", todayKey);
     } else {
       const { error } = await supabase.from("completions").insert({ exercise_id: ex.id, day: todayKey });
-      if (error) return toast.error(error.message);
+      if (error) return void toast.error(error.message);
       toast.success(`+${XP_PER_EXERCISE} XP — nice work!`);
     }
     load();
@@ -137,17 +137,17 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
   );
 }
 
-function CheckinCard({ existing, todayKey, onSaved }: { existing?: Checkin; todayKey: string; onSaved: () => void }) {
+function CheckinCard({ existing, todayKey, onSaved }: { existing: Checkin | undefined; todayKey: string; onSaved: () => void }) {
   const [pain, setPain] = useState(existing?.pain ?? 0);
   const [motivation, setMotivation] = useState(existing?.motivation ?? 3);
   const [status, setStatus] = useState<string>(existing?.status ?? "normal");
 
-  async function save() {
+  async function save(): Promise<void> {
     const { error } = await supabase.from("checkins").upsert(
       { day: todayKey, pain, motivation, status },
       { onConflict: "user_id,day" },
     );
-    if (error) return toast.error(error.message);
+    if (error) return void toast.error(error.message);
     toast.success(existing ? "Check-in updated" : `Checked in — +${XP_PER_CHECKIN} XP`);
     onSaved();
   }
@@ -220,19 +220,19 @@ function HistoryCard({ exercises, completions, checkins }: { exercises: Exercise
 function ExerciseManager({ exercises, onChange }: { exercises: Exercise[]; onChange: () => void }) {
   const [editing, setEditing] = useState<Partial<Exercise> | null>(null);
 
-  async function save() {
-    if (!editing?.name?.trim()) return toast.error("Please enter the exercise name");
-    if (!editing.days?.length) return toast.error("Pick at least one day");
+  async function save(): Promise<void> {
+    if (!editing?.name?.trim()) return void toast.error("Please enter the exercise name");
+    if (!editing.days?.length) return void toast.error("Pick at least one day");
     const payload = { name: editing.name.trim(), reps: editing.reps ?? "", notes: editing.notes ?? "", days: editing.days };
     const { error } = editing.id
       ? await supabase.from("exercises").update(payload).eq("id", editing.id)
       : await supabase.from("exercises").insert(payload);
-    if (error) return toast.error(error.message);
+    if (error) return void toast.error(error.message);
     setEditing(null);
     onChange();
   }
 
-  async function remove(id: string) {
+  async function remove(id: string): Promise<void> {
     if (!confirm("Remove this exercise?")) return;
     await supabase.from("exercises").delete().eq("id", id);
     onChange();
@@ -300,15 +300,15 @@ function ExerciseManager({ exercises, onChange }: { exercises: Exercise[]; onCha
 
 function SettingsCard({ prefs, email, onSaved }: { prefs: Prefs; email: string; onSaved: () => void }) {
   const [partner, setPartner] = useState(prefs.partner_email);
-  const [time, setTime] = useState(prefs.reminder_time.slice(0, 5));
+  const [time, setTime] = useState(prefs.reminder_time.slice(0, 5) || "09:00");
   const [enabled, setEnabled] = useState(prefs.reminders_enabled);
   const [preview, setPreview] = useState(false);
 
-  async function save() {
+  async function save(): Promise<void> {
     const { error } = await supabase.from("preferences").upsert({
       partner_email: partner.trim(), reminder_time: time, reminders_enabled: enabled, updated_at: new Date().toISOString(),
     });
-    if (error) return toast.error(error.message);
+    if (error) return void toast.error(error.message);
     toast.success("Settings saved");
     onSaved();
   }

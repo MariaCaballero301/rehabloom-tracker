@@ -52,6 +52,7 @@ export type DirectoryProfile = {
   user_id: string;
   display_name: string;
   rehab_area: string;
+  rehab_areas?: string[];
   languages: string[];
   availability: string[];
   discoverable: boolean;
@@ -59,7 +60,7 @@ export type DirectoryProfile = {
   mentor_bio: string;
 };
 
-type Matchable = { rehab_area: string; languages: string[]; availability: string[] };
+type Matchable = { rehab_area: string; rehab_areas?: string[] | null; languages: string[]; availability: string[] };
 
 export function areaLabel(value: string) {
   return REHAB_AREAS.find((a) => a.value === value)?.label ?? "Other";
@@ -69,12 +70,23 @@ export function availabilityLabel(value: string) {
   return AVAILABILITY.find((a) => a.value === value)?.label ?? value;
 }
 
+/** A person's rehab areas: rehab_areas when filled, else the single rehab_area. "other" never counts as a match. */
+export function areasOf(p: { rehab_area: string; rehab_areas?: string[] | null }) {
+  const list = p.rehab_areas && p.rehab_areas.length > 0 ? p.rehab_areas : [p.rehab_area];
+  return [...new Set(list)].filter((a) => a && a !== "other");
+}
+
+const sharedAreas = (me: Matchable, other: Matchable) => {
+  const mine = areasOf(me);
+  return areasOf(other).filter((a) => mine.includes(a));
+};
+
 const overlap = (a: string[], b: string[]) => a.filter((x) => b.includes(x)).length;
 
-/** Same rehab area +3, each shared language +2, each overlapping availability slot +1. */
+/** Any shared rehab area +3, each shared language +2, each overlapping availability slot +1. */
 export function buddyScore(me: Matchable, other: Matchable) {
   return (
-    (me.rehab_area === other.rehab_area ? 3 : 0) +
+    (sharedAreas(me, other).length > 0 ? 3 : 0) +
     overlap(me.languages, other.languages) * 2 +
     overlap(me.availability, other.availability)
   );
@@ -83,8 +95,8 @@ export function buddyScore(me: Matchable, other: Matchable) {
 /** Why we suggest this person, in plain words (shown on the card). */
 export function matchReasons(me: Matchable, other: Matchable) {
   const reasons: string[] = [];
-  if (me.rehab_area === other.rehab_area && other.rehab_area !== "other")
-    reasons.push(`Also ${areaLabel(other.rehab_area).toLowerCase()} rehab`);
+  const areas = sharedAreas(me, other);
+  if (areas.length) reasons.push(`Also ${areas.map((a) => areaLabel(a).toLowerCase()).join(", ")} rehab`);
   const langs = other.languages.filter((l) => me.languages.includes(l));
   if (langs.length) reasons.push(`Speaks ${langs.join(", ")}`);
   const slots = other.availability.filter((s) => me.availability.includes(s));

@@ -31,3 +31,6 @@
 - Read relationship metrics and opt-in aggregate completions through a connected-only, block-aware database RPC; private completion rows remain owner-only.
 - Attribute relationship XP only to the first five messages per sender per local day across all recipients; this avoids inventing additional rewards beyond existing cheer XP.
 - Rotate only the buddy bubble's decorative shell, keeping its contents stationary and honoring reduced motion so names and controls stay readable.
+
+## Sessions together
+- Keep session splitting, join windows and time formatting in the pure src/lib/sessions.ts helpers, and change rehab_sessions only through its SECURITY DEFINER RPCs; Home and the tests then share one set of rules, and clients can only read rows.

@@ -15,6 +15,7 @@
 - [x] Add glossy buddy bubble with real relationship stats and private opt-in exercise totals; verify saving and sharing.
 - [x] Add a name search bar at the top of "Find support" so buddies are discoverable by name.
 - [x] Buddy bubble: perfect glossy circle, one buddy at a time with prev/next arrow bubbles, icon-only hover-labeled actions.
-- [ ] Session room steps 3–8: apply Mariacab's rehab_sessions migration, PlanSessionDialog, HomeSupport, SupportPopups, demo button, multi-area matching — blocked until Mariacab re-pastes the missing SQL block and the spec text cut off after step 5c.
+- [x] Session steps 3–8: rehab_sessions migration, PlanSessionDialog, HomeSupport, SupportPopups toasts, demo button, multi-area matching.
+- [ ] Click-through check of sessions while signed in — blocked until someone signs in through the preview.
 - [ ] Build participant-only Session room, shared live progress/reactions/finish, reusable today's exercises and Start session entry — blocked until existing session feature is merged (user chose to wait).
 - [ ] Add phone links and separate-tab video calls; refresh Session room state on return and verify the flow — blocked until existing session feature is merged.

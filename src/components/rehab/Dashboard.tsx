@@ -265,8 +265,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
   onChange: () => void;
 }) {
   const [editing, setEditing] = useState<Partial<Exercise> | null>(null);
-  const [weekOffset, setWeekOffset] = useState(0);
-  const week = weekAt(weekOffset);
+  const week = weekAt(0);
   const today = new Date();
 
   async function save(): Promise<void> {
@@ -308,12 +307,9 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
           <Button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", weekly_mode: "days", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
             <Plus className="h-4 w-4" /> Add
           </Button>
-          <Button variant="outline" size="icon" className="rounded-full" aria-label={weekOffset ? "Show this week" : "Show next week"} title={weekOffset ? "Back to this week" : "Show next week's schedule"} onClick={() => setWeekOffset(weekOffset ? 0 : 1)}>
-            {weekOffset ? <ChevronLeft /> : <ChevronRight />}
-          </Button>
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.{weekOffset ? " Showing next week's schedule." : ""}</p>
+      <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.</p>
 
       {editing && (
         <div className="mt-4 space-y-3 rounded-2xl border bg-card p-4">

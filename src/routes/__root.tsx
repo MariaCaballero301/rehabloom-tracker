@@ -15,6 +15,8 @@ import aeroLandscape from "@/assets/aero-landscape.jpg";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { SupportPopups } from "@/components/alerts/SupportPopups";
+import { HomeInbox } from "@/components/network/HomeInbox";
+import { useSessionUser } from "@/hooks/use-session-user";
 
 function NotFoundComponent() {
   return (
@@ -117,11 +119,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { user } = useSessionUser();
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {user ? <HomeInbox key={user.id} userId={user.id}><Outlet /></HomeInbox> : <Outlet />}
       <Toaster position="top-center" richColors />
       <SupportPopups />
     </QueryClientProvider>

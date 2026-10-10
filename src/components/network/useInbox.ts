@@ -28,7 +28,8 @@ export function useInbox(userId: string) {
   }, [userId]);
   useEffect(() => {
     void reload();
-    const channel = supabase.channel(`inbox-${userId}`)
+    // Cleanup is asynchronous; a remount must not reuse the still-subscribed channel.
+    const channel = supabase.channel(`inbox-${userId}-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "encouragements", filter: `to_user=eq.${userId}` }, () => void reload())
       .on("postgres_changes", { event: "*", schema: "public", table: "encouragements", filter: `from_user=eq.${userId}` }, () => void reload())
       .on("postgres_changes", { event: "*", schema: "public", table: "connection_requests", filter: `to_user=eq.${userId}` }, () => void reload())

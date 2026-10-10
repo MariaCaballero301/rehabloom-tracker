@@ -20,7 +20,9 @@
 
 ## Inbox
 - Reuse encouragements and send_encouragement for human conversations so historical messages, connection authorization, limits and cheer XP stay consistent; never invent contacts or history.
-- Keep Inbox as a Home side panel and a directly accessible page, with Realtime plus periodic refresh, recipient-only read markers and paginated bidirectional history.
+- Mount Inbox once around signed-in routes in the root layout, preserving a directly accessible page, Realtime plus periodic refresh, recipient-only read markers and paginated bidirectional history; one shared instance avoids duplicate subscriptions and keeps conversations open during navigation.
+- Group support lists with a pure presentation helper keyed by account UUID, preserving original records and actions; this avoids duplicate accounts without changing relationship permissions.
+- Give each Realtime effect subscription a fresh channel topic and remove its own channel on cleanup; asynchronous teardown must not let remounts attach callbacks to an already-subscribed channel.
 
 ## Background
 - Render the shared decorative landscape in the root shell behind all content with pointer events disabled; this keeps the appearance consistent without interfering with controls.

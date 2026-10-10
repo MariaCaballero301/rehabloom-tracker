@@ -6,10 +6,13 @@ import { InboxCard } from "./InboxCard";
 import { InboxConversation } from "./InboxConversation";
 import { useInbox } from "./useInbox";
 import { ProfileAvatar } from "./ProfileAvatar";
+import { useLocation } from "@tanstack/react-router";
 
 export function HomeInbox({ userId, children, initiallyOpen = false }: { userId: string; children: ReactNode; initiallyOpen?: boolean }) {
   const inbox = useInbox(userId);
   const [open, setOpen] = useState(initiallyOpen);
+  const pathname = useLocation({ select: (location) => location.pathname });
+  useEffect(() => { if (pathname === "/inbox") setOpen(true); }, [pathname]);
   const [selected, setSelected] = useState<string | null>(null);
   const [requests, setRequests] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);

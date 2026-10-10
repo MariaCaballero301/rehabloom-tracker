@@ -243,6 +243,7 @@ export function PeopleCard({
               );
             }
             const s = supportingOnly[idx - buddyContacts.length];
+            if (!s) return null;
             const key = `s-${s.user_id}`;
             return (
               <li key={key} className="buddy-person">

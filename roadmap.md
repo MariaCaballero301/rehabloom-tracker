@@ -8,3 +8,4 @@
 - [x] Glossy blue/white bubble buttons with pop animation; checked state shows green check / yellow Skipped.
 - [x] Fix "Login failed" after successful Google sign-in.
 - [ ] Add profile photo picking, saving, replacement and removal; verify saved photos after reopening Support.
+- [ ] Add expandable Home Inbox with unread message/request alerts, named conversations, timestamps, history and custom/preset replies.

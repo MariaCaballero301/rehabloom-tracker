@@ -14,7 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      checkins: {
+        Row: {
+          created_at: string
+          day: string
+          id: string
+          motivation: number
+          pain: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          id?: string
+          motivation: number
+          pain: number
+          status?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          id?: string
+          motivation?: number
+          pain?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      completions: {
+        Row: {
+          created_at: string
+          day: string
+          exercise_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          exercise_id: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          exercise_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "completions_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercises: {
+        Row: {
+          created_at: string
+          days: number[]
+          id: string
+          name: string
+          notes: string
+          reps: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days?: number[]
+          id?: string
+          name: string
+          notes?: string
+          reps?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          days?: number[]
+          id?: string
+          name?: string
+          notes?: string
+          reps?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      preferences: {
+        Row: {
+          partner_email: string
+          reminder_time: string
+          reminders_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          partner_email?: string
+          reminder_time?: string
+          reminders_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          partner_email?: string
+          reminder_time?: string
+          reminders_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

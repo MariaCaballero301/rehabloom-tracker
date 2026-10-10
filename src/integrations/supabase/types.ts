@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_summaries: {
+        Row: {
+          created_at: string
+          id: string
+          is_demo: boolean
+          model: string
+          month: string
+          stats: Json
+          summary: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_demo?: boolean
+          model: string
+          month: string
+          stats?: Json
+          summary: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_demo?: boolean
+          model?: string
+          month?: string
+          stats?: Json
+          summary?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       alert_events: {
         Row: {
           channel: string

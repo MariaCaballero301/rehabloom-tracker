@@ -78,6 +78,13 @@
       "when": 1791662779400,
       "tag": "0010_cron_config_revoke_sandbox",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791664914653,
+      "tag": "0011_support_contacts_welcomed_at",
+      "breakpoints": true
     }
   ]
 }

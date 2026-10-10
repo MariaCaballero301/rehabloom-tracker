@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
 import { HistoryCard } from "./HistoryCard";
+import { SupportAlertsPanel } from "@/components/alerts/SupportAlertsPanel";
 import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
@@ -176,6 +177,7 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
         <HistoryCard exercises={exercises} completions={completed} checkins={checkins} joinedAt={joinedAt} />
         <ExerciseManager exercises={sorted} completions={completions} todayKey={todayKey} saving={saving} waitNotes={waitNotes} onTrack={track} onChange={load} />
         {prefs && <SettingsCard prefs={prefs} email={email} onSaved={load} />}
+        <SupportAlertsPanel userId={userId} />
       </div>
     </div>
   );

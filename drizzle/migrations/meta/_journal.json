@@ -29,6 +29,20 @@
       "when": 1791657621745,
       "tag": "0003_weekly_schedule_modes",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791660000000,
+      "tag": "0004_missed_session_alerts",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791661000000,
+      "tag": "0005_support_network",
+      "breakpoints": true
     }
   ]
 }

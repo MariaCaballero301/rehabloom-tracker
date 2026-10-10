@@ -71,6 +71,13 @@
       "when": 1791662760034,
       "tag": "0009_cron_config_sandbox_write",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791662779400,
+      "tag": "0010_cron_config_revoke_sandbox",
+      "breakpoints": true
     }
   ]
 }

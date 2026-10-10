@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Check, Heart, Inbox, X } from "lucide-react";
 import { KIND_LABEL } from "@/lib/network";
+import { sendWelcome } from "@/lib/welcome.functions";
+import { welcomeToast } from "@/lib/welcome";
 import { db, rpc, type ConnectionRequest, type Encouragement } from "./useNetwork";
 
 export function InboxCard({
@@ -100,7 +102,12 @@ export function InboxCard({
                     onClick={() =>
                       act(
                         r.id,
-                        () => rpc("respond_connection_request", { p_id: r.id, p_accept: true }),
+                        async () => {
+                          await rpc("respond_connection_request", { p_id: r.id, p_accept: true });
+                          sendWelcome({ data: { otherUserId: r.from_user } })
+                            .then((l) => l.forEach((w) => toast.success(welcomeToast(w.name, w.status))))
+                            .catch((e) => console.error("[welcome]", e));
+                        },
                         `You're now connected with ${r.from_name}!`,
                       )
                     }

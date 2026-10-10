@@ -11,8 +11,8 @@ export const sendWelcome = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
     z
-      .object({ contactId: z.string().uuid().optional(), otherUserId: z.string().uuid().optional() })
-      .refine((v) => v.contactId || v.otherUserId)
+      .object({ contactId: z.string().uuid().optional(), otherUserId: z.string().uuid().optional(), recent: z.boolean().optional() })
+      .refine((v) => v.contactId || v.otherUserId || v.recent)
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<Welcomed[]> => {
@@ -24,7 +24,10 @@ export const sendWelcome = createServerFn({ method: "POST" })
     let q = supabaseAdmin.from("support_contacts").select("*").is("welcomed_at", null);
     q = data.contactId
       ? q.eq("id", data.contactId)
-      : q.or(
+      : data.recent
+        ? // Just-redeemed invite: rows where I'm the new contact, created in the last few minutes.
+          q.eq("connected_user_id", me).gte("created_at", new Date(Date.now() - 5 * 60_000).toISOString())
+        : q.or(
           `and(user_id.eq.${me},connected_user_id.eq.${data.otherUserId}),and(user_id.eq.${data.otherUserId},connected_user_id.eq.${me})`,
         );
     const { data: rows } = await q;

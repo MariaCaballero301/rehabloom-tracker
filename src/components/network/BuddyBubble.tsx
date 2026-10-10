@@ -20,7 +20,7 @@ export function BuddyBubble({ children, empty }: { children: ReactNode; empty: b
   </div>;
 }
 
-export function BuddyMetrics({ stats, error = false }: { stats?: BuddyStats; error?: boolean }) {
+export function BuddyMetrics({ stats, error = false }: { stats?: BuddyStats | undefined; error?: boolean }) {
   const totals = sharedExerciseTotals(stats);
   return <>
     {totals && <div className="buddy-progress-bar mt-3 grid grid-cols-3 divide-x divide-input" aria-label="Shared completed exercises">

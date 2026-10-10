@@ -1,4 +1,9 @@
 - [x] Separate weekly weekdays from occurrence-count and positive gap scheduling.
 - [x] Collapse saved daily check-ins with editing and no duplicate XP.
 - [x] Add dated weekly/monthly history and account-aware empty states.
-- [x] Test rules and verify the signed-in flows.
+- [x] Test rules and verify the signed-in flows.- [x] Apply support network migrations and schedule daily 6 PM NY missed-session job.
+- [ ] Remove the date simulator.
+- [ ] Dashboard order: Rehabloom name + larger plant first, then Today overview.
+- [ ] Bubblier glossy Frutiger Aero plant.
+- [ ] Glossy blue/white bubble buttons with pop animation; checked state shows green check / yellow Skipped.
+- [ ] Fix "Login failed" after successful Google sign-in.

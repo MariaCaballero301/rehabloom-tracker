@@ -6,8 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
 import { HistoryCard } from "./HistoryCard";
-import { ChevronRight, ChevronLeft } from "lucide-react";
-import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, longDate, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
+import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;

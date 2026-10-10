@@ -7,6 +7,7 @@ import { AppNav } from "@/components/AppNav";
 import { HistoryCard } from "@/components/rehab/HistoryCard";
 import { useSessionUser } from "@/hooks/use-session-user";
 import { completedRecords, dayKey } from "@/lib/rehab";
+import { MonthlySummaryCard } from "@/components/rehab/MonthlySummaryCard";
 import { WeeklyReportCard } from "@/components/rehab/WeeklyReportCard";
 import { db } from "@/components/network/useNetwork";
 import type { DaySession, RehabSession } from "@/lib/sessions";
@@ -66,6 +67,7 @@ function Progress({ userId, email, joinedAt }: { userId: string; email: string; 
       {data ? (
         <HistoryCard exercises={data.ex} completions={completedRecords(data.co)} allCompletions={data.co} checkins={data.ci} joinedAt={joinedAt} sessions={sessions} />
       ) : null}
+      {data && <MonthlySummaryCard />}
       {data ? <WeeklyReportCard exercises={data.ex} completions={completedRecords(data.co)} checkins={data.ci} name={name} /> : (
         <p className="p-10 text-center text-muted-foreground">Loading…</p>
       )}

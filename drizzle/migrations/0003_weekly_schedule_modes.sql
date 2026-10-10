@@ -1,0 +1,3 @@
+ALTER TABLE public.exercises ADD COLUMN weekly_mode text NOT NULL DEFAULT 'days' CHECK (weekly_mode IN ('days', 'interval'));
+UPDATE public.exercises SET gap_days = 0 WHERE frequency = 'weekly';
+ALTER TABLE public.exercises ADD CONSTRAINT exercise_weekly_mode_rules CHECK (frequency <> 'weekly' OR (weekly_mode = 'days' AND gap_days = 0 AND occurrences = 1) OR (weekly_mode = 'interval' AND cardinality(days) = 0 AND occurrences BETWEEN 1 AND 6 AND gap_days >= 1));

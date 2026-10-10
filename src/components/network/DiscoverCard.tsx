@@ -1,7 +1,7 @@
 // Find a rehab buddy (matched by area, language, availability) or a volunteer mentor.
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Sparkles, UserPlus } from "lucide-react";
+import { Search, Sparkles, UserPlus } from "lucide-react";
 import {
   MAX_REQUEST_MESSAGE_LENGTH,
   REHAB_AREAS,
@@ -9,6 +9,7 @@ import {
   availabilityLabel,
   matchReasons,
   rankBuddies,
+  searchByName,
   type DirectoryProfile,
 } from "@/lib/network";
 import { rpc, type MyProfile } from "./useNetwork";
@@ -106,12 +107,16 @@ export function DiscoverCard({
 }) {
   const [tab, setTab] = useState<"buddies" | "mentors">("buddies");
   const [area, setArea] = useState("all");
+  const [query, setQuery] = useState("");
   const buddies = useMemo(
-    () => rankBuddies(profile, directory, excluded),
-    [profile, directory, excluded],
+    () => rankBuddies(profile, searchByName(directory, query), excluded),
+    [profile, directory, excluded, query],
   );
-  const mentors = directory.filter(
-    (p) => p.is_mentor && !excluded.has(p.user_id) && (area === "all" || p.rehab_area === area),
+  const mentors = searchByName(
+    directory.filter(
+      (p) => p.is_mentor && !excluded.has(p.user_id) && (area === "all" || p.rehab_area === area),
+    ),
+    query,
   );
   const needsName = !profile.display_name;
 
@@ -125,6 +130,20 @@ export function DiscoverCard({
           </span>
         )}
       </h2>
+      <label className="mt-3 block text-sm font-semibold">
+        <span className="flex items-center gap-1.5">
+          <Search className="h-4 w-4" aria-hidden="true" />
+          Search by name
+        </span>
+        <input
+          className="field mt-1"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Type a name, e.g. Maria"
+          aria-label="Search people by name"
+        />
+      </label>
       <div className="mt-3 flex gap-2" role="tablist">
         {(["buddies", "mentors"] as const).map((t) => (
           <button
@@ -152,7 +171,9 @@ export function DiscoverCard({
           </p>
           {buddies.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
-              No suggestions right now — check back soon as more people join.
+              {query.trim()
+                ? `No one called “${query.trim()}” yet — check the spelling or try another name.`
+                : "No suggestions right now — check back soon as more people join."}
             </p>
           ) : (
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -191,7 +212,9 @@ export function DiscoverCard({
           </label>
           {mentors.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
-              No mentors available for this area yet.
+              {query.trim()
+                ? `No mentor called “${query.trim()}” in this area yet.`
+                : "No mentors available for this area yet."}
             </p>
           ) : (
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">

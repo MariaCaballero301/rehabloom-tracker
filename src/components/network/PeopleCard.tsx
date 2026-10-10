@@ -224,6 +224,7 @@ export function PeopleCard({
             const idx = ((buddyPage % total) + total) % total;
             if (idx < buddyContacts.length) {
               const c = buddyContacts[idx];
+              if (!c) return null;
               return (
                 <li key={c.id} className="buddy-person">
                   <div className="flex flex-col items-center gap-1 text-center">

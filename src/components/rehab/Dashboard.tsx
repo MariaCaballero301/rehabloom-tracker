@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, Minus, Pencil, Trash2, Plus, LogOut, Bell, X } from "lucide-react";
+import { Check, Pencil, Trash2, Plus, LogOut, Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
 import { HistoryCard } from "./HistoryCard";
 import { ChevronRight, ChevronLeft } from "lucide-react";
-import { positiveInteger, weeklyAvailability, computeXp, stageFor, dayKey, lastNDays, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, longDate, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
+import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, longDate, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
@@ -42,7 +42,7 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
   useEffect(() => { load(); }, [load]);
 
   const completed = completedRecords(completions);
-  const xp = computeXp(completed.length, checkins.length);
+  const xp = computeXp(completed.length, checkinCount(checkins));
   const stage = stageFor(xp);
   const sorted = sortExercises(exercises);
   const todays = sorted.filter((e) => scheduledCount(e, today) > 0 && (e.weekly_mode !== "interval" || e.frequency === "daily" || weeklyAvailability(e, completions, today).available));
@@ -144,8 +144,7 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
                       <span className={`block font-bold ${done ? "line-through opacity-70" : ""}`}>{ex.name}</span>
                       <span className="block text-sm text-muted-foreground">{ex.reps}{total > 1 ? ` · ${count}/${total} today` : ""}</span>
                       {ex.notes && <span className="block text-xs text-muted-foreground">{ex.notes}</span>}
-                      {interval && !scheduledToday && <p className="mt-2 text-xs text-muted-foreground">{available.gap ? `Please wait ${available.gap} more day${available.gap === 1 ? "" : "s"}.` : "All weekly occurrences are complete."} Upcoming</p>}
-              {waitNotes[ex.id] && <span className="block text-xs font-semibold text-destructive">{waitNotes[ex.id]}</span>}
+                      {waitNotes[ex.id] && <span className="block text-xs font-semibold text-destructive">{waitNotes[ex.id]}</span>}
                     </span>
                   </label>
                 </li>
@@ -281,6 +280,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
       occurrences: frequency === "daily" ? Math.min(10, positiveInteger(editing.occurrences ?? 1)) : editing.weekly_mode === "interval" ? Math.min(6, positiveInteger(editing.occurrences ?? 1)) : 1,
       cooldown_minutes: Math.max(0, Math.round(editing.cooldown_minutes ?? 0)),
       gap_days: frequency === "weekly" && editing.weekly_mode === "interval" ? positiveInteger(editing.gap_days ?? 1) : 0,
+      ...(frequency === "weekly" ? weeklySchedule(editing.weekly_mode ?? "days", editing.days ?? [], editing.occurrences ?? 1, editing.gap_days ?? 1) : {}),
     };
     const { error } = editing.id
       ? await supabase.from("exercises").update(payload).eq("id", editing.id)
@@ -331,7 +331,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
             <div className="mt-1 grid grid-cols-2 gap-1.5">
               {(["daily", "weekly"] as const).map((f) => (
                 <Button key={f} type="button" aria-pressed={freq === f} onClick={() => setEditing({ ...editing, frequency: f, occurrences: 1 })}
-                  className={`min-h-10 rounded-full border font-bold ${freq === f ? "btn-aqua min-h-10" : "bg-card"}`}>
+                  className={`h-auto min-h-10 whitespace-normal rounded-full border font-bold ${freq === f ? "btn-aqua min-h-10" : "btn-soft"}`}>
                   {f === "daily" ? "Daily Occurrence" : "Weekly Occurrence"}
                 </Button>
               ))}

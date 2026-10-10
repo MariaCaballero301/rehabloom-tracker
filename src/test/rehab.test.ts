@@ -76,7 +76,7 @@ describe("weekly scheduling and history rules", () => {
     expect(weeklyAvailability(ex, records, new Date(2026, 9, 9)).gap).toBe(1);
     expect(weeklyAvailability(ex, records, new Date(2026, 9, 10)).available).toBe(false);
     expect(weeklyAvailability(ex, records, new Date(2026, 9, 11)).available).toBe(true);
-    expect(weeklyAvailability(ex, [{ ...records[0], status: "skip" }], new Date(2026, 9, 10)).count).toBe(0);
+    expect(weeklyAvailability(ex, [{ exercise_id: "exercise", day: "2026-10-06", status: "skip" }], new Date(2026, 9, 10)).count).toBe(0);
   });
   it("editing a daily check-in cannot award another five XP", () => {
     expect(computeXp(0, checkinCount([{ day: "2026-10-10" }, { day: "2026-10-10" }]))).toBe(5);

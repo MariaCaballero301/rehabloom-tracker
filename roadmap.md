@@ -22,3 +22,4 @@
 - [x] Sessions bubble, Progress session markers, reschedule, .ics, reminders (Mariacab spec)
 - [x] Weekly progress & PT report card below Progress history (Ines)
 - [x] Gemini AI monthly summary on Progress (Jaiden)
+- [ ] Add Monthly/Weekly AI summary choices, distinct date pickers and period-aware generation/history; test and verify.

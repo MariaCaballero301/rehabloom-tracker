@@ -1,3 +1,4 @@
+import { celebrateXp } from "@/components/XpFish";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Check, Pencil, Trash2, Plus, Bell, X } from "lucide-react";
@@ -87,7 +88,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
         : await supabase.from("completions").upsert({ exercise_id: ex.id, day, occurrence, status, created_at: new Date().toISOString() }, { onConflict: "exercise_id,day,occurrence" });
       if (error) return void toast.error(error.message);
       if (status === null) setUndone((u) => new Set(u).add(ex.id));
-      if (status === "complete") toast.success(`+${XP_PER_EXERCISE} XP — nice work!`);
+      if (status === "complete") celebrateXp(`+${XP_PER_EXERCISE} XP — nice work!`);
       else toast.success(status === "skip" ? "Skipped for today" : "Exercise reset");
       await load();
     } finally {
@@ -204,7 +205,7 @@ function CheckinCard({ existing, todayKey, onSaved }: { existing: Checkin | unde
     );
     setSubmitting(false);
     if (error) return void toast.error(error.message);
-    toast.success(existing || justSaved ? "Check-in updated" : `Checked in — +${XP_PER_CHECKIN} XP`);
+    if (existing || justSaved) toast.success("Check-in updated"); else celebrateXp(`Checked in — +${XP_PER_CHECKIN} XP`);
     setJustSaved(true);
     setEditing(false);
     onSaved();

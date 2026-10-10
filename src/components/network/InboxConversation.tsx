@@ -1,3 +1,4 @@
+import { celebrateXp } from "@/components/XpFish";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUp, Send, Smile } from "lucide-react";
 import { toast } from "sonner";
@@ -69,7 +70,7 @@ export function InboxConversation({ userId, person, revision, onRead, onSent }: 
       await load(); onSent();
       const { data } = await supabase.from("encouragements").select("created_at").eq("from_user", userId)
         .gte("created_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString());
-      if (data && data.length <= MAX_XP_CHEERS_PER_DAY && cheerCount(data) > 0) toast.success("Message sent · +2 XP");
+      if (data && data.length <= MAX_XP_CHEERS_PER_DAY && cheerCount(data) > 0) celebrateXp("Message sent · +2 XP");
       else toast.success("Message sent");
     } catch (e) { toast.error(e instanceof Error ? e.message : (e as { message?: string }).message ?? "Message couldn't be sent."); }
     finally { setSending(false); }

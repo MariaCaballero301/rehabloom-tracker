@@ -218,7 +218,7 @@
 }
 
 .home-inbox-layout { min-height: 100vh; }
-.buddy-bubble { position: relative; isolation: isolate; padding: 2.5rem; overflow: hidden; border-radius: 5rem; min-height: 18rem; }
+.buddy-bubble { position: relative; isolation: isolate; padding: 4rem 2.5rem; overflow: hidden; border-radius: 45% / 25%; min-height: 24rem; }
 .buddy-bubble-shell { position: absolute; inset: 0; pointer-events: none; z-index: -1; border-radius: inherit; background: var(--buddy-shell); box-shadow: var(--buddy-shadow); border: 2px solid var(--border); }
 .buddy-bubble-shell::before { content: ""; position: absolute; inset: -40%; background: var(--buddy-shell); border-radius: 50%; animation: buddy-spin 90s linear infinite; }
 .buddy-bubble-shell::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--buddy-shadow); }

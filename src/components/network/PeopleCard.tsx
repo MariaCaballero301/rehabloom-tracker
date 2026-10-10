@@ -8,6 +8,7 @@ import { ProfileAvatar } from "./ProfileAvatar";
 import { supportGroups } from "@/lib/support-groups";
 import { BuddyBubble, BuddyMetrics } from "./BuddyBubble";
 import type { BuddyStats } from "@/lib/buddy-stats";
+import { Button } from "@/components/ui/button";
 
 function Encourage({ to, name, onDone }: { to: string; name: string; onDone: () => void }) {
   const [text, setText] = useState("");
@@ -207,7 +208,7 @@ export function PeopleCard({
       ))}
 
       <BuddyBubble empty={buddyContacts.length === 0 && supportingOnly.length === 0}>
-        <ul className="grid gap-4 md:grid-cols-2">
+        <ul className="grid gap-4 md:grid-cols-2 [&>li:last-child:nth-child(odd)]:md:col-span-2 [&>li:last-child:nth-child(odd)]:md:mx-auto [&>li:last-child:nth-child(odd)]:md:w-full [&>li:last-child:nth-child(odd)]:md:max-w-md">
           {buddyContacts.map((c) => (
             <li key={c.id} className="buddy-person min-w-0 p-5 text-sm">
               <div className="flex flex-col items-center gap-2 text-center">
@@ -218,9 +219,9 @@ export function PeopleCard({
               <BuddyMetrics stats={buddyStats.find((s) => s.user_id === c.connected_user_id)} error={statsError} />
               <label className="mt-4 flex items-center gap-2 text-xs font-semibold"><input type="checkbox" className="h-4 w-4" checked={c.notify_on_missed} onChange={() => toggleNotify(c)} />Alert them if I miss sessions</label>
               <div className="mt-3 flex flex-wrap gap-2">
-                <button className="btn-soft text-sm" onClick={() => setOpen(open === c.id ? null : c.id)}><MessageCircleHeart className="h-4 w-4" /> Send encouragement</button>
-                <button className="btn-soft text-sm" onClick={() => remove(c)}><UserMinus className="h-4 w-4" /> Disconnect</button>
-                <button className="btn-soft text-sm" onClick={() => { if (c.connected_user_id) void block(c.connected_user_id, c.name); }}><Ban className="h-4 w-4" /> Block</button>
+                <Button variant="ghost" className="btn-soft text-sm" onClick={() => setOpen(open === c.id ? null : c.id)}><MessageCircleHeart className="h-4 w-4" /> Send encouragement</Button>
+                <Button variant="ghost" className="btn-soft text-sm" onClick={() => remove(c)}><UserMinus className="h-4 w-4" /> Disconnect</Button>
+                <Button variant="ghost" className="btn-soft text-sm" onClick={() => { if (c.connected_user_id) void block(c.connected_user_id, c.name); }}><Ban className="h-4 w-4" /> Block</Button>
               </div>
               {open === c.id && c.connected_user_id && <Encourage to={c.connected_user_id} name={c.name} onDone={() => { setOpen(null); onChange(); }} />}
             </li>

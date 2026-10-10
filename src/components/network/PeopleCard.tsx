@@ -78,6 +78,7 @@ export function PeopleCard({
   statsError?: boolean;
 }) {
   const [open, setOpen] = useState<string | null>(null);
+  const [buddyPage, setBuddyPage] = useState(0);
   const { familyFriends, buddyContacts, supportingOnly } = supportGroups(contacts, supporting);
 
   async function toggleNotify(c: Contact) {

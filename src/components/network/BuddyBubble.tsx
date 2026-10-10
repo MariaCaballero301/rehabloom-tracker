@@ -1,17 +1,51 @@
+// Glossy circular bubble holding the rehab buddies, one at a time.
 import type { ReactNode } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { messageStreak, sharedExerciseTotals, type BuddyStats } from "@/lib/buddy-stats";
 
-export function BuddyBubble({ children, empty, count = 0 }: { children: ReactNode; empty: boolean; count?: number }) {
-  const size = count <= 1 ? "one" : count <= 2 ? "two" : count <= 4 ? "few" : "many";
-  return <div className="mt-7">
-    <h3 className="mb-4 text-center text-2xl font-bold">Rehab buddies</h3>
-    <div className={`buddy-bubble buddy-size-${size}`}>
-      <div className="buddy-bubble-shell" aria-hidden="true"><span className="buddy-shine buddy-shine-a" /><span className="buddy-shine buddy-shine-b" /></div>
-      <div className="buddy-bubble-content">
-        {empty ? <p className="text-center text-muted-foreground">No rehab buddies yet.</p> : children}
+export function BuddyBubble({
+  children,
+  empty,
+  total = 0,
+  page = 0,
+  onPrev,
+  onNext,
+}: {
+  children: ReactNode;
+  empty: boolean;
+  total?: number;
+  page?: number;
+  onPrev?: () => void;
+  onNext?: () => void;
+}) {
+  const shown = total > 0 ? (((page % total) + total) % total) + 1 : 0;
+  return (
+    <div className="mt-7">
+      <h3 className="mb-4 text-center text-2xl font-bold">Rehab buddies</h3>
+      <div className="buddy-bubble buddy-size-one">
+        <div className="buddy-bubble-shell" aria-hidden="true">
+          <span className="buddy-shine buddy-shine-a" />
+          <span className="buddy-shine buddy-shine-b" />
+        </div>
+        <div className="buddy-bubble-content" aria-live="polite">
+          {empty ? <p className="text-center text-muted-foreground">No rehab buddies yet.</p> : children}
+        </div>
+        {total > 1 && (
+          <>
+            <button type="button" className="buddy-cycle-btn buddy-cycle-prev btn-aqua" aria-label="Previous buddy" onClick={onPrev}>
+              <ChevronLeft />
+            </button>
+            <button type="button" className="buddy-cycle-btn buddy-cycle-next btn-aqua" aria-label="Next buddy" onClick={onNext}>
+              <ChevronRight />
+            </button>
+            <p className="buddy-cycle-count">
+              {shown} of {total}
+            </p>
+          </>
+        )}
       </div>
     </div>
-  </div>;
+  );
 }
 
 export function IconAction({ label, onClick, children, pressed }: { label: string; onClick: () => void; children: ReactNode; pressed?: boolean }) {

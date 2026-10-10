@@ -31,7 +31,7 @@ const me = {
 };
 
 describe("Your people cards render", () => {
-  it("people card shows contacts, people I support and blocks", () => {
+  it("people card shows contacts, people I support and blocks", async () => {
     render(
       <PeopleCard
         contacts={[

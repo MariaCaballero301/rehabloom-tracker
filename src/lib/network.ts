@@ -109,6 +109,15 @@ export function rankBuddies(
     .slice(0, limit);
 }
 
+/** People whose name matches a search box: ignores case, accents and stray spaces. Empty query returns everyone. */
+export function searchByName<T extends { display_name: string }>(people: T[], query: string) {
+  const fold = (s: string) =>
+    s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
+  const needle = fold(query);
+  if (!needle) return people;
+  return people.filter((p) => fold(p.display_name).includes(needle));
+}
+
 /** Invite codes are 8 chars without look-alikes (0/O/1/I). People may type them in lowercase or with dashes. */
 export function normalizeInviteCode(raw: string) {
   return raw.toUpperCase().replace(/[^A-Z0-9]/g, "");

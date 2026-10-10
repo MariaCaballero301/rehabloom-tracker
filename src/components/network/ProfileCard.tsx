@@ -10,6 +10,7 @@ import { ProfileAvatar } from "./ProfileAvatar";
 import { normalizePhone } from "@/lib/alerts";
 import { AVAILABILITY, LANGUAGES, MAX_BIO_LENGTH, REHAB_AREAS, toggleIn } from "@/lib/network";
 import { db, type MyProfile } from "./useNetwork";
+import { PROFILE_SAVED_EVENT } from "@/components/AccountProfile";
 
 function Chip({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) {
   return (
@@ -118,6 +119,7 @@ export function ProfileCard({ profile, saved, onSaved }: { profile: MyProfile; s
       if (uploadedPath) await supabase.storage.from(PROFILE_PHOTO_BUCKET).remove([uploadedPath]);
       throw new Error(error.message);
     }
+    window.dispatchEvent(new Event(PROFILE_SAVED_EVENT));
     if (oldPath && photoPath !== oldPath) {
       await supabase.storage.from(PROFILE_PHOTO_BUCKET).remove([oldPath]).catch(() => {});
     }

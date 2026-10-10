@@ -73,9 +73,61 @@ export function sortExercises<T extends { frequency: string }>(list: T[]) {
 }
 
 /** How many check-offs an exercise has on a given date. */
-export function scheduledCount(ex: { frequency: string; occurrences: number; days: number[] }, date: Date) {
+export function scheduledCount(ex: { frequency: string; occurrences: number; days: number[]; weekly_mode?: string }, date: Date) {
   if (ex.frequency === "daily") return ex.occurrences;
+  if (ex.weekly_mode === "interval") return 1;
   return ex.days.includes(date.getDay()) ? 1 : 0;
+}
+
+export function positiveInteger(value: number) {
+  return Math.max(1, Math.round(Number.isFinite(value) ? value : 1));
+}
+
+/** Flexible weekly occurrences share one quota and require full rest days. */
+export function weeklyAvailability(ex: { id: string; occurrences: number; gap_days: number }, records: { exercise_id: string; day: string; status: string }[], today: Date) {
+  const key = dayKey(today);
+  const start = dayKey(currentWeek(today)[0] ?? today);
+  const mine = completedRecords(records).filter((r) => r.exercise_id === ex.id);
+  const count = mine.filter((r) => r.day >= start && r.day <= key).length;
+  const last = mine.filter((r) => r.day < key).map((r) => r.day).sort().at(-1);
+  const gap = gapDaysRemaining(last, ex.gap_days, key);
+  return { count, gap, available: gap === 0 && (mine.some((r) => r.day === key) || count < ex.occurrences) };
+}
+
+export function monthWeeks(month: Date) {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+  const weeks: Date[][] = [];
+  for (let offset = 0; ; offset++) {
+    const week = weekAt(offset, first);
+    if ((week[0] ?? first) > last) break;
+    weeks.push(week);
+  }
+  return weeks;
+}
+
+export function ordinal(n: number) {
+  const suffix = n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
+  return `${n}${suffix}`;
+}
+
+export function weekRange(days: Date[]) {
+  const first = days[0];
+  const last = days.at(-1);
+  if (!first || !last) return "";
+  const format = (d: Date) => `${d.toLocaleDateString("en-US", { month: "long" })} ${ordinal(d.getDate())}${first.getFullYear() !== last.getFullYear() ? `, ${d.getFullYear()}` : ""}`;
+  return `${format(first)} - ${format(last)}`;
+}
+
+export function historyPeriod(days: Date[], joinedAt: string, activityDays: string[], today: Date) {
+  const first = dayKey(days[0] ?? today);
+  const last = dayKey(days.at(-1) ?? today);
+  const key = dayKey(today);
+  const joined = dayKey(new Date(joinedAt));
+  return {
+    temporal: last < key ? "Past" : first > key ? "Upcoming" : "This week",
+    empty: last < joined ? "No Data Available" : first > key ? null : activityDays.some((d) => d >= first && d <= last) ? null : "No Action Taken",
+  };
 }
 
 /** Milliseconds left before the next daily occurrence may be checked off. */

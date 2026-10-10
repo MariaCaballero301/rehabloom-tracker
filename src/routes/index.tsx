@@ -37,5 +37,5 @@ function Index() {
 
   if (!ready) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
   if (!user) return <AuthCard />;
-  return <Dashboard key={user.id} userId={user.id} email={user.email ?? ""} />;
+  return <Dashboard key={user.id} userId={user.id} email={user.email ?? ""} joinedAt={user.created_at} />;
 }

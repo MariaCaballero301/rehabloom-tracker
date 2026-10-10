@@ -23,6 +23,7 @@
 - Mount Inbox once around signed-in routes in the root layout, preserving a directly accessible page, Realtime plus periodic refresh, recipient-only read markers and paginated bidirectional history; one shared instance avoids duplicate subscriptions and keeps conversations open during navigation.
 - Group support lists with a pure presentation helper keyed by account UUID, preserving original records and actions; this avoids duplicate accounts without changing relationship permissions.
 - Give each Realtime effect subscription a fresh channel topic and remove its own channel on cleanup; asynchronous teardown must not let remounts attach callbacks to an already-subscribed channel.
+- Keep Inbox typing in a separate expiring, recipient-readable table updated only through an authenticated, connection/block-aware RPC; never transmit draft text, store typing as messages, or award XP for presence.
 
 ## Background
 - Render the shared decorative landscape in the root shell behind all content with pointer events disabled; this keeps the appearance consistent without interfering with controls.

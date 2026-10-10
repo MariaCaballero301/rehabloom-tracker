@@ -148,6 +148,13 @@
       "when": 1791674261688,
       "tag": "0020_ai_summaries",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791676480398,
+      "tag": "0021_inbox_typing",
+      "breakpoints": true
     }
   ]
 }

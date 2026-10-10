@@ -289,6 +289,24 @@ export type Database = {
         }
         Relationships: []
       }
+      inbox_typing: {
+        Row: {
+          expires_at: string
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          expires_at?: string
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          expires_at?: string
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       invite_codes: {
         Row: {
           code: string
@@ -594,6 +612,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      can_read_inbox_typing: {
+        Args: { p_recipient: string; p_sender: string }
+        Returns: boolean
+      }
       can_read_profile_photo: { Args: { p_path: string }; Returns: boolean }
       can_view_profile_photo: { Args: { p_user_id: string }; Returns: boolean }
       cancel_connection_request: { Args: { p_id: string }; Returns: undefined }
@@ -666,6 +688,10 @@ export type Database = {
       }
       send_encouragement: {
         Args: { p_message: string; p_to: string }
+        Returns: undefined
+      }
+      set_inbox_typing: {
+        Args: { p_to: string; p_typing: boolean }
         Returns: undefined
       }
       simulate_missed_sessions: { Args: never; Returns: number }

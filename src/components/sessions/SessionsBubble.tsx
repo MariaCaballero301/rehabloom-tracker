@@ -2,7 +2,7 @@
 // sessions together and invites waiting for a reply. Mounted once in the root layout.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { CalendarClock, CalendarPlus2, CalendarHeart, CalendarPlus, Check, HeartHandshake, MessageCircleHeart, Phone, Video, X } from "lucide-react";
+import { CalendarClock, CalendarPlus2, CalendarHeart, CalendarPlus, Check, HeartHandshake, MessageCircleHeart, Video, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { db, rpc } from "@/components/network/useNetwork";
@@ -145,17 +145,6 @@ export function SessionsBubble({ userId }: { userId: string }) {
     await db.from("support_notifications").update({ read_at: t, dismissed_at: t }).eq("id", a.id);
   }
 
-  async function call(a: Alert) {
-    try {
-      const phone = await rpc<string | null>("supported_person_phone", { p_user: a.patient_id });
-      if (!phone) return void toast(`${a.patient_name} hasn't shared a phone number yet.`);
-      void handled(a);
-      window.location.href = `tel:${phone.replace(/[^\d+]/g, "")}`;
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  }
-
   async function encourage(a: Alert) {
     try {
       await rpc("send_encouragement", { p_to: a.patient_id, p_message: ENCOURAGEMENT });
@@ -225,9 +214,8 @@ export function SessionsBubble({ userId }: { userId: string }) {
                       </button>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <button className="btn-aqua text-sm" onClick={() => void call(a)}><Phone className="h-4 w-4" /> Call {a.patient_name}</button>
-                      <button className="btn-soft text-sm" onClick={() => { setPlan({ id: a.patient_id, name: a.patient_name }); void handled(a); }}><CalendarPlus className="h-4 w-4" /> Do a session together</button>
-                      <button className="btn-soft text-sm" onClick={() => void encourage(a)}><MessageCircleHeart className="h-4 w-4" /> Send encouragement</button>
+                      <Button variant="ghost" className="btn-aqua h-auto whitespace-normal text-sm" onClick={() => { setPlan({ id: a.patient_id, name: a.patient_name }); void handled(a); }}><CalendarPlus className="h-4 w-4" /> Do a session together</Button>
+                      <Button variant="ghost" className="btn-soft h-auto whitespace-normal text-sm" onClick={() => void encourage(a)}><MessageCircleHeart className="h-4 w-4" /> Send encouragement</Button>
                     </div>
                   </li>
                 ))}

@@ -115,6 +115,26 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
       </p>
 
       <div className="grid gap-5 lg:grid-cols-3">
+        <section className="glass flex flex-col items-center p-6 text-center lg:col-span-3" aria-labelledby="plant-h">
+          <h2 id="plant-h" className="text-xl">Your plant</h2>
+          <Plant stage={stage.index} size="lg" />
+          <p className="font-bold">{stage.name}</p>
+          <p className="text-2xl font-extrabold text-success">{xp} XP</p>
+          {stage.nextAt !== null ? (
+            <>
+              <div className="mt-2 h-3 w-full max-w-md overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={xp} aria-valuemax={stage.nextAt}>
+                <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, (xp / stage.nextAt) * 100)}%` }} />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{stage.nextAt - xp} XP to next stage</p>
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground">Fully grown!</p>
+          )}
+          <p className="mt-3 text-xs text-muted-foreground">
+            +{XP_PER_EXERCISE} per exercise, +{XP_PER_CHECKIN} per check-in (rest days included). Pain level never changes XP.
+          </p>
+        </section>
+
         <section className="glass p-5 lg:col-span-2" aria-labelledby="today-h">
           <h2 id="today-h" className="text-xl">Today's exercises</h2>
           <p className="text-sm text-muted-foreground">
@@ -137,7 +157,7 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
                 <li key={ex.id}>
                   <label className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition ${done ? "bg-accent/70" : "bg-card"}`}>
                     <input type="checkbox" className="sr-only" checked={done} disabled={saving} onChange={() => toggleToday(ex)} />
-                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${done ? "btn-aqua btn-leaf min-h-0 border-success p-0" : "border-input bg-card"}`} aria-hidden>
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${done ? "border-success bg-card text-success" : "bubble border-transparent"}`} aria-hidden>
                       {done && <Check className="h-5 w-5" />}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -151,26 +171,6 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
               );
             })}
           </ul>
-        </section>
-
-        <section className="glass flex flex-col items-center p-5 text-center" aria-labelledby="plant-h">
-          <h2 id="plant-h" className="text-xl">Your plant</h2>
-          <Plant stage={stage.index} />
-          <p className="font-bold">{stage.name}</p>
-          <p className="text-2xl font-extrabold text-success">{xp} XP</p>
-          {stage.nextAt !== null ? (
-            <>
-              <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={xp} aria-valuemax={stage.nextAt}>
-                <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, (xp / stage.nextAt) * 100)}%` }} />
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{stage.nextAt - xp} XP to next stage</p>
-            </>
-          ) : (
-            <p className="text-xs text-muted-foreground">Fully grown!</p>
-          )}
-          <p className="mt-3 text-xs text-muted-foreground">
-            +{XP_PER_EXERCISE} per exercise, +{XP_PER_CHECKIN} per check-in (rest days included). Pain level never changes XP.
-          </p>
         </section>
 
         <CheckinCard existing={todayCheckin} todayKey={todayKey} onSaved={load} />
@@ -457,9 +457,9 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                             title={past ? "Past — can no longer be edited" : future ? "Upcoming — it's not this day yet! Check this off when you complete it on the appropriate date." : isToday ? "Mark as complete" : label}
                             onClick={() => isToday && onTrack(ex, key, "complete", 1)}
                             className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 text-[10px] font-bold transition sm:h-11 sm:w-11 ${
-                              status === "complete" ? "border-success bg-success text-success-foreground"
-                              : status === "skip" ? "border-warning bg-warning text-foreground"
-                              : isToday && scheduled ? "border-primary bg-card text-primary shadow-sm hover:bg-accent"
+                              status === "complete" ? "border-success bg-card text-success"
+                              : status === "skip" ? "border-warning bg-warning/25 text-foreground"
+                              : isToday && scheduled ? "bubble border-transparent text-primary"
                               : "border-input bg-muted text-muted-foreground"
                             } ${!isToday || !scheduled ? "cursor-not-allowed opacity-60" : ""}`}
                           >

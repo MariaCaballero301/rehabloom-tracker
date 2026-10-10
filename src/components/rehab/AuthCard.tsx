@@ -30,7 +30,10 @@ export function AuthCard() {
 
   async function google() {
     const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (r.error) toast.error("Google sign-in failed");
+    if (!r.error) return;
+    // The sign-in window can report an error even when the session was set, so trust the session.
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) toast.error("Google sign-in didn't finish. Please try again.");
   }
 
   return (

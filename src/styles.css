@@ -116,7 +116,7 @@
   box-shadow: var(--shadow-button);
   transition: transform 0.15s, filter 0.15s;
   &:hover { filter: brightness(1.06); }
-  &:active { transform: translateY(1px); }
+  &:active:not(:disabled) { animation: bubble-pop 0.28s ease-out; }
   &:disabled { opacity: 0.55; cursor: not-allowed; }
 }
 
@@ -134,10 +134,32 @@
   border-radius: 9999px;
   font-weight: 600;
   color: var(--secondary-foreground);
-  background: oklch(1 0 0 / 0.7);
+  background: linear-gradient(180deg, oklch(1 0 0 / 0.95) 0%, oklch(1 0 0 / 0.75) 48%, oklch(0.9 0.05 230 / 0.75) 52%, oklch(0.97 0.03 220 / 0.9) 100%);
   border: 1px solid var(--input);
-  transition: background 0.15s;
-  &:hover { background: oklch(1 0 0 / 0.95); }
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.9), 0 2px 6px oklch(0.5 0.12 240 / 0.15);
+  transition: filter 0.15s;
+  &:hover { filter: brightness(1.04); }
+  &:active:not(:disabled) { animation: bubble-pop 0.28s ease-out; }
+}
+
+/* Glossy blue-and-white bubble for things waiting to be checked off. */
+@utility bubble {
+  background:
+    radial-gradient(circle at 35% 28%, oklch(1 0 0 / 0.95) 0 18%, oklch(1 0 0 / 0) 42%),
+    radial-gradient(circle at 50% 60%, oklch(0.97 0.03 220) 0%, oklch(0.82 0.1 230) 75%, oklch(0.62 0.15 240) 100%);
+  box-shadow: inset 0 -3px 6px oklch(0.5 0.15 240 / 0.35), inset 0 2px 3px oklch(1 0 0 / 0.8), 0 3px 8px oklch(0.5 0.15 240 / 0.3);
+  &:active:not(:disabled), label:active > & { animation: bubble-pop 0.28s ease-out; }
+}
+
+@keyframes bubble-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.18); }
+  70% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; }
 }
 
 @utility field {

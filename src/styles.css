@@ -283,3 +283,13 @@
   border: 1px solid var(--input);
   color: var(--foreground);
 }
+
+.xp-fish-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.xp-fish-swim { position: absolute; left: 0; animation: xp-fish-swim 3.6s cubic-bezier(.45,.05,.55,.95) forwards; }
+.xp-fish-bob { position: relative; width: 15rem; animation: xp-fish-bob 0.9s ease-in-out infinite; }
+.xp-fish-img { width: 100%; height: auto; filter: drop-shadow(0 10px 14px oklch(0.4 0.1 230 / 0.3)); }
+.xp-fish-flip { transform: scaleX(-1); }
+.xp-fish-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 2.5rem; text-align: center; font-weight: 800; font-size: 1rem; line-height: 1.15; color: var(--foreground); text-shadow: 0 0 6px var(--background), 0 0 12px var(--background), 0 0 3px var(--background); }
+@keyframes xp-fish-swim { from { transform: translateX(-16rem); } to { transform: translateX(calc(100vw + 1rem)); } }
+@keyframes xp-fish-bob { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-14px) rotate(2deg); } }
+@media (prefers-reduced-motion: reduce) { .xp-fish-swim { left: 50%; transform: translateX(-50%); } }

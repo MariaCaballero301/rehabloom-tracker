@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import aeroLandscape from "@/assets/aero-landscape.jpg";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { XpFishLayer } from "@/components/XpFish";
 import { SupportPopups } from "@/components/alerts/SupportPopups";
 import { HomeInbox } from "@/components/network/HomeInbox";
 import { useSessionUser } from "@/hooks/use-session-user";
@@ -126,6 +127,7 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       {user ? <HomeInbox key={user.id} userId={user.id}><Outlet /></HomeInbox> : <Outlet />}
       <Toaster position="top-center" richColors />
+      <XpFishLayer />
       <SupportPopups />
     </QueryClientProvider>
   );

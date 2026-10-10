@@ -1,4 +1,5 @@
 // "Your people": who supports me (with the alert toggle) and who I support.
+import { celebrateXp } from "@/components/XpFish";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Ban, HeartHandshake, MessageCircleHeart, UserMinus } from "lucide-react";
@@ -19,7 +20,7 @@ function Encourage({ to, name, onDone }: { to: string; name: string; onDone: () 
     setSending(true);
     try {
       await rpc("send_encouragement", { p_to: to, p_message: message });
-      toast.success(`Sent to ${name} 💌 +2 XP for cheering them on`);
+      celebrateXp(`Sent to ${name} 💌 +2 XP`);
       onDone();
     } catch (e) {
       toast.error((e as Error).message);

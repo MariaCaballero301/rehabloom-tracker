@@ -12,7 +12,7 @@ import { PeopleCard } from "@/components/network/PeopleCard";
 import { DiscoverCard } from "@/components/network/DiscoverCard";
 import { InviteCard } from "@/components/network/InviteCard";
 
-export const Route = createFileRoute("/people")({
+export const Route = createFileRoute("/support")({
   validateSearch: (search: Record<string, unknown>): { code?: string } => {
     const code = search["code"];
     return typeof code === "string" ? { code: code.slice(0, 12) } : {};

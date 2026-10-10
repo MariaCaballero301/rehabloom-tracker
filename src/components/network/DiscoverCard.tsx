@@ -116,8 +116,13 @@ export function DiscoverCard({
 
   return (
     <section className="glass p-5" aria-labelledby="discover-h">
-      <h2 id="discover-h" className="flex items-center gap-2 text-xl">
+      <h2 id="discover-h" className="flex flex-wrap items-center gap-2 text-xl">
         <Sparkles className="h-5 w-5" /> Find support
+        {needsName && (
+          <span className="rounded-full border border-warning bg-warning/30 px-2.5 py-0.5 text-xs font-bold text-foreground">
+            Create profile first
+          </span>
+        )}
       </h2>
       <div className="mt-3 flex gap-2" role="tablist">
         {(["buddies", "mentors"] as const).map((t) => (
@@ -135,8 +140,7 @@ export function DiscoverCard({
 
       {needsName && (
         <p className="mt-3 rounded-2xl border border-dashed p-3 text-sm text-muted-foreground">
-          Add your name, rehab area and availability in “Your profile” to get better matches and
-          send requests.
+          Fill in your Profile at the top of this page to get better matches and send requests.
         </p>
       )}
 

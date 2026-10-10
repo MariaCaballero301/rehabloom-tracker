@@ -393,7 +393,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
   }
 
   return (
-    <section className="glass p-5 lg:col-span-2" aria-labelledby="ex-h">
+    <section id="prescribed" className="glass scroll-mt-4 p-5 lg:col-span-2" aria-labelledby="ex-h">
       <div className="flex items-center justify-between gap-2">
         <h2 id="ex-h" className="text-xl">Prescribed exercises</h2>
         <div className="flex items-center gap-2">

@@ -615,6 +615,10 @@ export type Database = {
         Returns: string
       }
       redeem_invite_code: { Args: { p_code: string }; Returns: string }
+      reschedule_rehab_session: {
+        Args: { p_id: string; p_note?: string; p_starts_at: string }
+        Returns: undefined
+      }
       respond_connection_request: {
         Args: { p_accept: boolean; p_id: string }
         Returns: undefined

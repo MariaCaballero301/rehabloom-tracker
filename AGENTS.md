@@ -26,3 +26,8 @@
 
 ## Background
 - Render the shared decorative landscape in the root shell behind all content with pointer events disabled; this keeps the appearance consistent without interfering with controls.
+
+## Buddy statistics
+- Read relationship metrics and opt-in aggregate completions through a connected-only, block-aware database RPC; private completion rows remain owner-only.
+- Attribute relationship XP only to the first five messages per sender per local day across all recipients; this avoids inventing additional rewards beyond existing cheer XP.
+- Rotate only the buddy bubble's decorative shell, keeping its contents stationary and honoring reduced motion so names and controls stay readable.

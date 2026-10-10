@@ -120,6 +120,13 @@
       "when": 1791666578264,
       "tag": "0016_inbox_conversations",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791669213274,
+      "tag": "0017_buddy_progress_sharing",
+      "breakpoints": true
     }
   ]
 }

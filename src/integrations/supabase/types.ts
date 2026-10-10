@@ -302,6 +302,7 @@ export type Database = {
           photo_path: string | null
           rehab_area: string
           rehab_areas: string[]
+          share_exercise_counts: boolean
           updated_at: string
           user_id: string
         }
@@ -317,6 +318,7 @@ export type Database = {
           photo_path?: string | null
           rehab_area?: string
           rehab_areas?: string[]
+          share_exercise_counts?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -332,6 +334,7 @@ export type Database = {
           photo_path?: string | null
           rehab_area?: string
           rehab_areas?: string[]
+          share_exercise_counts?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -501,6 +504,18 @@ export type Database = {
     }
     Functions: {
       block_person: { Args: { p_other: string }; Returns: undefined }
+      buddy_relationship_stats: {
+        Args: { p_timezone?: string }
+        Returns: {
+          cheer_xp: number
+          message_days: string[]
+          messages_sent: number
+          shared_today: number
+          shared_total: number
+          shared_week: number
+          user_id: string
+        }[]
+      }
       can_read_profile_photo: { Args: { p_path: string }; Returns: boolean }
       can_view_profile_photo: { Args: { p_user_id: string }; Returns: boolean }
       cancel_connection_request: { Args: { p_id: string }; Returns: undefined }

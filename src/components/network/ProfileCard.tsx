@@ -111,6 +111,7 @@ export function ProfileCard({ profile, saved, onSaved }: { profile: MyProfile; s
       is_mentor: p.finished_therapy && p.is_mentor,
       mentor_bio: p.mentor_bio.trim(),
       photo_path: photoPath,
+      share_exercise_counts: p.share_exercise_counts ?? false,
       updated_at: new Date().toISOString(),
     });
     if (error) {
@@ -160,8 +161,8 @@ export function ProfileCard({ profile, saved, onSaved }: { profile: MyProfile; s
         <UserRound className="h-5 w-5" /> Profile
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Others only ever see your photo, name, rehab areas, languages and availability — never your
-        exercises, pain or phone number. Your phone is only shared with your support network.
+        Others can see your photo, name, rehab areas, languages and availability, but never your
+        exercise instructions or pain. Completed exercise totals are shared with connected buddies only if you choose below.
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -258,6 +259,13 @@ export function ProfileCard({ profile, saved, onSaved }: { profile: MyProfile; s
           label="Let others find me as a rehab buddy"
         />
       </div>
+
+      <label className="mt-4 flex items-start gap-3 text-sm font-semibold">
+        <input type="checkbox" className="mt-1 h-4 w-4 shrink-0" checked={p.share_exercise_counts ?? false} onChange={(e) => set("share_exercise_counts", e.target.checked)} />
+        <span>Share my completed exercise totals with rehab buddies
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">Today, this week and all-time. Optional; off by default.</span>
+        </span>
+      </label>
 
       <div className="mt-4 rounded-2xl border bg-popover p-3">
         <label className="flex items-center gap-2 text-sm font-semibold">

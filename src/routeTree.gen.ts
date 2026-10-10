@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as PeopleRouteImport } from './routes/people'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as SupportRouteImport } from './routes/support'
@@ -19,6 +20,11 @@ import { Route as ApiCronMissedSessionsRouteImport } from './routes/api/cron/mis
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InboxRoute = InboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PeopleRoute = PeopleRouteImport.update({
@@ -49,6 +55,7 @@ const ApiCronMissedSessionsRoute = ApiCronMissedSessionsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/inbox': typeof InboxRoute
   '/people': typeof PeopleRoute
   '/progress': typeof ProgressRoute
   '/support': typeof SupportRouteWithChildren
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/inbox': typeof InboxRoute
   '/people': typeof PeopleRoute
   '/progress': typeof ProgressRoute
   '/support': typeof SupportRouteWithChildren
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/inbox': typeof InboxRoute
   '/people': typeof PeopleRoute
   '/progress': typeof ProgressRoute
   '/support': typeof SupportRouteWithChildren
@@ -76,6 +85,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/inbox'
     | '/people'
     | '/progress'
     | '/support'
@@ -84,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/inbox'
     | '/people'
     | '/progress'
     | '/support'
@@ -92,6 +103,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/inbox'
     | '/people'
     | '/progress'
     | '/support'
@@ -101,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  InboxRoute: typeof InboxRoute
   PeopleRoute: typeof PeopleRoute
   ProgressRoute: typeof ProgressRoute
   SupportRoute: typeof SupportRouteWithChildren
@@ -114,6 +127,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/people': {
@@ -167,6 +187,7 @@ const SupportRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  InboxRoute: InboxRoute,
   PeopleRoute: PeopleRoute,
   ProgressRoute: ProgressRoute,
   SupportRoute: SupportRouteWithChildren,

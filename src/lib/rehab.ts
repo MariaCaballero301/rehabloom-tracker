@@ -83,6 +83,16 @@ export function positiveInteger(value: number) {
   return Math.max(1, Math.round(Number.isFinite(value) ? value : 1));
 }
 
+export function weeklySchedule(mode: string, days: number[], occurrences: number, gapDays: number) {
+  return mode === "interval"
+    ? { weekly_mode: "interval", days: [], occurrences: Math.min(6, positiveInteger(occurrences)), gap_days: positiveInteger(gapDays) }
+    : { weekly_mode: "days", days, occurrences: 1, gap_days: 0 };
+}
+
+export function checkinCount(records: { day: string }[]) {
+  return new Set(records.map((record) => record.day)).size;
+}
+
 /** Flexible weekly occurrences share one quota and require full rest days. */
 export function weeklyAvailability(ex: { id: string; occurrences: number; gap_days: number }, records: { exercise_id: string; day: string; status: string }[], today: Date) {
   const key = dayKey(today);

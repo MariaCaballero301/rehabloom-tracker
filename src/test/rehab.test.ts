@@ -47,7 +47,54 @@ describe("frequency rules", () => {
     expect(scheduledCount({ frequency: "weekly", occurrences: 1, days: [1] }, new Date(2026, 9, 10))).toBe(0);
   });
   it("next week starts the following Sunday and dates read like Saturday, Oct. 10th", () => {
-    expect(dayKey(weekAt(1, new Date(2026, 9, 10))[0]!)).toBe("2026-10-11");
+    const first = weekAt(1, new Date(2026, 9, 10))[0];
+    expect(first && dayKey(first)).toBe("2026-10-11");
     expect(longDate(new Date(2026, 9, 10))).toBe("Saturday, Oct. 10th");
+  });
+});
+
+import { positiveInteger, weeklyAvailability, weeklySchedule, checkinCount, historyPeriod, monthWeeks, weekRange } from "@/lib/rehab";
+
+describe("weekly scheduling and history rules", () => {
+  it("scheduled weekdays exclude interval gaps and occurrence counts", () => {
+    expect(weeklySchedule("days", [1, 3], 6, 2)).toEqual({ weekly_mode: "days", days: [1, 3], occurrences: 1, gap_days: 0 });
+  });
+  it("interval scheduling excludes weekdays and allows 1–6 occurrences", () => {
+    expect(weeklySchedule("interval", [1, 3], 6, 2)).toEqual({ weekly_mode: "interval", days: [], occurrences: 6, gap_days: 2 });
+    expect(weeklySchedule("interval", [], 10, 2).occurrences).toBe(6);
+    expect(weeklySchedule("interval", [], 0, 2).occurrences).toBe(1);
+  });
+  it("days in between never go below one and remain integers", () => {
+    expect(positiveInteger(-2)).toBe(1);
+    expect(positiveInteger(0)).toBe(1);
+    expect(positiveInteger(3)).toBe(3);
+    expect(positiveInteger(2.4)).toBe(2);
+  });
+  it("weekly interval quota and days in between apply independently", () => {
+    const ex = { id: "exercise", occurrences: 2, gap_days: 1 };
+    const records = [{ exercise_id: "exercise", day: "2026-10-06", status: "complete" }, { exercise_id: "exercise", day: "2026-10-08", status: "complete" }];
+    expect(weeklyAvailability(ex, records, new Date(2026, 9, 9)).gap).toBe(1);
+    expect(weeklyAvailability(ex, records, new Date(2026, 9, 10)).available).toBe(false);
+    expect(weeklyAvailability(ex, records, new Date(2026, 9, 11)).available).toBe(true);
+    expect(weeklyAvailability(ex, [{ ...records[0], status: "skip" }], new Date(2026, 9, 10)).count).toBe(0);
+  });
+  it("editing a daily check-in cannot award another five XP", () => {
+    expect(computeXp(0, checkinCount([{ day: "2026-10-10" }, { day: "2026-10-10" }]))).toBe(5);
+  });
+  it("before joining is unavailable; inactive joined weeks have no action", () => {
+    const days = currentWeek(new Date(2026, 9, 10));
+    expect(historyPeriod(days, "2026-10-11T12:00:00", [], new Date(2026, 9, 20))).toEqual({ temporal: "Past", empty: "No Data Available" });
+    expect(historyPeriod(days, "2026-10-01T12:00:00", [], new Date(2026, 9, 20))).toEqual({ temporal: "Past", empty: "No Action Taken" });
+    expect(historyPeriod(days, "2026-10-01T12:00:00", ["2026-10-08"], new Date(2026, 9, 20)).empty).toBeNull();
+    expect(historyPeriod(weekAt(1, new Date(2026, 9, 10)), "2026-10-01T12:00:00", [], new Date(2026, 9, 10))).toEqual({ temporal: "Upcoming", empty: null });
+  });
+  it("weekly ranges show October 4th - October 10th", () => {
+    expect(weekRange(currentWeek(new Date(2026, 9, 10)))).toBe("October 4th - October 10th");
+  });
+  it("monthly history includes every date even when the month spans five weeks", () => {
+    const weeks = monthWeeks(new Date(2026, 9, 1));
+    expect(weeks).toHaveLength(5);
+    expect(weeks.flat().filter((d) => d.getMonth() === 9)).toHaveLength(31);
+    expect(weeks.every((week) => week.length === 7)).toBe(true);
   });
 });

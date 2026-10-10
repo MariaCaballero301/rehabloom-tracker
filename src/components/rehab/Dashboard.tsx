@@ -41,6 +41,8 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
 
   useEffect(() => { load(); }, [load]);
 
+  // Exercises the user undid today: undo restores eligibility so they can redo it.
+  const [undone, setUndone] = useState<Set<string>>(() => new Set());
   const completed = completedRecords(completions);
   const xp = computeXp(completed.length, checkinCount(checkins));
   const stage = stageFor(xp);
@@ -48,8 +50,6 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
   const todays = sorted.filter((e) => scheduledCount(e, today) > 0 && (e.weekly_mode !== "interval" || e.frequency === "daily" || weeklyAvailability(e, completions, today).available || undone.has(e.id)));
   const todayCheckin = checkins.find((c) => c.day === todayKey);
   const [waitNotes, setWaitNotes] = useState<Record<string, string>>({});
-  // Exercises the user undid today: undo restores eligibility so they can redo it.
-  const [undone, setUndone] = useState<Set<string>>(() => new Set());
 
   function blockReason(ex: Exercise, occurrence: number): string | null {
     const mine = completed.filter((c) => c.exercise_id === ex.id);

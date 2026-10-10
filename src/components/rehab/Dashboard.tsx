@@ -433,6 +433,51 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
               </div>
               {interval && !scheduledToday && <p className="mt-2 text-xs text-muted-foreground">{available.gap ? `Please wait ${available.gap} more day${available.gap === 1 ? "" : "s"}.` : "All weekly occurrences are complete."} Upcoming</p>}
               {waitNotes[ex.id] && <p className="mt-2 rounded-xl bg-secondary px-3 py-1.5 text-xs font-semibold text-secondary-foreground" role="status">{waitNotes[ex.id]}</p>}
+              {!daily && (
+                <div className="mt-3 rounded-2xl border bg-card/60 p-3">
+                  <div className="grid grid-cols-7 gap-1.5 sm:gap-2" role="group" aria-label={`${ex.name} schedule this week`}>
+                    {week.map((d) => {
+                      const key = dayKey(d);
+                      const isToday = key === todayKey;
+                      const past = key < todayKey;
+                      const future = key > todayKey;
+                      const scheduled = interval ? true : ex.days.includes(d.getDay());
+                      const record = completions.find((c) => c.exercise_id === ex.id && c.day === key);
+                      const status = record?.status;
+                      const label = `${d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}${isToday ? ", today" : ""}${past ? ", past — can no longer be edited" : future ? ", upcoming" : ""}${status === "complete" ? ", completed" : status === "skip" ? ", skipped" : ""}`;
+                      return (
+                        <div key={key} className="flex flex-col items-center gap-1">
+                          <span className={`text-[10px] font-semibold ${isToday ? "text-primary" : "text-muted-foreground"}`}>{DAY_LABELS[d.getDay()]}</span>
+                          <button
+                            type="button"
+                            disabled={saving || !isToday || !scheduled || !scheduledToday}
+                            aria-label={label}
+                            aria-pressed={status === "complete"}
+                            title={past ? "Past — can no longer be edited" : future ? "Upcoming — it's not this day yet! Check this off when you complete it on the appropriate date." : isToday ? "Mark as complete" : label}
+                            onClick={() => isToday && onTrack(ex, key, "complete", 1)}
+                            className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 text-[10px] font-bold transition sm:h-11 sm:w-11 ${
+                              status === "complete" ? "border-success bg-success text-success-foreground"
+                              : status === "skip" ? "border-warning bg-warning text-foreground"
+                              : isToday && scheduled ? "border-primary bg-card text-primary shadow-sm hover:bg-accent"
+                              : "border-input bg-muted text-muted-foreground"
+                            } ${!isToday || !scheduled ? "cursor-not-allowed opacity-60" : ""}`}
+                          >
+                            {past && status !== "complete" && status !== "skip" && <span aria-hidden className="absolute h-0.5 w-8 rotate-45 rounded bg-muted-foreground/60" />}
+                            {status === "complete" ? <Check className="h-5 w-5" /> : status === "skip" ? <span className="leading-none">Skipped</span> : <span className={past ? "opacity-0" : ""}>{d.getDate()}</span>}
+                          </button>
+                          {isToday && scheduled && scheduledToday && (
+                            <button type="button" disabled={saving} onClick={() => onTrack(ex, key, "skip", 1)}
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${status === "skip" ? "bg-warning text-foreground" : "text-muted-foreground underline hover:text-foreground"}`}>
+                              Skip
+                            </button>
+                          )}
+                          {isToday && <span className="text-[10px] font-bold text-primary">Today</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {lines.length > 0 && (
                 <ul className="mt-2 space-y-1 rounded-2xl border bg-card/60 p-2 text-xs">
                   {lines.map((line) => {

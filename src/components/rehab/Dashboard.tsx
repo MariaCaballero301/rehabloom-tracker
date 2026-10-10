@@ -68,16 +68,14 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
   }
 
   async function track(ex: Exercise, day: string, requested: ExerciseStatus, occurrence = 1): Promise<void> {
-    if (saving || day !== todayKey || scheduledCount(ex, today) === 0) return;
+    if (saving || scheduledCount(ex, today) === 0) return;
     const existing = completions.find((c) => c.exercise_id === ex.id && c.day === day && c.occurrence === occurrence);
     const status = nextExerciseStatus(existing?.status, requested);
+    if (day !== todayKey && status !== null) return; // past/future days: undo only
     if (status === "complete") {
       const reason = blockReason(ex, occurrence);
-      if (reason && waitNotes[ex.id] !== reason) {
-        setWaitNotes((n) => ({ ...n, [ex.id]: `${reason} Tap again to do it anyway.` }));
-        return;
-      }
-      setWaitNotes((n) => ({ ...n, [ex.id]: "" }));
+      setWaitNotes((n) => ({ ...n, [ex.id]: reason ?? "" }));
+      if (reason) return;
     }
     setSaving(true);
     try {
@@ -451,7 +449,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
               {!daily && (
                 <div className="mt-3 rounded-2xl border bg-card/60 p-3">
                   <div className="grid grid-cols-7 gap-1.5 sm:gap-2" role="group" aria-label={`${ex.name} schedule this week`}>
-                    {week.map((d) => {
+                     {week.map((d) => {
                       const key = dayKey(d);
                       const isToday = key === todayKey;
                       const past = key < todayKey;
@@ -459,35 +457,36 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                       const scheduled = interval ? true : ex.days.includes(d.getDay());
                       const record = completions.find((c) => c.exercise_id === ex.id && c.day === key);
                       const status = record?.status;
-                      const label = `${d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}${isToday ? ", today" : ""}${past ? ", past — can no longer be edited" : future ? ", upcoming" : ""}${status === "complete" ? ", completed" : status === "skip" ? ", skipped" : ""}`;
+                      const blocked = isToday && scheduled && !status && interval && !undone.has(ex.id) && !weeklyAvailability(ex, completions, d).available;
+                      const label = `${d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}${isToday ? ", today" : ""}${past ? ", past" : future ? ", upcoming" : ""}${blocked ? ", waiting period — not available yet" : ""}${status === "complete" ? ", completed" : status === "skip" ? ", skipped" : ""}`;
                       return (
                         <div key={key} className="flex flex-col items-center gap-1">
                           <span className={`text-[10px] font-semibold ${isToday ? "text-primary" : "text-muted-foreground"}`}>{DAY_LABELS[d.getDay()]}</span>
                           <button
                             type="button"
-                            disabled={saving || !isToday || !scheduled || !scheduledToday}
+                            disabled={saving || !scheduled || blocked || (isToday ? !scheduledToday : !status)}
                             aria-label={label}
                             aria-pressed={status === "complete"}
-                            title={past ? "Past — can no longer be edited" : future ? "Upcoming — it's not this day yet! Check this off when you complete it on the appropriate date." : isToday ? (status ? "Right-click to undo" : "Mark as complete") : label}
-                            onClick={() => isToday && !status && onTrack(ex, key, "complete", 1)}
-                            onContextMenu={(e) => { e.preventDefault(); if (isToday && status) onTrack(ex, key, status as ExerciseStatus, 1); }}
+                            title={blocked ? "Please wait one more day before doing this exercise." : past ? (status ? "Undo available below" : "Past — can no longer be edited") : future ? "Upcoming — it's not this day yet! Check this off when you complete it on the appropriate date." : isToday ? (status ? "Right-click to undo" : "Mark as complete") : label}
+                            onClick={() => isToday && !status && !blocked && onTrack(ex, key, "complete", 1)}
+                            onContextMenu={(e) => { e.preventDefault(); if (status && (isToday || past)) onTrack(ex, key, status as ExerciseStatus, 1); }}
                             className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 text-[10px] font-bold transition sm:h-11 sm:w-11 ${
                               status === "complete" ? "border-success bg-card text-success"
                               : status === "skip" ? "border-warning bg-warning/25 text-foreground"
-                              : isToday && scheduled ? "bubble border-transparent text-primary"
+                              : isToday && scheduled && !blocked ? "bubble border-transparent text-primary"
                               : "border-input bg-muted text-muted-foreground"
-                            } ${!isToday || !scheduled ? "cursor-not-allowed opacity-60" : ""}`}
+                            } ${!isToday || !scheduled || blocked ? "cursor-not-allowed opacity-60" : ""}`}
                           >
-                            {past && status !== "complete" && status !== "skip" && <span aria-hidden className="absolute h-0.5 w-8 rotate-45 rounded bg-muted-foreground/60" />}
-                            {status === "complete" ? <Check className="h-5 w-5" /> : status === "skip" ? <span className="leading-none">Skipped</span> : <span className={past ? "opacity-0" : ""}>{d.getDate()}</span>}
+                            {(past || blocked) && status !== "complete" && status !== "skip" && <span aria-hidden className="absolute h-0.5 w-8 rotate-45 rounded bg-muted-foreground/60" />}
+                            {status === "complete" ? <Check className="h-5 w-5" /> : status === "skip" ? <span className="leading-none">Skipped</span> : <span className={past || blocked ? "opacity-0" : ""}>{d.getDate()}</span>}
                           </button>
-                          {isToday && scheduled && scheduledToday && !status && (
+                          {isToday && scheduled && scheduledToday && !status && !blocked && (
                             <button type="button" disabled={saving} onClick={() => onTrack(ex, key, "skip", 1)}
                               className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-muted-foreground underline hover:text-foreground">
                               Skip
                             </button>
                           )}
-                          {isToday && status && (
+                          {status && (isToday || past) && (
                             <button type="button" disabled={saving} onClick={() => onTrack(ex, key, status as ExerciseStatus, 1)}
                               className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-muted-foreground underline hover:text-foreground">
                               Undo
@@ -497,9 +496,12 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                         </div>
                       );
                     })}
-                  </div>
-                </div>
-              )}
+                   </div>
+                   {interval && !undone.has(ex.id) && !completions.some((c) => c.exercise_id === ex.id && c.day === todayKey) && !weeklyAvailability(ex, completions, today).available && (
+                     <p className="mt-2 text-xs font-semibold text-muted-foreground" role="status">Please wait one more day before doing this exercise.</p>
+                   )}
+                 </div>
+               )}
               {lines.length > 0 && (
                 <ul className="mt-2 space-y-1 rounded-2xl border bg-card/60 p-2 text-xs">
                   {lines.map((line) => {

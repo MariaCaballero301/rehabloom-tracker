@@ -144,9 +144,9 @@ describe("Your people cards render", () => {
   });
 
   it("profile card only offers mentoring after finishing therapy", () => {
-    const { rerender } = render(<ProfileCard profile={me} onSaved={() => {}} />);
+    const { rerender } = render(<ProfileCard saved={false} profile={me} onSaved={() => {}} />);
     expect(screen.queryByText("Volunteer as a mentor")).toBeNull();
-    rerender(<ProfileCard profile={{ ...me, finished_therapy: true }} onSaved={() => {}} />);
+    rerender(<ProfileCard saved={false} profile={{ ...me, finished_therapy: true }} onSaved={() => {}} />);
     expect(screen.getByText("Volunteer as a mentor")).toBeTruthy();
   });
 });

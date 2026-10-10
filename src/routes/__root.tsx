@@ -17,6 +17,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { XpFishLayer } from "@/components/XpFish";
 import { SupportPopups } from "@/components/alerts/SupportPopups";
 import { HomeInbox } from "@/components/network/HomeInbox";
+import { SessionsBubble } from "@/components/sessions/SessionsBubble";
 import { useSessionUser } from "@/hooks/use-session-user";
 
 function NotFoundComponent() {
@@ -150,7 +151,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      {user ? <HomeInbox key={user.id} userId={user.id}><Outlet /></HomeInbox> : <Outlet />}
+      {user ? <HomeInbox key={user.id} userId={user.id}><Outlet /><SessionsBubble userId={user.id} /></HomeInbox> : <Outlet />}
       <Toaster position="top-center" richColors />
       <XpFishLayer />
       <SupportPopups />

@@ -19,3 +19,5 @@
 - [ ] Click-through check of sessions while signed in — blocked until someone signs in through the preview.
 - [ ] Build participant-only Session room, shared live progress/reactions/finish, reusable today's exercises and Start session entry — blocked until existing session feature is merged (user chose to wait).
 - [ ] Add phone links and separate-tab video calls; refresh Session room state on return and verify the flow — blocked until existing session feature is merged.
+- [ ] Sessions bubble, Progress session markers, reschedule, .ics, reminders (Mariacab spec)
+- [ ] Weekly progress & PT report card below Progress history (Ines)

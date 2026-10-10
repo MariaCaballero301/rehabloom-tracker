@@ -22,7 +22,13 @@ export function HomeInbox({ userId, children, initiallyOpen = false }: { userId:
   latestReload.current = inbox.reload;
   const incoming = inbox.requests.filter((r) => r.to_user === userId);
   useEffect(() => {
+    const onPanel = (e: Event) => { if ((e as CustomEvent<string>).detail !== "inbox") setOpen(false); };
+    window.addEventListener("rehabloom:panel-open", onPanel);
+    return () => window.removeEventListener("rehabloom:panel-open", onPanel);
+  }, []);
+  useEffect(() => {
     if (!open) return;
+    window.dispatchEvent(new CustomEvent("rehabloom:panel-open", { detail: "inbox" }));
     close.current?.focus();
     const escape = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); trigger.current?.focus(); } };
     window.addEventListener("keydown", escape);

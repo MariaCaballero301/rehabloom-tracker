@@ -294,3 +294,10 @@
 @keyframes xp-fish-swim { from { transform: translateX(-16rem); } to { transform: translateX(calc(100vw + 1rem)); } }
 @keyframes xp-fish-bob { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-14px) rotate(2deg); } }
 @media (prefers-reduced-motion: reduce) { .xp-fish-swim { left: 50%; transform: translateX(-50%); } }
+
+/* Sessions bubble sits above the Inbox bubble and opens a matching side panel. */
+.sessions-trigger { bottom: 6rem; }
+.sessions-panel-open .home-inbox-content { margin-left: clamp(340px, 34%, 520px); }
+@media (max-width: 767px) {
+  .sessions-panel-open .home-inbox-content { visibility: hidden; margin-left: 0; height: 100dvh; overflow: hidden; }
+}

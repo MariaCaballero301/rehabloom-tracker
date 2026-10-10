@@ -110,7 +110,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6">
       <AppNav email={email} />
-      <HomeSupport userId={USERID} />
+      <HomeSupport userId={userId} />
 
       <p className="mb-5 rounded-2xl bg-secondary/70 px-4 py-2 text-xs text-secondary-foreground">
         Rehabloom helps you follow your therapist's plan. It doesn't give medical advice. If pain increases, stop and contact your physical therapist.

@@ -406,6 +406,7 @@ export type Database = {
           notify_on_missed: boolean
           phone: string
           user_id: string
+          welcomed_at: string | null
         }
         Insert: {
           connected_user_id?: string | null
@@ -416,6 +417,7 @@ export type Database = {
           notify_on_missed?: boolean
           phone?: string
           user_id?: string
+          welcomed_at?: string | null
         }
         Update: {
           connected_user_id?: string | null
@@ -426,6 +428,7 @@ export type Database = {
           notify_on_missed?: boolean
           phone?: string
           user_id?: string
+          welcomed_at?: string | null
         }
         Relationships: []
       }

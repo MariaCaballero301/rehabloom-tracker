@@ -1,0 +1,1 @@
+ALTER TABLE public.support_contacts ADD COLUMN welcomed_at timestamptz;

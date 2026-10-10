@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { Copy, KeyRound, Trash2, UserRoundPlus } from "lucide-react";
 import { normalizePhone } from "@/lib/alerts";
 import { formatInviteCode, isInviteCodeFormat, normalizeInviteCode } from "@/lib/network";
+import { sendWelcome } from "@/lib/welcome.functions";
+import { welcomeToast } from "@/lib/welcome";
 import { db, rpc, type InviteCode } from "./useNetwork";
 
 export function InviteCard({
@@ -19,6 +21,13 @@ export function InviteCard({
   const [redeem, setRedeem] = useState(initialCode);
   const [busy, setBusy] = useState(false);
   const [manual, setManual] = useState({ name: "", phone: "", kind: "family", notify: true });
+
+  // Fire-and-forget: a failed welcome text never blocks adding the contact.
+  function welcome(data: { contactId?: string; recent?: boolean }) {
+    sendWelcome({ data })
+      .then((list) => list.forEach((w) => toast.success(welcomeToast(w.name, w.status))))
+      .catch((e) => console.error("[welcome]", e));
+  }
 
   const linkFor = (code: string) => `${window.location.origin}/people?code=${code}`;
 
@@ -70,6 +79,7 @@ export function InviteCard({
       const name = await rpc<string>("redeem_invite_code", { p_code: code });
       toast.success(`You're now part of ${name}'s support network 💚`);
       setRedeem("");
+      welcome({ recent: true });
       onChange();
     });
   }
@@ -77,14 +87,15 @@ export function InviteCard({
   function submitManual(e: FormEvent) {
     e.preventDefault();
     void run(async () => {
-      const { error } = await db.from("support_contacts").insert({
+      const { data: row, error } = await db.from("support_contacts").insert({
         name: manual.name.trim(),
         phone: normalizePhone(manual.phone),
         kind: manual.kind,
         notify_on_missed: manual.notify,
-      });
+      }).select("id").single();
       if (error) throw new Error(error.message);
       toast.success(`${manual.name.trim()} added`);
+      if (row) welcome({ contactId: row.id });
       setManual({ name: "", phone: "", kind: "family", notify: true });
       onChange();
     });

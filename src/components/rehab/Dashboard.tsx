@@ -303,7 +303,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
   return (
     <section className="glass p-5 lg:col-span-2" aria-labelledby="ex-h">
       <div className="flex items-center justify-between gap-2">
-        <h2 id="ex-h" className="text-xl">My prescribed exercises.</h2>
+        <h2 id="ex-h" className="text-xl">My prescribed exercises</h2>
         <div className="flex items-center gap-2">
           <Button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", weekly_mode: "days", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
             <Plus className="h-4 w-4" /> Add

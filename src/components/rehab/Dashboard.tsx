@@ -54,7 +54,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
       const status = nextExerciseStatus(existing?.status, requested);
       const { error } = status === null
         ? await supabase.from("completions").delete().eq("exercise_id", ex.id).eq("day", day)
-        : await supabase.from("completions").upsert({ exercise_id: ex.id, day, status }, { onConflict: "user_id,exercise_id,day" });
+        : await supabase.from("completions").upsert({ exercise_id: ex.id, day, status }, { onConflict: "exercise_id,day" });
       if (error) return void toast.error(error.message);
       if (status === "complete") toast.success(`+${XP_PER_EXERCISE} XP — nice work!`);
       else toast.success(status === "skip" ? "Exercise skipped" : "Exercise reset");
@@ -346,7 +346,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, onTrack, on
 }
 
 function TrackingButtons({ exercise, day, status, disabled, onTrack }: {
-  exercise: Exercise; day: string; status?: string; disabled: boolean;
+  exercise: Exercise; day: string; status: string | undefined; disabled: boolean;
   onTrack: (exercise: Exercise, day: string, status: ExerciseStatus) => Promise<void>;
 }) {
   return (

@@ -456,7 +456,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                             aria-pressed={status === "complete"}
                             title={past ? "Past — can no longer be edited" : future ? "Upcoming — it's not this day yet! Check this off when you complete it on the appropriate date." : isToday ? (status ? "Right-click to undo" : "Mark as complete") : label}
                             onClick={() => isToday && !status && onTrack(ex, key, "complete", 1)}
-                            onContextMenu={(e) => { e.preventDefault(); if (isToday && status) onTrack(ex, key, status, 1); }}
+                            onContextMenu={(e) => { e.preventDefault(); if (isToday && status) onTrack(ex, key, status as ExerciseStatus, 1); }}
                             className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 text-[10px] font-bold transition sm:h-11 sm:w-11 ${
                               status === "complete" ? "border-success bg-card text-success"
                               : status === "skip" ? "border-warning bg-warning/25 text-foreground"
@@ -474,7 +474,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                             </button>
                           )}
                           {isToday && status && (
-                            <button type="button" disabled={saving} onClick={() => onTrack(ex, key, status, 1)}
+                            <button type="button" disabled={saving} onClick={() => onTrack(ex, key, status as ExerciseStatus, 1)}
                               className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-muted-foreground underline hover:text-foreground">
                               Undo
                             </button>

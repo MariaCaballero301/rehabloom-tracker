@@ -50,6 +50,13 @@
       "when": 1791662640793,
       "tag": "0006_support_network_applied",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791662688137,
+      "tag": "0007_enable_cron",
+      "breakpoints": true
     }
   ]
 }

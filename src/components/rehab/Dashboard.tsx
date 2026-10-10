@@ -11,13 +11,11 @@ import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, comp
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
 type Checkin = Tables<"checkins">;
-type Prefs = Tables<"preferences">;
 
 export function Dashboard({ userId, email }: { userId: string; email: string; joinedAt?: string }) {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
-  const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [cheers, setCheers] = useState<{ created_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,18 +24,16 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
   const todayKey = dayKey(today);
 
   const load = useCallback(async () => {
-    const [ex, co, ci, pr, ch] = await Promise.all([
+    const [ex, co, ci, ch] = await Promise.all([
       supabase.from("exercises").select("*").order("created_at"),
       supabase.from("completions").select("*"),
       supabase.from("checkins").select("*"),
-      supabase.from("preferences").select("*").maybeSingle(),
       supabase.from("encouragements").select("created_at").eq("from_user", userId),
     ]);
     setCheers(ch.data ?? []);
     setExercises(ex.data ?? []);
     setCompletions(co.data ?? []);
     setCheckins(ci.data ?? []);
-    setPrefs(pr.data ?? { user_id: userId, partner_email: "", reminder_time: "09:00:00", reminders_enabled: true, updated_at: "" });
     setLoading(false);
   }, [userId]);
 
@@ -183,7 +179,6 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
 
         <div className="space-y-5 lg:col-span-1">
           <CheckinCard existing={todayCheckin} todayKey={todayKey} onSaved={load} />
-          {prefs && <SettingsCard prefs={prefs} email={email} onSaved={load} />}
         </div>
         <ExerciseManager exercises={sorted} completions={completions} todayKey={todayKey} saving={saving} waitNotes={waitNotes} undone={undone} onTrack={track} onChange={load} />
       </div>
@@ -545,59 +540,3 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
   );
 }
 
-function SettingsCard({ prefs, email, onSaved }: { prefs: Prefs; email: string; onSaved: () => void }) {
-  const [partner, setPartner] = useState(prefs.partner_email);
-  const [time, setTime] = useState(prefs.reminder_time.slice(0, 5) || "09:00");
-  const [enabled, setEnabled] = useState(prefs.reminders_enabled);
-  const [preview, setPreview] = useState(false);
-
-  async function save(): Promise<void> {
-    const { error } = await supabase.from("preferences").upsert({
-      partner_email: partner.trim(), reminder_time: time, reminders_enabled: enabled, updated_at: new Date().toISOString(),
-    });
-    if (error) return void toast.error(error.message);
-    toast.success("Settings saved");
-    onSaved();
-  }
-
-  const sample = useMemo(() => ({
-    to: email,
-    cc: partner || "(no partner set)",
-    subject: "Rehabloom reminder: your exercises for today",
-    body: `Hi there,\n\nThis is your ${time} reminder to do the exercises your physical therapist prescribed. Open Rehabloom to check them off and water your plant.\n\nIf you're in pain or need rest today, it's okay to log a rest day.\n\n— Rehabloom`,
-  }), [email, partner, time]);
-
-  return (
-    <section className="glass p-5" aria-labelledby="set-h">
-      <h2 id="set-h" className="text-xl">Reminders</h2>
-      <label className="mt-3 block text-sm font-semibold">Accountability partner email
-        <input type="email" className="field mt-1" value={partner} onChange={(e) => setPartner(e.target.value)} placeholder="friend@example.com" />
-      </label>
-      <label className="mt-3 block text-sm font-semibold">Reminder time
-        <input type="time" className="field mt-1" value={time} onChange={(e) => setTime(e.target.value)} />
-      </label>
-      <label className="mt-3 flex items-center justify-between gap-2 text-sm font-semibold">
-        Reminders {enabled ? "on" : "paused"}
-        <button type="button" role="switch" aria-checked={enabled} onClick={() => setEnabled(!enabled)}
-          className={`relative h-8 w-14 rounded-full border transition ${enabled ? "bg-success" : "bg-muted"}`}>
-          <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-card shadow transition-all ${enabled ? "left-7" : "left-0.5"}`} />
-        </button>
-      </label>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button className="btn-aqua" onClick={save}>Save</button>
-        <button className="btn-soft" onClick={() => { setPreview(true); toast.info(enabled ? "Test reminder simulated — no email was sent." : "Reminders are paused, but here's a preview."); }}>
-          <Bell className="h-4 w-4" /> Test reminder
-        </button>
-      </div>
-      {preview && (
-        <div className="mt-4 rounded-2xl border bg-popover p-3 text-sm" aria-live="polite">
-          <p className="mb-1 text-xs font-bold uppercase text-muted-foreground">Sample email (simulation only)</p>
-          <p><b>To:</b> {sample.to}</p>
-          <p><b>CC:</b> {sample.cc}</p>
-          <p><b>Subject:</b> {sample.subject}</p>
-          <p className="mt-2 whitespace-pre-line text-muted-foreground">{sample.body}</p>
-        </div>
-      )}
-    </section>
-  );
-}

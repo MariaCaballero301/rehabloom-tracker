@@ -11,4 +11,5 @@
 
 ## Exercise tracking
 - Store complete and skip as mutually exclusive statuses on the existing daily completion record; only complete records count toward XP and completion history.
-- Show scheduled dates in the current Sunday–Saturday week beneath each prescribed exercise, sharing tracking state with today's exercise list.
+- Keep schedule validation and weekly eligibility in shared pure helpers so today's list and prescribed checklist enforce the same mode, quota, and spacing.
+- Keep calendar history in its own component, using authenticated account creation time for pre-account empty states and calendar weeks covering the full month.

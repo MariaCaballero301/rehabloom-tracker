@@ -95,6 +95,7 @@ export type Database = {
           occurrences: number
           reps: string
           user_id: string
+          weekly_mode: string
         }
         Insert: {
           cooldown_minutes?: number
@@ -108,6 +109,7 @@ export type Database = {
           occurrences?: number
           reps?: string
           user_id?: string
+          weekly_mode?: string
         }
         Update: {
           cooldown_minutes?: number
@@ -121,6 +123,7 @@ export type Database = {
           occurrences?: number
           reps?: string
           user_id?: string
+          weekly_mode?: string
         }
         Relationships: []
       }

@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, Minus, Pencil, Trash2, Plus, LogOut, Bell, X } from "lucide-react";
+import { Check, Pencil, Trash2, Plus, LogOut, Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
+import { HistoryCard } from "./HistoryCard";
 import { ChevronRight, ChevronLeft } from "lucide-react";
-import { computeXp, stageFor, dayKey, lastNDays, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, longDate, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
+import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, longDate, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
 type Checkin = Tables<"checkins">;
 type Prefs = Tables<"preferences">;
 
-export function Dashboard({ userId, email }: { userId: string; email: string }) {
+export function Dashboard({ userId, email, joinedAt }: { userId: string; email: string; joinedAt: string }) {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
@@ -41,10 +42,10 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
   useEffect(() => { load(); }, [load]);
 
   const completed = completedRecords(completions);
-  const xp = computeXp(completed.length, checkins.length);
+  const xp = computeXp(completed.length, checkinCount(checkins));
   const stage = stageFor(xp);
   const sorted = sortExercises(exercises);
-  const todays = sorted.filter((e) => scheduledCount(e, today) > 0);
+  const todays = sorted.filter((e) => scheduledCount(e, today) > 0 && (e.weekly_mode !== "interval" || e.frequency === "daily" || weeklyAvailability(e, completions, today).available));
   const todayCheckin = checkins.find((c) => c.day === todayKey);
   const [waitNotes, setWaitNotes] = useState<Record<string, string>>({});
 
@@ -56,13 +57,16 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
       const ms = cooldownRemainingMs(last, ex.cooldown_minutes);
       return ms > 0 ? `Please wait ${formatWait(ms)} before the next occurrence.` : null;
     }
+    if (ex.weekly_mode === "days") return null;
+    const available = weeklyAvailability(ex, completions, today);
+    if (available.count >= ex.occurrences && !mine.some((c) => c.day === todayKey)) return "All weekly occurrences are complete. Your next week starts Sunday.";
     const lastDay = mine.filter((c) => c.day < todayKey).map((c) => c.day).sort().at(-1);
     const d = gapDaysRemaining(lastDay, ex.gap_days, todayKey);
     return d > 0 ? `Please wait ${d} more day${d === 1 ? "" : "s"} before doing this again.` : null;
   }
 
   async function track(ex: Exercise, day: string, requested: ExerciseStatus, occurrence = 1): Promise<void> {
-    if (saving || day !== todayKey) return;
+    if (saving || day !== todayKey || scheduledCount(ex, today) === 0) return;
     const existing = completions.find((c) => c.exercise_id === ex.id && c.day === day && c.occurrence === occurrence);
     const status = nextExerciseStatus(existing?.status, requested);
     if (status === "complete") {
@@ -170,7 +174,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
         </section>
 
         <CheckinCard existing={todayCheckin} todayKey={todayKey} onSaved={load} />
-        <HistoryCard exercises={exercises} completions={completed} checkins={checkins} />
+        <HistoryCard exercises={exercises} completions={completed} checkins={checkins} joinedAt={joinedAt} />
         <ExerciseManager exercises={sorted} completions={completions} todayKey={todayKey} saving={saving} waitNotes={waitNotes} onTrack={track} onChange={load} />
         {prefs && <SettingsCard prefs={prefs} email={email} onSaved={load} />}
       </div>
@@ -183,18 +187,39 @@ function CheckinCard({ existing, todayKey, onSaved }: { existing: Checkin | unde
   const [motivation, setMotivation] = useState(existing?.motivation ?? 3);
   const [status, setStatus] = useState<string>(existing?.status ?? "normal");
 
+  const [editing, setEditing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+
   async function save(): Promise<void> {
+    if (submitting) return;
+    setSubmitting(true);
     const { error } = await supabase.from("checkins").upsert(
       { day: todayKey, pain, motivation, status },
       { onConflict: "user_id,day" },
     );
+    setSubmitting(false);
     if (error) return void toast.error(error.message);
-    toast.success(existing ? "Check-in updated" : `Checked in — +${XP_PER_CHECKIN} XP`);
+    toast.success(existing || justSaved ? "Check-in updated" : `Checked in — +${XP_PER_CHECKIN} XP`);
+    setJustSaved(true);
+    setEditing(false);
     onSaved();
   }
 
+  if ((existing || justSaved) && !editing) return (
+    <section className="glass self-start border-success bg-accent p-5 text-accent-foreground" aria-labelledby="ci-h">
+      <h2 id="ci-h" className="text-xl">Daily check-in</h2>
+      <div className="mt-2 flex items-center gap-2" role="status">
+        <Check className="h-5 w-5" /><span className="font-bold">Saved</span>
+        <Button variant="ghost" size="icon" className="rounded-full" aria-label="Edit daily check-in" title="Edit daily check-in" onClick={() => {
+          setPain(existing?.pain ?? pain); setMotivation(existing?.motivation ?? motivation); setStatus(existing?.status ?? status); setEditing(true);
+        }}><Pencil /></Button>
+      </div>
+    </section>
+  );
+
   return (
-    <section className="glass p-5" aria-labelledby="ci-h">
+    <section className="glass self-start p-5" aria-labelledby="ci-h">
       <h2 id="ci-h" className="text-xl">Daily check-in</h2>
       <label className="mt-3 block text-sm font-semibold">
         Pain level: <span className="text-primary">{pain}/10</span>
@@ -207,10 +232,10 @@ function CheckinCard({ existing, todayKey, onSaved }: { existing: Checkin | unde
         <legend className="text-sm font-semibold">Motivation</legend>
         <div className="mt-2 flex gap-1.5">
           {[1, 2, 3, 4, 5].map((m) => (
-            <button key={m} type="button" aria-pressed={motivation === m} onClick={() => setMotivation(m)}
+            <Button variant="outline" key={m} type="button" aria-pressed={motivation === m} onClick={() => setMotivation(m)}
               className={`h-10 flex-1 rounded-full border font-bold ${motivation === m ? "btn-aqua min-h-0 p-0" : "bg-card"}`}>
               {m}
-            </button>
+            </Button>
           ))}
         </div>
       </fieldset>
@@ -218,42 +243,14 @@ function CheckinCard({ existing, todayKey, onSaved }: { existing: Checkin | unde
         <legend className="text-sm font-semibold">Today</legend>
         <div className="mt-2 grid grid-cols-3 gap-1.5 text-sm">
           {([["normal", "On track"], ["rest", "Rest day"], ["unable", "Unable"]] as const).map(([v, l]) => (
-            <button key={v} type="button" aria-pressed={status === v} onClick={() => setStatus(v)}
+            <Button variant="outline" key={v} type="button" aria-pressed={status === v} onClick={() => setStatus(v)}
               className={`min-h-10 rounded-full border px-2 font-semibold ${status === v ? "btn-aqua btn-leaf min-h-10 px-2" : "bg-card"}`}>
               {l}
-            </button>
+            </Button>
           ))}
         </div>
       </fieldset>
-      <button className="btn-aqua mt-4 w-full" onClick={save}>{existing ? "Update check-in" : "Save check-in"}</button>
-    </section>
-  );
-}
-
-function HistoryCard({ exercises, completions, checkins }: { exercises: Exercise[]; completions: Completion[]; checkins: Checkin[] }) {
-  const days = lastNDays(7);
-  return (
-    <section className="glass p-5 lg:col-span-2" aria-labelledby="hist-h">
-      <h2 id="hist-h" className="text-xl">Last 7 days</h2>
-      <div className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-3">
-        {days.map((d) => {
-          const k = dayKey(d);
-          const scheduled = exercises.filter((e) => dayKey(new Date(e.created_at)) <= k).reduce((s, e) => s + scheduledCount(e, d), 0);
-          const done = completions.filter((c) => c.day === k).length;
-          const ci = checkins.find((c) => c.day === k);
-          const pct = scheduled ? Math.min(100, Math.round((done / scheduled) * 100)) : 0;
-          const label = ci?.status === "rest" ? "Rest" : ci?.status === "unable" ? "Unable" : scheduled ? `${done}/${scheduled}` : "—";
-          return (
-            <div key={k} className="flex flex-col items-center gap-1 text-center">
-              <span className="text-xs font-semibold text-muted-foreground">{DAY_LABELS[d.getDay()]}</span>
-              <div className="relative flex h-20 w-full items-end overflow-hidden rounded-xl border bg-card" aria-label={`${d.toDateString()}: ${label}`}>
-                <div className={`w-full ${ci && ci.status !== "normal" ? "bg-secondary" : "bg-success"}`} style={{ height: ci && ci.status !== "normal" ? "100%" : `${pct}%` }} />
-              </div>
-              <span className="text-[11px] font-bold">{label}</span>
-            </div>
-          );
-        })}
-      </div>
+      <Button className="btn-aqua mt-4 w-full" onClick={save} disabled={submitting}>{existing || justSaved ? "Update check-in" : "Save check-in"}</Button>
     </section>
   );
 }
@@ -270,18 +267,20 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
   const [editing, setEditing] = useState<Partial<Exercise> | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const week = weekAt(weekOffset);
-  const todayDow = new Date().getDay();
+  const today = new Date();
 
   async function save(): Promise<void> {
     if (!editing?.name?.trim()) return void toast.error("Please enter the exercise name");
     const frequency = (editing.frequency ?? "weekly") as Frequency;
-    if (frequency === "weekly" && !editing.days?.length) return void toast.error("Pick at least one day");
+    if (frequency === "weekly" && editing.weekly_mode !== "interval" && !editing.days?.length) return void toast.error("Pick at least one day");
     const payload = {
       name: editing.name.trim(), reps: editing.reps ?? "", notes: editing.notes ?? "", frequency,
-      days: frequency === "daily" ? [0, 1, 2, 3, 4, 5, 6] : editing.days ?? [],
-      occurrences: frequency === "daily" ? editing.occurrences ?? 1 : 1,
+      days: frequency === "daily" ? [0, 1, 2, 3, 4, 5, 6] : editing.weekly_mode === "interval" ? [] : editing.days ?? [],
+      weekly_mode: editing.weekly_mode ?? "days",
+      occurrences: frequency === "daily" ? Math.min(10, positiveInteger(editing.occurrences ?? 1)) : editing.weekly_mode === "interval" ? Math.min(6, positiveInteger(editing.occurrences ?? 1)) : 1,
       cooldown_minutes: Math.max(0, Math.round(editing.cooldown_minutes ?? 0)),
-      gap_days: Math.max(0, Math.round(editing.gap_days ?? 0)),
+      gap_days: frequency === "weekly" && editing.weekly_mode === "interval" ? positiveInteger(editing.gap_days ?? 1) : 0,
+      ...(frequency === "weekly" ? weeklySchedule(editing.weekly_mode ?? "days", editing.days ?? [], editing.occurrences ?? 1, editing.gap_days ?? 1) : {}),
     };
     const { error } = editing.id
       ? await supabase.from("exercises").update(payload).eq("id", editing.id)
@@ -304,11 +303,11 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
   return (
     <section className="glass p-5 lg:col-span-2" aria-labelledby="ex-h">
       <div className="flex items-center justify-between gap-2">
-        <h2 id="ex-h" className="text-xl">My Prescribed Exercises</h2>
+        <h2 id="ex-h" className="text-xl">My prescribed exercises.</h2>
         <div className="flex items-center gap-2">
-          <button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
+          <Button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", weekly_mode: "days", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
             <Plus className="h-4 w-4" /> Add
-          </button>
+          </Button>
           <Button variant="outline" size="icon" className="rounded-full" aria-label={weekOffset ? "Show this week" : "Show next week"} title={weekOffset ? "Back to this week" : "Show next week's schedule"} onClick={() => setWeekOffset(weekOffset ? 0 : 1)}>
             {weekOffset ? <ChevronLeft /> : <ChevronRight />}
           </Button>
@@ -331,10 +330,10 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
             <legend className="text-sm font-semibold">Frequency</legend>
             <div className="mt-1 grid grid-cols-2 gap-1.5">
               {(["daily", "weekly"] as const).map((f) => (
-                <button key={f} type="button" aria-pressed={freq === f} onClick={() => setEditing({ ...editing, frequency: f })}
-                  className={`min-h-10 rounded-full border font-bold ${freq === f ? "btn-aqua min-h-10" : "bg-card"}`}>
-                  {f === "daily" ? "Daily" : "Weekly"}
-                </button>
+                <Button variant="outline" key={f} type="button" aria-pressed={freq === f} onClick={() => setEditing({ ...editing, frequency: f, occurrences: 1 })}
+                  className={`h-auto min-h-10 whitespace-normal rounded-full border font-bold ${freq === f ? "btn-aqua min-h-10" : "btn-soft"}`}>
+                  {f === "daily" ? "Daily Occurrence" : "Weekly Occurrence"}
+                </Button>
               ))}
             </div>
           </fieldset>
@@ -344,10 +343,10 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                 <legend className="text-sm font-semibold">Times per day</legend>
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <button key={n} type="button" aria-pressed={editing.occurrences === n} onClick={() => setEditing({ ...editing, occurrences: n })}
+                    <Button variant="outline" key={n} type="button" aria-pressed={editing.occurrences === n} onClick={() => setEditing({ ...editing, occurrences: n })}
                       className={`h-10 w-10 rounded-full border text-sm font-bold ${editing.occurrences === n ? "btn-aqua btn-leaf min-h-0 p-0" : "btn-soft min-h-0 p-0"}`}>
                       {n}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </fieldset>
@@ -362,28 +361,43 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
           ) : (
             <>
               <fieldset>
-                <legend className="text-sm font-semibold">Days of the week</legend>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {DAY_LABELS.map((l, i) => {
-                    const on = editing.days?.includes(i);
-                    return (
-                      <button key={l} type="button" aria-pressed={on}
-                        onClick={() => setEditing({ ...editing, days: on ? (editing.days ?? []).filter((d) => d !== i) : [...(editing.days ?? []), i].sort() })}
-                        className={`h-10 w-12 rounded-full border text-sm font-bold ${on ? "btn-aqua min-h-0 p-0" : "bg-card"}`}>
-                        {l}
-                      </button>
-                    );
-                  })}
+                <legend className="text-sm font-semibold">Weekly schedule</legend>
+                <div className="mt-1 grid grid-cols-2 gap-2">
+                  {([["days", "Scheduled days"], ["interval", "Occurrences"]] as const).map(([mode, label]) => (
+                    <Button key={mode} variant="outline" className={`h-auto min-h-11 whitespace-normal rounded-full ${editing.weekly_mode === mode ? "btn-aqua" : "btn-soft"}`} aria-pressed={editing.weekly_mode === mode} onClick={() => setEditing({ ...editing, weekly_mode: mode, occurrences: 1, gap_days: mode === "interval" ? 1 : 0, days: mode === "interval" ? [] : [today.getDay()] })}>{label}</Button>
+                  ))}
                 </div>
               </fieldset>
-              <label className="block text-sm font-semibold">Days in between
-                <input type="number" min={0} max={6} className="field mt-1 w-24" value={editing.gap_days ?? 0} onChange={(e) => setEditing({ ...editing, gap_days: Math.min(6, Math.max(0, +e.target.value)) })} />
-              </label>
+              {editing.weekly_mode === "interval" ? (
+                <>
+                  <fieldset>
+                    <legend className="text-sm font-semibold">Times per week</legend>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {Array.from({ length: 6 }, (_, i) => i + 1).map((n) => (
+                        <Button key={n} variant="outline" aria-pressed={editing.occurrences === n} onClick={() => setEditing({ ...editing, occurrences: n })} className={`h-10 w-10 rounded-full p-0 font-bold ${editing.occurrences === n ? "btn-aqua btn-leaf min-h-0 p-0" : "btn-soft min-h-0 p-0"}`}>{n}</Button>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <label className="block text-sm font-semibold">Days in between
+                    <input type="number" min={1} step={1} aria-label="Days in between" className="field mt-1 w-24" value={editing.gap_days ?? 1} onChange={(e) => setEditing({ ...editing, gap_days: positiveInteger(+e.target.value) })} />
+                  </label>
+                </>
+              ) : (
+                <fieldset>
+                  <legend className="text-sm font-semibold">Days of the week</legend>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {DAY_LABELS.map((label, i) => {
+                      const on = editing.days?.includes(i);
+                      return <Button key={label} variant="outline" aria-pressed={on} onClick={() => setEditing({ ...editing, days: on ? (editing.days ?? []).filter((d) => d !== i) : [...(editing.days ?? []), i].sort() })} className={`h-10 w-12 rounded-full p-0 font-bold ${on ? "btn-aqua min-h-0 p-0" : "btn-soft min-h-0 p-0"}`}>{label}</Button>;
+                    })}
+                  </div>
+                </fieldset>
+              )}
             </>
           )}
           <div className="flex gap-2">
-            <button className="btn-aqua" onClick={save}>Save</button>
-            <button className="btn-soft" onClick={() => setEditing(null)}><X className="h-4 w-4" /> Cancel</button>
+            <Button className="btn-aqua" onClick={save}>Save</Button>
+            <Button variant="outline" className="btn-soft" onClick={() => setEditing(null)}><X className="h-4 w-4" /> Cancel</Button>
           </div>
         </div>
       )}
@@ -392,10 +406,12 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
         {exercises.length === 0 && <li className="py-2 text-sm text-muted-foreground">No exercises yet.</li>}
         {exercises.map((ex) => {
           const daily = ex.frequency === "daily";
-          const scheduledToday = daily || ex.days.includes(todayDow);
+          const interval = !daily && ex.weekly_mode === "interval";
+          const available = weeklyAvailability(ex, completions, today);
+          const scheduledToday = scheduledCount(ex, today) > 0 && (!interval || available.available);
           const lines = daily
             ? (weekOffset ? [] : Array.from({ length: ex.occurrences }, (_, i) => ({ key: `o${i + 1}`, label: `Occurrence ${i + 1}`, day: todayKey, occ: i + 1, date: new Date() })))
-            : week.filter((d) => ex.days.includes(d.getDay())).map((d) => ({ key: dayKey(d), label: longDate(d), day: dayKey(d), occ: 1, date: d }));
+            : (interval ? week : week.filter((d) => ex.days.includes(d.getDay()))).map((d) => ({ key: dayKey(d), label: longDate(d), day: dayKey(d), occ: 1, date: d }));
           return (
             <li key={ex.id} className="py-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -405,7 +421,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                     {daily && <span className="ml-2 rounded-full bg-accent px-2 py-0.5 align-middle text-[11px] font-bold text-accent-foreground">Daily</span>}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {ex.reps} · {daily ? `${ex.occurrences}× per day${ex.cooldown_minutes ? `, ${formatWait(ex.cooldown_minutes * 60_000)} apart` : ""}` : `${ex.days.length === 7 ? "Every day" : ex.days.map((d) => DAY_LABELS[d]).join(", ")}${ex.gap_days ? `, ${ex.gap_days} day${ex.gap_days === 1 ? "" : "s"} in between` : ""}`}
+                    {ex.reps} · {daily ? `${ex.occurrences}× per day${ex.cooldown_minutes ? `, ${formatWait(ex.cooldown_minutes * 60_000)} apart` : ""}` : interval ? `${ex.occurrences}× per week, ${ex.gap_days} day${ex.gap_days === 1 ? "" : "s"} in between · ${available.count}/${ex.occurrences} this week` : `${ex.days.length === 7 ? "Every day" : ex.days.map((d) => DAY_LABELS[d]).join(", ")}${ex.gap_days ? `, ${ex.gap_days} day${ex.gap_days === 1 ? "" : "s"} in between` : ""}`}
                   </p>
                   {ex.notes && <p className="break-words text-xs text-muted-foreground">{ex.notes}</p>}
                   {!scheduledToday && (
@@ -419,15 +435,17 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                   <Button variant="outline" size="icon" className="rounded-full text-destructive" title="Remove exercise" aria-label={`Remove ${ex.name}`} onClick={() => remove(ex.id)}><Trash2 /></Button>
                 </div>
               </div>
+              {interval && !scheduledToday && <p className="mt-2 text-xs text-muted-foreground">{available.gap ? `Please wait ${available.gap} more day${available.gap === 1 ? "" : "s"}.` : "All weekly occurrences are complete."} Upcoming</p>}
               {waitNotes[ex.id] && <p className="mt-2 rounded-xl bg-secondary px-3 py-1.5 text-xs font-semibold text-secondary-foreground" role="status">{waitNotes[ex.id]}</p>}
               {lines.length > 0 && (
                 <ul className="mt-2 space-y-1 rounded-2xl border bg-card/60 p-2 text-xs">
                   {lines.map((line) => {
                     const record = completions.find((c) => c.exercise_id === ex.id && c.day === line.day && c.occurrence === line.occ);
                     const isToday = line.day === todayKey;
-                    const note = line.day > todayKey ? "Upcoming" : line.day < todayKey ? "Past" : null;
+                    const canTrack = isToday && scheduledToday;
+                    const note = isToday && !scheduledToday ? "Upcoming" : line.day > todayKey ? "Upcoming" : line.day < todayKey ? "Past" : null;
                     return (
-                      <li key={line.key} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl px-2 py-1 ${isToday ? "" : "opacity-50"}`}
+                      <li key={line.key} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl px-2 py-1 ${canTrack ? "" : "opacity-50"}`}
                         title={isToday ? undefined : `It's not ${line.date.toLocaleDateString("en-US", { weekday: "long" })} yet! Check this off when you complete it on the appropriate date.`}>
                         <span className="flex items-center gap-2">
                           <span className="font-semibold">{line.label}</span>
@@ -436,14 +454,14 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                           {record && <span className={record.status === "complete" ? "font-semibold text-success" : "text-muted-foreground"}>{record.status === "complete" ? "Completed" : "Skipped"}</span>}
                         </span>
                         <span className="flex gap-1">
-                          <button type="button" disabled={saving || !isToday} aria-pressed={record?.status === "complete"} onClick={() => onTrack(ex, line.day, "complete", line.occ)}
+                          <Button variant="outline" type="button" disabled={saving || !canTrack} aria-pressed={record?.status === "complete"} onClick={() => onTrack(ex, line.day, "complete", line.occ)}
                             className={`rounded-full border px-2.5 py-1 font-semibold disabled:cursor-not-allowed ${record?.status === "complete" ? "border-success bg-accent text-accent-foreground" : "bg-card"}`}>
                             Mark as complete
-                          </button>
-                          <button type="button" disabled={saving || !isToday} aria-pressed={record?.status === "skip"} onClick={() => onTrack(ex, line.day, "skip", line.occ)}
+                          </Button>
+                          <Button variant="outline" type="button" disabled={saving || !canTrack} aria-pressed={record?.status === "skip"} onClick={() => onTrack(ex, line.day, "skip", line.occ)}
                             className={`rounded-full border px-2.5 py-1 font-semibold disabled:cursor-not-allowed ${record?.status === "skip" ? "border-primary bg-secondary text-secondary-foreground" : "bg-card"}`}>
                             Skip for today
-                          </button>
+                          </Button>
                         </span>
                       </li>
                     );

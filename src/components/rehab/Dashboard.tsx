@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
 import { AppNav } from "@/components/AppNav";
-import { HomeSupport } from "@/components/home/HomeSupport";
 import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, stageProgress, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN, XP_PER_CHEER, MAX_XP_CHEERS_PER_DAY, cheerCount } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
@@ -110,7 +109,6 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6">
       <AppNav email={email} />
-      <HomeSupport userId={userId} />
 
       <p className="mb-5 rounded-2xl bg-secondary/70 px-4 py-2 text-xs text-secondary-foreground">
         Rehabloom helps you follow your therapist's plan. It doesn't give medical advice. If pain increases, stop and contact your physical therapist.

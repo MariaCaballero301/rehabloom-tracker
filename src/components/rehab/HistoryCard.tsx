@@ -3,13 +3,14 @@ import { Link } from "@tanstack/react-router";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
+import { sessionStatusLabel, type DaySession } from "@/lib/sessions";
 import { DAY_LABELS, dayKey, historyPeriod, monthWeeks, scheduledCount, weekAt, weekRange } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
 type Checkin = Tables<"checkins">;
 
-export function HistoryCard({ exercises, completions, allCompletions, checkins, joinedAt }: { exercises: Exercise[]; completions: Completion[]; allCompletions?: Completion[]; checkins: Checkin[]; joinedAt: string }) {
+export function HistoryCard({ exercises, completions, allCompletions, checkins, joinedAt, sessions = [] }: { exercises: Exercise[]; completions: Completion[]; allCompletions?: Completion[]; checkins: Checkin[]; joinedAt: string; sessions?: DaySession[] }) {
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [monthly, setMonthly] = useState(false);
@@ -37,15 +38,17 @@ export function HistoryCard({ exercises, completions, allCompletions, checkins, 
     const ci = checkins.find((c) => c.day === key);
     const label = beforeJoining ? "—" : future ? "—" : ci?.status === "rest" ? "Rest" : ci?.status === "unable" ? "Unable" : scheduled ? `${done}/${scheduled}` : done ? `${done}` : "—";
     const pct = scheduled ? Math.min(100, Math.round(done / scheduled * 100)) : done ? 100 : 0;
+    const daySessions = sessions.filter((s) => s.day === key);
+    const sessionNote = daySessions.map((s) => ` · 🤝 ${sessionLine(s)}`).join("");
     const note = beforeJoining ? "No Data Available" : future ? "Upcoming" : done ? `${done} completed` : "No Action Taken";
     return (
-      <button type="button" key={key} onClick={() => setSelected(selected === key ? null : key)} aria-expanded={selected === key} aria-controls="day-detail" className={`flex min-w-0 flex-col items-center gap-1 rounded-2xl p-0.5 text-center transition hover:bg-accent/50 ${selected === key ? "bg-accent ring-2 ring-primary" : ""} ${outsideMonth || future || beforeJoining ? "opacity-50" : ""}`} title={`${d.toDateString()}: ${note}. Tap to see exercises.`}>
+      <button type="button" key={key} onClick={() => setSelected(selected === key ? null : key)} aria-expanded={selected === key} aria-controls="day-detail" className={`flex min-w-0 flex-col items-center gap-1 rounded-2xl p-0.5 text-center transition hover:bg-accent/50 ${selected === key ? "bg-accent ring-2 ring-primary" : ""} ${outsideMonth || future || beforeJoining ? "opacity-50" : ""}`} title={`${d.toDateString()}: ${note}${sessionNote}. Tap to see exercises.`}>
         {showDayLabel && <span className="text-xs font-semibold text-muted-foreground">{DAY_LABELS[d.getDay()]}</span>}
         <span className={`text-xs ${key === todayKey ? "font-bold text-primary" : "text-muted-foreground"}`}>{d.getDate()}</span>
         <div className={`relative flex w-full items-end overflow-hidden rounded-xl border bg-card ${compact ? "h-10" : "h-20"}`} aria-label={`${d.toDateString()}: ${note}`}>
           <div className={`w-full ${ci && ci.status !== "normal" ? "bg-secondary" : "bg-success"}`} style={{ height: beforeJoining || future ? "0%" : ci && ci.status !== "normal" ? "100%" : `${pct}%` }} />
         </div>
-        <span className="text-[11px] font-bold">{label}</span>
+        <span className="text-[11px] font-bold">{label}{daySessions.length > 0 && <span aria-label="Session together"> 🤝</span>}</span>
       </button>
     );
   }
@@ -60,6 +63,7 @@ export function HistoryCard({ exercises, completions, allCompletions, checkins, 
     return (
       <div id="day-detail" className="mt-3 rounded-2xl border bg-popover p-3 text-left text-sm" role="region" aria-label={`Exercises for ${d.toDateString()}`}>
         <p className="font-bold">{d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</p>
+        {sessions.filter((s) => s.day === key).map((s) => <p key={s.id} className="mt-1 rounded-xl bg-card px-3 py-2 text-xs">🤝 {sessionLine(s)}</p>)}
         {ci && ci.status !== "normal" && <p className="text-xs text-muted-foreground">Marked as {ci.status === "rest" ? "a rest day" : "unable to complete"}.</p>}
         {list.length === 0 ? (
           <p className="mt-1 text-muted-foreground">No prescribed exercises scheduled.</p>
@@ -135,4 +139,13 @@ export function HistoryCard({ exercises, completions, allCompletions, checkins, 
       }}><CalendarDays />{monthly ? "Weekly View" : "Monthly View"}</Button>
     </section>
   );
+}
+
+function sessionLine(s: DaySession) {
+  const now = new Date();
+  const label = sessionStatusLabel(s.status, s.startsAt, now);
+  const time = new Date(s.startsAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const how = s.mode === "video" ? "Video call" : "In person";
+  if (label === "Planned") return `Planned with ${s.name} · ${time} · ${how}`;
+  return `Session with ${s.name} · ${time} · ${how} — ${label}`;
 }

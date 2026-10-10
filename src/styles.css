@@ -294,3 +294,18 @@
 @keyframes xp-fish-swim { from { transform: translateX(-16rem); } to { transform: translateX(calc(100vw + 1rem)); } }
 @keyframes xp-fish-bob { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-14px) rotate(2deg); } }
 @media (prefers-reduced-motion: reduce) { .xp-fish-swim { left: 50%; transform: translateX(-50%); } }
+
+/* Sessions bubble sits above the Inbox bubble and opens a matching side panel. */
+.sessions-trigger { bottom: 6rem; }
+.sessions-panel-open .home-inbox-content { margin-left: clamp(340px, 34%, 520px); }
+@media (max-width: 767px) {
+  .sessions-panel-open .home-inbox-content { visibility: hidden; margin-left: 0; height: 100dvh; overflow: hidden; }
+}
+
+/* Weekly report: Aero glass with a faint ripple and blue glow. */
+.aero-report { position: relative; overflow: hidden; box-shadow: var(--shadow-glass), 0 0 28px color-mix(in oklab, var(--primary) 25%, transparent); }
+.aero-report::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.35;
+  background: repeating-radial-gradient(circle at 20% 0%, color-mix(in oklab, var(--primary) 18%, transparent) 0 2px, transparent 2px 22px); }
+.aero-report > * { position: relative; }
+.aero-pill { border-radius: 999px; padding: 0.4rem 0.9rem; border: 1px solid var(--border);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--card) 95%, transparent), color-mix(in oklab, var(--primary) 12%, var(--card))); }

@@ -62,3 +62,43 @@ describe("toStartsAt", () => {
     expect(toStartsAt("", "")).toBeNull();
   });
 });
+
+import { buildIcs, inviteLabel, sessionsBadgeCount, startingSoon } from "@/lib/sessions";
+
+describe("sessionsBadgeCount", () => {
+  it("adds open alerts, invites for me and shared invites", () => {
+    const rows = [
+      s({ id: "a", organizer_id: "you", guest_id: "me", status: "proposed" }),
+      s({ id: "b", status: "proposed" }), // my own invite: not counted
+      s({ id: "c", organizer_id: "you", guest_id: "me", status: "accepted" }),
+    ];
+    expect(sessionsBadgeCount(2, rows, 1, "me", now)).toBe(4);
+  });
+});
+
+describe("rescheduled sessions", () => {
+  it("show in invites for the new guest only, with the new-time text", () => {
+    // After reschedule_rehab_session by "you", you become organizer and "me" the guest.
+    const r = s({ id: "r", organizer_id: "you", organizer_name: "You", guest_id: "me", status: "proposed" });
+    expect(splitSessions([r], "me", now).invites.map((x) => x.id)).toEqual(["r"]);
+    expect(splitSessions([r], "you", now).invites).toEqual([]);
+    expect(splitSessions([r], "you", now).waiting.map((x) => x.id)).toEqual(["r"]);
+    expect(inviteLabel(r, new Set(["r"]), now)).toBe("You suggested a new time · Today 6:00 PM");
+  });
+});
+
+describe("buildIcs", () => {
+  it("makes a one-hour event with the video link", () => {
+    const ics = buildIcs(s({ id: "z", starts_at: "2026-10-10T22:00:00.000Z" }), "me");
+    expect(ics).toContain("SUMMARY:Rehab session with You");
+    expect(ics).toContain("DTSTART:20261010T220000Z");
+    expect(ics).toContain("DTEND:20261010T230000Z");
+    expect(ics).toContain("LOCATION:https://meet.jit.si/r");
+  });
+});
+
+describe("startingSoon", () => {
+  it("only accepted sessions within 15 minutes", () => {
+    expect(startingSoon([s({ id: "1", starts_at: at(12, 10) }), s({ id: "2", starts_at: at(12, 20) })], now).map((x) => x.id)).toEqual(["1"]);
+  });
+});

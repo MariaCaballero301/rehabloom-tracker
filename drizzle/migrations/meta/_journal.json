@@ -134,6 +134,13 @@
       "when": 1791671792129,
       "tag": "0018_rehab_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791673950415,
+      "tag": "0019_reschedule_rehab_session",
+      "breakpoints": true
     }
   ]
 }

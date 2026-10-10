@@ -4,9 +4,10 @@ import { toast } from "sonner";
 import { CalendarPlus, MapPin, Video } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { rpc } from "@/components/network/useNetwork";
-import { localDateInput, MAX_PLACE_LENGTH, MAX_SESSION_NOTE_LENGTH, toStartsAt } from "@/lib/sessions";
+import { localDateInput, MAX_PLACE_LENGTH, MAX_SESSION_NOTE_LENGTH, toStartsAt, type RehabSession } from "@/lib/sessions";
 
-export type PlanTarget = { id: string; name: string };
+/** Pass `session` to reschedule an existing session instead of proposing a new one. */
+export type PlanTarget = { id: string; name: string; session?: RehabSession };
 
 export function PlanSessionDialog({
   target,
@@ -26,6 +27,16 @@ export function PlanSessionDialog({
 
   useEffect(() => {
     if (!target) return;
+    const s = target.session;
+    if (s) {
+      const d = new Date(s.starts_at);
+      setMode(s.mode === "in_person" ? "in_person" : "video");
+      setDate(localDateInput(d));
+      setTime(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
+      setPlace(s.place);
+      setNote(s.note);
+      return;
+    }
     const t = new Date();
     t.setDate(t.getDate() + 1);
     setMode("video");
@@ -42,6 +53,13 @@ export function PlanSessionDialog({
     if (!startsAt) return void toast.error("Pick a valid date and time.");
     setSending(true);
     try {
+      if (target.session) {
+        await rpc("reschedule_rehab_session", { p_id: target.session.id, p_starts_at: startsAt, p_note: note });
+        toast.success(`New time sent to ${target.name} 💌`);
+        onSent?.();
+        onClose();
+        return;
+      }
       await rpc("propose_rehab_session", {
         p_with: target.id,
         p_starts_at: startsAt,
@@ -64,9 +82,9 @@ export function PlanSessionDialog({
       <DialogContent className="glass max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CalendarPlus className="h-5 w-5" /> Do a session with {target?.name}
+            <CalendarPlus className="h-5 w-5" /> {target?.session ? "Reschedule with" : "Do a session with"} {target?.name}
           </DialogTitle>
-          <DialogDescription>They'll get an invite and can accept or say not this time.</DialogDescription>
+          <DialogDescription>{target?.session ? "They'll need to accept the new time." : "They'll get an invite and can accept or say not this time."}</DialogDescription>
         </DialogHeader>
         <form className="space-y-3" onSubmit={submit}>
           <div className="flex gap-2" role="radiogroup" aria-label="How">
@@ -79,6 +97,7 @@ export function PlanSessionDialog({
                 type="button"
                 role="radio"
                 aria-checked={mode === v}
+                disabled={!!target?.session && mode !== v}
                 className={mode === v ? "btn-aqua flex-1" : "btn-soft flex-1"}
                 onClick={() => setMode(v)}
               >
@@ -99,7 +118,7 @@ export function PlanSessionDialog({
           {mode === "in_person" && (
             <label className="block text-sm font-semibold">
               Where?
-              <input className="field mt-1" maxLength={MAX_PLACE_LENGTH} value={place} onChange={(e) => setPlace(e.target.value)} placeholder="e.g. Riverside park" />
+              <input className="field mt-1" disabled={!!target?.session} maxLength={MAX_PLACE_LENGTH} value={place} onChange={(e) => setPlace(e.target.value)} placeholder="e.g. Riverside park" />
             </label>
           )}
           <label className="block text-sm font-semibold">
@@ -108,7 +127,7 @@ export function PlanSessionDialog({
           </label>
           <div className="flex justify-end gap-2">
             <button type="button" className="btn-soft" onClick={onClose}>Cancel</button>
-            <button className="btn-aqua" disabled={sending}>{sending ? "Sending…" : "Send invite"}</button>
+            <button className="btn-aqua" disabled={sending}>{sending ? "Sending…" : target?.session ? "Send new time" : "Send invite"}</button>
           </div>
         </form>
       </DialogContent>

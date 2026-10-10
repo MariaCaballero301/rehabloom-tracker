@@ -14,9 +14,9 @@ export function Plant({ stage, size = "md" }: { stage: number; size?: "md" | "lg
           <stop offset="100%" stopColor="var(--leaf-dark)" />
         </linearGradient>
         <linearGradient id="pl-pot" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="var(--primary)" />
+          <stop offset="0%" stopColor="var(--pot)" stopOpacity="0.8" />
           <stop offset="55%" stopColor="var(--pot)" />
-          <stop offset="100%" stopColor="var(--primary)" />
+          <stop offset="100%" stopColor="var(--pot)" stopOpacity="0.8" />
         </linearGradient>
         <linearGradient id="pl-shine" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="var(--primary-foreground)" stopOpacity="0.85" />

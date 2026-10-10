@@ -458,7 +458,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                             onClick={() => isToday && onTrack(ex, key, "complete", 1)}
                             className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 text-[10px] font-bold transition sm:h-11 sm:w-11 ${
                               status === "complete" ? "border-success bg-card text-success"
-                              : status === "skip" ? "border-warning bg-card text-foreground"
+                              : status === "skip" ? "border-warning bg-warning/25 text-foreground"
                               : isToday && scheduled ? "bubble border-transparent text-primary"
                               : "border-input bg-muted text-muted-foreground"
                             } ${!isToday || !scheduled ? "cursor-not-allowed opacity-60" : ""}`}

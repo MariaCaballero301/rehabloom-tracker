@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 // The cards talk to Supabase; for rendering we only need a harmless stub.
 vi.mock("@/integrations/supabase/client", () => {

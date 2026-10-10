@@ -1,5 +1,5 @@
 // /support — the whole support network on one page: profile, alerts, people, find support, invites.
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { AppNav } from "@/components/AppNav";
 import { SupportAlertsPanel } from "@/components/alerts/SupportAlertsPanel";
@@ -31,6 +31,12 @@ export const Route = createFileRoute("/support")({
 });
 
 function PeoplePage() {
+  const childMatches = useChildMatches();
+  if (childMatches.length > 0) return <Outlet />;
+  return <SupportPage />;
+}
+
+function SupportPage() {
   const { user, ready } = useSessionUser();
   const { code } = Route.useSearch();
 

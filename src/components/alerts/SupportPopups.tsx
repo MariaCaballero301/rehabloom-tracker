@@ -1,20 +1,13 @@
-// In-app pop-up alerts for supporters: shows unread missed-session notifications live
-// (Realtime) or on next open. Replaces real SMS while Twilio isn't available.
+// Short live heads-up toasts for supporters and session guests (Realtime). The alert itself stays
+// on the home screen (HomeSupport) until it's handled.
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { HeartHandshake, X } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-type Note = {
-  id: string;
-  patient_name: string;
-  missed_days: number;
-  support_token: string;
-};
 
 export function SupportPopups() {
   const [userId, setUserId] = useState<string | null>(null);
-  const [notes, setNotes] = useState<Note[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -25,92 +18,23 @@ export function SupportPopups() {
   }, []);
 
   useEffect(() => {
-    if (!userId) return setNotes([]);
-    let active = true;
-    void supabase
-      .from("support_notifications")
-      .select("id, patient_name, missed_days, support_token")
-      .eq("recipient_id", userId)
-      .is("dismissed_at", null)
-      .order("created_at", { ascending: false })
-      .limit(5)
-      .then(({ data }) => active && setNotes(data ?? []));
-
+    if (!userId) return;
+    const open = { label: "Open", onClick: () => void navigate({ to: "/" }) };
     const channel = supabase
-      .channel(`support-notes-${userId}-${crypto.randomUUID()}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "support_notifications",
-          filter: `recipient_id=eq.${userId}`,
-        },
-        (payload) => {
-          const n = payload.new as Note;
-          setNotes((prev) => (prev.some((p) => p.id === n.id) ? prev : [n, ...prev]));
-        },
-      )
+      .channel(`support-popups-${userId}-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_notifications", filter: `recipient_id=eq.${userId}` }, (payload) => {
+        const n = payload.new as { patient_name?: string };
+        toast(`${n.patient_name || "Someone"} could use a little support 💚`, { description: "See it on your home screen.", action: open });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "rehab_sessions", filter: `guest_id=eq.${userId}` }, (payload) => {
+        const s = payload.new as { organizer_name?: string };
+        toast(`${s.organizer_name || "Someone"} invited you to a session together 🤝`, { action: open });
+      })
       .subscribe();
     return () => {
-      active = false;
       void supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, navigate]);
 
-  async function close(n: Note, opened: boolean) {
-    setNotes((prev) => prev.filter((p) => p.id !== n.id));
-    const now = new Date().toISOString();
-    await supabase
-      .from("support_notifications")
-      .update(opened ? { read_at: now, dismissed_at: now } : { dismissed_at: now })
-      .eq("id", n.id);
-  }
-
-  if (notes.length === 0) return null;
-
-  return (
-    <div
-      className="fixed bottom-4 right-4 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-3"
-      role="region"
-      aria-label="Support alerts"
-    >
-      {notes.map((n) => (
-        <div key={n.id} role="alertdialog" aria-labelledby={`sn-${n.id}`} className="glass p-4 shadow-lg">
-          <div className="flex items-start gap-3">
-            <HeartHandshake className="mt-0.5 h-5 w-5 shrink-0 text-success" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <p id={`sn-${n.id}`} className="font-semibold">
-                {n.patient_name} could use a check-in
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                They've missed their rehab sessions for {n.missed_days} days. A kind message can
-                help.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Link
-                  to="/support/$token"
-                  params={{ token: n.support_token }}
-                  className="btn-aqua text-sm"
-                  onClick={() => void close(n, true)}
-                >
-                  Offer support
-                </Link>
-                <button className="btn-soft text-sm" onClick={() => void close(n, false)}>
-                  Later
-                </button>
-              </div>
-            </div>
-            <button
-              className="rounded-full p-1 text-muted-foreground hover:text-foreground"
-              aria-label="Dismiss"
-              onClick={() => void close(n, false)}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return null;
 }

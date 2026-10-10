@@ -9,7 +9,8 @@ import { db, rpc, type Block, type Contact, type Supported } from "./useNetwork"
 import { ProfileAvatar } from "./ProfileAvatar";
 import { supportGroups } from "@/lib/support-groups";
 import { BuddyBubble, BuddyMetrics, IconAction } from "./BuddyBubble";
-import { BellRing } from "lucide-react";
+import { BellRing, CalendarPlus } from "lucide-react";
+import { PlanSessionDialog, type PlanTarget } from "@/components/sessions/PlanSessionDialog";
 import type { BuddyStats } from "@/lib/buddy-stats";
 import { Button } from "@/components/ui/button";
 
@@ -79,6 +80,7 @@ export function PeopleCard({
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const [buddyPage, setBuddyPage] = useState(0);
+  const [plan, setPlan] = useState<PlanTarget | null>(null);
   const { familyFriends, buddyContacts, supportingOnly } = supportGroups(contacts, supporting);
 
   async function toggleNotify(c: Contact) {
@@ -190,6 +192,11 @@ export function PeopleCard({
                     <MessageCircleHeart className="h-4 w-4" /> Send encouragement
                   </button>
                 )}
+                {c.connected_user_id && (
+                  <button className="btn-aqua text-sm" onClick={() => { if (c.connected_user_id) setPlan({ id: c.connected_user_id, name: c.name }); }}>
+                    <CalendarPlus className="h-4 w-4" /> Plan a session
+                  </button>
+                )}
                 <button className="btn-soft text-sm" onClick={() => remove(c)}>
                   <UserMinus className="h-4 w-4" /> {c.connected_user_id ? "Disconnect" : "Remove"}
                 </button>
@@ -235,6 +242,7 @@ export function PeopleCard({
                   <BuddyMetrics stats={buddyStats.find((s) => s.user_id === c.connected_user_id)} error={statsError} />
                   <div className="mt-2 flex justify-center gap-1.5">
                     <IconAction label="Send encouragement" onClick={() => setOpen(open === c.id ? null : c.id)}><MessageCircleHeart /></IconAction>
+                    <IconAction label="Plan a session" onClick={() => { if (c.connected_user_id) setPlan({ id: c.connected_user_id, name: c.name }); }}><CalendarPlus /></IconAction>
                     <IconAction label={c.notify_on_missed ? "Alerts on: tap to stop alerting them if I miss sessions" : "Alert them if I miss sessions"} pressed={c.notify_on_missed} onClick={() => toggleNotify(c)}><BellRing /></IconAction>
                     <IconAction label="Disconnect" onClick={() => remove(c)}><UserMinus /></IconAction>
                     <IconAction label="Block" onClick={() => { if (c.connected_user_id) void block(c.connected_user_id, c.name); }}><Ban /></IconAction>
@@ -256,6 +264,7 @@ export function PeopleCard({
                 <BuddyMetrics stats={buddyStats.find((stat) => stat.user_id === s.user_id)} error={statsError} />
                 <div className="mt-2 flex justify-center gap-1.5">
                   <IconAction label="Send encouragement" onClick={() => setOpen(open === key ? null : key)}><MessageCircleHeart /></IconAction>
+                  <IconAction label="Plan a session" onClick={() => setPlan({ id: s.user_id, name: s.name })}><CalendarPlus /></IconAction>
                   <IconAction label="Disconnect" onClick={() => disconnect(s.user_id, s.name)}><UserMinus /></IconAction>
                   <IconAction label="Block" onClick={() => block(s.user_id, s.name)}><Ban /></IconAction>
                 </div>
@@ -265,6 +274,8 @@ export function PeopleCard({
           })()}
         </ul>
       </BuddyBubble>
+
+      <PlanSessionDialog target={plan} onClose={() => setPlan(null)} />
 
       {blocks.length > 0 && (
         <details className="mt-5 text-sm">

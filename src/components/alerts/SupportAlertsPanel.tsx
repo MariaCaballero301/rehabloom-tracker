@@ -3,7 +3,7 @@
 // - session invites proposed by contacts, to accept or decline
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CalendarHeart, Check, X } from "lucide-react";
+import { CalendarHeart, Check, FlaskConical, X } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -47,6 +47,14 @@ export function SupportAlertsPanel({ userId }: { userId: string }) {
     void load();
   }
 
+  async function simulate() {
+    const { data, error } = await db.rpc("simulate_missed_sessions");
+    if (error) return void toast.error(error.message);
+    const n = Number(data ?? 0);
+    if (n === 0) toast("Nobody in your network uses Rehabloom yet — invite them with a code first.");
+    else toast.success(`Demo: ${n} ${n === 1 ? "person" : "people"} in your network got an alert`);
+  }
+
   return (
     <section className="glass p-5" aria-labelledby="support-alerts-h">
       <h2 id="support-alerts-h" className="flex items-center gap-2 text-xl">
@@ -56,6 +64,9 @@ export function SupportAlertsPanel({ userId }: { userId: string }) {
         If you miss your sessions for a couple of days, the people in your support network get a
         message so they can call you or do a session with you.
       </p>
+      <button className="btn-soft mt-3 text-sm" onClick={() => void simulate()}>
+        <FlaskConical className="h-4 w-4" /> Simulate missed sessions (demo)
+      </button>
       <h3 className="mt-3 text-sm font-bold uppercase text-muted-foreground">Session invites</h3>
       {sessions.length === 0 ? (
         <p className="mt-1 text-sm text-muted-foreground">No invites right now.</p>

@@ -1,3 +1,4 @@
-- [x] Add persistent complete/skip controls shared by both exercise lists.
-- [x] Show daily check-off lines for the current week with Today labels.
-- [x] Test tracking rules and verify the signed-in flow.
+- [ ] Separate weekly weekdays from occurrence-count and positive gap scheduling.
+- [ ] Collapse saved daily check-ins with editing and no duplicate XP.
+- [ ] Add dated weekly/monthly history and account-aware empty states.
+- [ ] Test rules and verify the signed-in flows.

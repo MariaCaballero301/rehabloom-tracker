@@ -52,7 +52,6 @@ export function HistoryCard({ exercises, completions, checkins, joinedAt }: { ex
     const period = historyPeriod(days, joinedAt, activityDays, today);
     return (
       <div key={dayKey(days[0] ?? today)} className="mt-3">
-        <h3 className="text-sm font-semibold">{weekRange(days)}</h3>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
           <span className="font-semibold text-muted-foreground">{period.temporal}</span>
           {period.empty && <span className="text-muted-foreground">{period.empty}</span>}

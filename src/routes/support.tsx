@@ -84,12 +84,12 @@ function People({ userId, email, initialCode }: { userId: string; email: string;
                 encouragements={n.encouragements}
                 onChange={n.reload}
               />
-              <PeopleCard contacts={n.contacts} supporting={n.supporting} blocks={n.blocks} onChange={n.reload} />
             </div>
             <div className="space-y-4">
               <DiscoverCard profile={n.profile} directory={n.directory} excluded={excluded} onChange={n.reload} />
             </div>
           </div>
+          <PeopleCard contacts={n.contacts} supporting={n.supporting} blocks={n.blocks} buddyStats={n.buddyStats} statsError={n.statsError} onChange={n.reload} />
           <InviteCard invites={n.invites} initialCode={initialCode} onChange={n.reload} />
         </div>
       )}

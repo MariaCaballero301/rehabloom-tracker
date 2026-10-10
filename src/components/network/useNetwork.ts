@@ -7,7 +7,7 @@ import type { DirectoryProfile } from "@/lib/network";
 // The network tables are not in the generated types until Lovable regenerates them.
 export const db = supabase as unknown as SupabaseClient;
 
-export type MyProfile = DirectoryProfile & { finished_therapy: boolean };
+export type MyProfile = DirectoryProfile & { finished_therapy: boolean; photo_path?: string | null };
 export type Contact = {
   id: string;
   name: string;
@@ -26,6 +26,7 @@ export type ConnectionRequest = {
   kind: string;
   message: string;
   created_at: string;
+  read_at?: string | null;
 };
 export type Encouragement = {
   id: string;

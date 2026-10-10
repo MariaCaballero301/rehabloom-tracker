@@ -12,6 +12,7 @@ import {
   type DirectoryProfile,
 } from "@/lib/network";
 import { rpc, type MyProfile } from "./useNetwork";
+import { ProfileAvatar } from "./ProfileAvatar";
 
 function RequestButton({
   person,
@@ -159,7 +160,7 @@ export function DiscoverCard({
                 const reasons = matchReasons(profile, p);
                 return (
                   <li key={p.user_id} className="rounded-2xl border bg-popover p-3 text-sm">
-                    <p className="font-semibold">{p.display_name}</p>
+                    <div className="flex items-center gap-2"><ProfileAvatar userId={p.user_id} name={p.display_name} /><p className="min-w-0 break-words font-semibold">{p.display_name}</p></div>
                     <Tags person={p} />
                     {reasons.length > 0 && (
                       <p className="mt-1 text-xs text-success">✓ {reasons.join(" · ")}</p>
@@ -196,7 +197,7 @@ export function DiscoverCard({
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
               {mentors.map((p) => (
                 <li key={p.user_id} className="rounded-2xl border bg-popover p-3 text-sm">
-                  <p className="font-semibold">{p.display_name} 🎓</p>
+                  <div className="flex items-center gap-2"><ProfileAvatar userId={p.user_id} name={p.display_name} /><p className="min-w-0 break-words font-semibold">{p.display_name} 🎓</p></div>
                   <Tags person={p} />
                   {p.mentor_bio && <p className="mt-1 text-muted-foreground">“{p.mentor_bio}”</p>}
                   {!needsName && <RequestButton person={p} kind="mentor" onSent={onChange} />}

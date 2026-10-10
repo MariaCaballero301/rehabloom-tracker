@@ -150,6 +150,7 @@ export type Database = {
           id: string
           kind: string
           message: string
+          read_at: string | null
           status: string
           to_name: string
           to_user: string
@@ -161,6 +162,7 @@ export type Database = {
           id?: string
           kind: string
           message?: string
+          read_at?: string | null
           status?: string
           to_name?: string
           to_user: string
@@ -172,6 +174,7 @@ export type Database = {
           id?: string
           kind?: string
           message?: string
+          read_at?: string | null
           status?: string
           to_name?: string
           to_user?: string
@@ -296,6 +299,7 @@ export type Database = {
           is_mentor: boolean
           languages: string[]
           mentor_bio: string
+          photo_path: string | null
           rehab_area: string
           rehab_areas: string[]
           updated_at: string
@@ -310,6 +314,7 @@ export type Database = {
           is_mentor?: boolean
           languages?: string[]
           mentor_bio?: string
+          photo_path?: string | null
           rehab_area?: string
           rehab_areas?: string[]
           updated_at?: string
@@ -324,6 +329,7 @@ export type Database = {
           is_mentor?: boolean
           languages?: string[]
           mentor_bio?: string
+          photo_path?: string | null
           rehab_area?: string
           rehab_areas?: string[]
           updated_at?: string
@@ -495,9 +501,20 @@ export type Database = {
     }
     Functions: {
       block_person: { Args: { p_other: string }; Returns: undefined }
+      can_read_profile_photo: { Args: { p_path: string }; Returns: boolean }
+      can_view_profile_photo: { Args: { p_user_id: string }; Returns: boolean }
       cancel_connection_request: { Args: { p_id: string }; Returns: undefined }
       create_invite_code: { Args: { p_relationship: string }; Returns: string }
       disconnect_person: { Args: { p_other: string }; Returns: undefined }
+      inbox_channels: {
+        Args: never
+        Returns: {
+          can_message: boolean
+          kind: string
+          name: string
+          user_id: string
+        }[]
+      }
       network_directory: {
         Args: never
         Returns: {
@@ -534,6 +551,7 @@ export type Database = {
         Args: { p_message: string; p_to: string }
         Returns: undefined
       }
+      visible_profile_photo: { Args: { p_user_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

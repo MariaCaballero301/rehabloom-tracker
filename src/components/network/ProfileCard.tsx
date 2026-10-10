@@ -1,8 +1,12 @@
 // "Profile": phone, name, therapy areas, languages, availability, buddy/mentor opt-ins.
 // Collapses to a green saved summary; the pencil reopens the form.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Check, Pencil, UserRound } from "lucide-react";
+import { Camera, Check, Pencil, Trash2, UserRound } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { PROFILE_PHOTO_BUCKET, profilePhotoError, profilePhotoPath } from "@/lib/profile-photo";
+import { ProfileAvatar } from "./ProfileAvatar";
 import { normalizePhone } from "@/lib/alerts";
 import { AVAILABILITY, LANGUAGES, MAX_BIO_LENGTH, REHAB_AREAS, toggleIn } from "@/lib/network";
 import { db, type MyProfile } from "./useNetwork";
@@ -49,12 +53,23 @@ const EVERY_DAY = AVAILABILITY.map((a) => a.value as string);
 type Full = MyProfile & { rehab_areas?: string[] };
 
 export function ProfileCard({ profile, saved, onSaved }: { profile: MyProfile; saved: boolean; onSaved: () => void }) {
-  const initialAreas = (profile as Full).rehab_areas?.length ? (profile as Full).rehab_areas! : profile.rehab_area !== "other" ? [profile.rehab_area] : [];
+  const profileAreas = (profile as Full).rehab_areas;
+  const initialAreas = profileAreas?.length ? profileAreas : profile.rehab_area !== "other" ? [profile.rehab_area] : [];
   const [p, setP] = useState(profile);
   const [areas, setAreas] = useState<string[]>(initialAreas);
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(!saved);
+  const picker = useRef<HTMLInputElement>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
+  useEffect(() => {
+    if (!photo) { setPreview(null); return; }
+    const url = URL.createObjectURL(photo);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photo]);
   useEffect(() => setP(profile), [profile]);
   useEffect(() => setEditing(!saved), [saved]);
   useEffect(() => {
@@ -69,6 +84,21 @@ export function ProfileCard({ profile, saved, onSaved }: { profile: MyProfile; s
   async function save() {
     if (!p.display_name.trim()) return void toast.error("Add your name so others know who you are.");
     setSaving(true);
+    const oldPath = profile.photo_path ?? null;
+    let photoPath = removePhoto ? null : oldPath;
+    let uploadedPath: string | null = null;
+    try {
+    if (photo) {
+      try {
+        const path = profilePhotoPath(p.user_id, photo.type, crypto.randomUUID());
+        const { error: uploadError } = await supabase.storage.from(PROFILE_PHOTO_BUCKET).upload(path, photo, { contentType: photo.type });
+        if (uploadError) throw uploadError;
+        uploadedPath = path;
+        photoPath = path;
+      } catch {
+        toast.error("Your photo couldn't be uploaded. Your other profile changes will still be saved.");
+      }
+    }
     const { error } = await db.from("network_profiles").upsert({
       user_id: p.user_id,
       display_name: p.display_name.trim(),
@@ -80,25 +110,37 @@ export function ProfileCard({ profile, saved, onSaved }: { profile: MyProfile; s
       finished_therapy: p.finished_therapy,
       is_mentor: p.finished_therapy && p.is_mentor,
       mentor_bio: p.mentor_bio.trim(),
+      photo_path: photoPath,
       updated_at: new Date().toISOString(),
     });
+    if (error) {
+      if (uploadedPath) await supabase.storage.from(PROFILE_PHOTO_BUCKET).remove([uploadedPath]);
+      throw new Error(error.message);
+    }
+    if (oldPath && photoPath !== oldPath) {
+      await supabase.storage.from(PROFILE_PHOTO_BUCKET).remove([oldPath]).catch(() => {});
+    }
     const clean = normalizePhone(phone);
     const ph = error ? null : await db.from("support_profiles").upsert({ user_id: p.user_id, phone: clean, updated_at: new Date().toISOString() });
-    setSaving(false);
-    if (error || ph?.error) return void toast.error((error ?? ph?.error)!.message);
+    if (ph?.error) throw new Error(ph.error.message);
     setPhone(clean);
     setEditing(false);
+    setPhoto(null);
+    setRemovePhoto(false);
     toast.success("Profile saved");
     onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Your profile couldn't be saved. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!editing) {
     return (
       <section className="glass border-success bg-accent p-4 text-accent-foreground" aria-labelledby="profile-h">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground">
-            <UserRound className="h-5 w-5" />
-          </span>
+          <ProfileAvatar userId={profile.user_id} name={profile.display_name} path={profile.photo_path ?? null} />
           <div className="min-w-0 flex-1">
             <h2 id="profile-h" className="text-lg">Profile</h2>
             <p className="truncate font-semibold">{profile.display_name}</p>
@@ -118,9 +160,32 @@ export function ProfileCard({ profile, saved, onSaved }: { profile: MyProfile; s
         <UserRound className="h-5 w-5" /> Profile
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Others only ever see your name, rehab areas, languages and availability — never your
+        Others only ever see your photo, name, rehab areas, languages and availability — never your
         exercises, pain or phone number. Your phone is only shared with your support network.
       </p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <ProfileAvatar userId={profile.user_id} name={p.display_name} path={removePhoto ? null : profile.photo_path ?? null} preview={preview} large />
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Profile photo</p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" className="btn-soft rounded-full" disabled={saving} onClick={() => picker.current?.click()}>
+              <Camera /> {photo || (!removePhoto && profile.photo_path) ? "Change photo" : "Add photo"}
+            </Button>
+            {(photo || (!removePhoto && profile.photo_path)) && <Button variant="ghost" size="icon" className="btn-soft rounded-full" title="Remove photo" aria-label="Remove photo" disabled={saving} onClick={() => { setPhoto(null); setRemovePhoto(true); }}><Trash2 /></Button>}
+          </div>
+          <p className="text-xs text-muted-foreground">JPG, PNG or WebP · Up to 5 MB</p>
+        </div>
+        <input ref={picker} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label="Choose profile photo" disabled={saving} onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (!file) return;
+          const error = profilePhotoError(file);
+          if (error) return void toast.error(error);
+          setPhoto(file);
+          setRemovePhoto(false);
+        }} />
+      </div>
 
       <label className="mt-3 block text-sm font-semibold">
         Phone (so your support network can call you)
@@ -246,7 +311,7 @@ export function ProfileCard({ profile, saved, onSaved }: { profile: MyProfile; s
         <button className="btn-aqua" onClick={save} disabled={saving}>
           {saving ? "Saving…" : "Save profile"}
         </button>
-        {saved && <button className="btn-soft" onClick={() => { setP(profile); setEditing(false); }}>Cancel</button>}
+        {saved && <button className="btn-soft" disabled={saving} onClick={() => { setP(profile); setPhoto(null); setRemovePhoto(false); setEditing(false); }}>Cancel</button>}
       </div>
     </section>
   );

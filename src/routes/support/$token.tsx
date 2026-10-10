@@ -12,6 +12,11 @@ export const Route = createFileRoute("/support/$token")({
   head: () => ({
     meta: [
       { title: "Rehabloom — Support a friend" },
+      { name: "description", content: "Offer a friend encouragement and arrange a shared Rehabloom session." },
+      { property: "og:title", content: "Rehabloom — Support a friend" },
+      { property: "og:description", content: "Offer a friend encouragement and arrange a shared Rehabloom session." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Ban, HeartHandshake, MessageCircleHeart, UserMinus } from "lucide-react";
 import { KIND_LABEL, MAX_ENCOURAGEMENT_LENGTH, QUICK_ENCOURAGEMENTS } from "@/lib/network";
 import { db, rpc, type Block, type Contact, type Supported } from "./useNetwork";
+import { ProfileAvatar } from "./ProfileAvatar";
 
 function Encourage({ to, name, onDone }: { to: string; name: string; onDone: () => void }) {
   const [text, setText] = useState("");
@@ -145,12 +146,12 @@ export function PeopleCard({
           {contacts.map((c) => (
             <li key={c.id} className="rounded-2xl border bg-popover p-3 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-semibold">
+                <div className="flex min-w-0 items-center gap-2"><ProfileAvatar userId={c.connected_user_id} name={c.name} /><p className="min-w-0 break-words font-semibold">
                   {c.name}{" "}
                   <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-bold">
                     {KIND_LABEL[c.kind] ?? c.kind}
                   </span>
-                </p>
+                </p></div>
                 <label className="flex items-center gap-2 text-xs font-semibold">
                   <input
                     type="checkbox"
@@ -205,12 +206,12 @@ export function PeopleCard({
               const key = `s-${s.user_id}`;
               return (
                 <li key={key} className="rounded-2xl border bg-popover p-3 text-sm">
-                  <p className="font-semibold">
+                  <div className="flex items-center gap-2"><ProfileAvatar userId={s.user_id} name={s.name} /><p className="min-w-0 break-words font-semibold">
                     {s.name}{" "}
                     <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-bold">
                       {s.kind === "mentor" ? "You're their mentor" : KIND_LABEL[s.kind]}
                     </span>
-                  </p>
+                  </p></div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button
                       className="btn-soft text-sm"

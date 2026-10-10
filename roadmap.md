@@ -7,3 +7,6 @@
 - [x] Bubblier glossy Frutiger Aero plant.
 - [x] Glossy blue/white bubble buttons with pop animation; checked state shows green check / yellow Skipped.
 - [x] Fix "Login failed" after successful Google sign-in.
+- [x] Add profile photo picking, saving, replacement and removal; verify saved photos after reopening Support.
+- [x] Add expandable Home Inbox with unread message/request alerts, named conversations, timestamps, history and custom/preset replies.
+- [ ] Verify sending/receiving in Jaiden's maria conversation; blocked until Jaiden signs in through the preview (current session belongs to another account).

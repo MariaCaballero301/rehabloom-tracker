@@ -42,6 +42,11 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
   }, [userId]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const refresh = () => void load();
+    window.addEventListener("rehabloom:message-sent", refresh);
+    return () => window.removeEventListener("rehabloom:message-sent", refresh);
+  }, [load]);
 
   // Exercises the user undid today: undo restores eligibility so they can redo it.
   const [undone, setUndone] = useState<Set<string>>(() => new Set());

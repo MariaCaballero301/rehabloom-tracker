@@ -432,6 +432,42 @@ export type Database = {
         }
         Relationships: []
       }
+      support_notifications: {
+        Row: {
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          missed_days: number
+          patient_id: string
+          patient_name: string
+          read_at: string | null
+          recipient_id: string
+          support_token: string
+        }
+        Insert: {
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          missed_days: number
+          patient_id: string
+          patient_name: string
+          read_at?: string | null
+          recipient_id: string
+          support_token: string
+        }
+        Update: {
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          missed_days?: number
+          patient_id?: string
+          patient_name?: string
+          read_at?: string | null
+          recipient_id?: string
+          support_token?: string
+        }
+        Relationships: []
+      }
       support_profiles: {
         Row: {
           phone: string

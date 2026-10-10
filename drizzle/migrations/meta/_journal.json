@@ -85,6 +85,13 @@
       "when": 1791664914653,
       "tag": "0011_support_contacts_welcomed_at",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791665525011,
+      "tag": "0012_support_notifications",
+      "breakpoints": true
     }
   ]
 }

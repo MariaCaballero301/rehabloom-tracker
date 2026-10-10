@@ -5,7 +5,7 @@ const mock = vi.hoisted(() => {
   const query: Record<string, unknown> = {};
   for (const name of ["select", "eq"]) query[name] = () => query;
   const read = vi.fn().mockResolvedValue({ data: null, error: null });
-  query.maybeSingle = read;
+  query["maybeSingle"] = read;
   const channel = { on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() };
   return { read, channel, client: { rpc: vi.fn().mockResolvedValue({ error: null }), from: vi.fn(() => query), channel: vi.fn(() => channel), removeChannel: vi.fn() } };
 });

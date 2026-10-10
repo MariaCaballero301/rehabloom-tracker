@@ -3,8 +3,21 @@
 export const XP_PER_EXERCISE = 10;
 export const XP_PER_CHECKIN = 5;
 
-export function computeXp(completionCount: number, checkinCount: number) {
-  return completionCount * XP_PER_EXERCISE + checkinCount * XP_PER_CHECKIN;
+export const XP_PER_CHEER = 2;
+export const MAX_XP_CHEERS_PER_DAY = 5;
+
+/** Cheers (encouragements sent) that earn XP: at most MAX_XP_CHEERS_PER_DAY per day. */
+export function cheerCount(sent: { created_at: string }[]) {
+  const perDay = new Map<string, number>();
+  for (const c of sent) {
+    const k = dayKey(new Date(c.created_at));
+    perDay.set(k, Math.min(MAX_XP_CHEERS_PER_DAY, (perDay.get(k) ?? 0) + 1));
+  }
+  return [...perDay.values()].reduce((a, b) => a + b, 0);
+}
+
+export function computeXp(completionCount: number, checkinCount: number, cheers = 0) {
+  return completionCount * XP_PER_EXERCISE + checkinCount * XP_PER_CHECKIN + cheers * XP_PER_CHEER;
 }
 
 export const STAGES = [

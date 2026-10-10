@@ -297,6 +297,7 @@ export type Database = {
           languages: string[]
           mentor_bio: string
           rehab_area: string
+          rehab_areas: string[]
           updated_at: string
           user_id: string
         }
@@ -310,6 +311,7 @@ export type Database = {
           languages?: string[]
           mentor_bio?: string
           rehab_area?: string
+          rehab_areas?: string[]
           updated_at?: string
           user_id?: string
         }
@@ -323,6 +325,7 @@ export type Database = {
           languages?: string[]
           mentor_bio?: string
           rehab_area?: string
+          rehab_areas?: string[]
           updated_at?: string
           user_id?: string
         }

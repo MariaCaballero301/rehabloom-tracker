@@ -1,0 +1,2 @@
+ALTER TABLE public.network_profiles ADD COLUMN rehab_areas text[] NOT NULL DEFAULT '{}'::text[];
+UPDATE public.network_profiles SET rehab_areas = ARRAY[rehab_area] WHERE rehab_area <> 'other' AND rehab_areas = '{}';

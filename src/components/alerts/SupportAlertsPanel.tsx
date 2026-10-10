@@ -3,11 +3,9 @@
 // - session invites proposed by contacts, to accept or decline
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Link } from "@tanstack/react-router";
-import { CalendarHeart, Check, Pencil, Users, X } from "lucide-react";
+import { CalendarHeart, Check, X } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { normalizePhone } from "@/lib/alerts";
 
 // The new tables are not in the generated types until Lovable regenerates them.
 const db = supabase as unknown as SupabaseClient;
@@ -21,15 +19,11 @@ type Session = {
 };
 
 export function SupportAlertsPanel({ userId }: { userId: string }) {
-  const [phone, setPhone] = useState("");
-  const [savedPhone, setSavedPhone] = useState("");
-  const [editingPhone, setEditingPhone] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
 
   const load = useCallback(async () => {
     const since = new Date(Date.now() - 86_400_000).toISOString();
-    const [profile, list] = await Promise.all([
-      db.from("support_profiles").select("phone").eq("user_id", userId).maybeSingle(),
+    const [list] = await Promise.all([
       db
         .from("shared_sessions")
         .select("id, contact_name, proposed_for, note, status")
@@ -37,27 +31,12 @@ export function SupportAlertsPanel({ userId }: { userId: string }) {
         .gte("proposed_for", since)
         .order("proposed_for"),
     ]);
-    const saved = (profile.data as { phone?: string } | null)?.phone ?? "";
-    setPhone(saved);
-    setSavedPhone(saved);
     setSessions((list.data ?? []) as Session[]);
   }, [userId]);
 
   useEffect(() => {
     void load();
   }, [load]);
-
-  async function savePhone() {
-    const clean = normalizePhone(phone);
-    const { error } = await db
-      .from("support_profiles")
-      .upsert({ user_id: userId, phone: clean, updated_at: new Date().toISOString() });
-    if (error) return void toast.error(error.message);
-    setPhone(clean);
-    setSavedPhone(clean);
-    setEditingPhone(false);
-    toast.success("Phone saved");
-  }
 
   async function answer(id: string, status: "accepted" | "declined") {
     const { error } = await db.from("shared_sessions").update({ status }).eq("id", id);
@@ -77,42 +56,7 @@ export function SupportAlertsPanel({ userId }: { userId: string }) {
         If you miss your sessions for a couple of days, the people in your support network get a
         message so they can call you or do a session with you.
       </p>
-      <Link to="/people" className="btn-aqua mt-3">
-        <Users className="h-4 w-4" /> Your people
-      </Link>
-
-      {savedPhone && !editingPhone ? (
-        <div className="mt-3">
-          <p className="text-sm font-semibold">Your phone (so they can call you)</p>
-          <div className="mt-1 flex items-center gap-2">
-            <div className="flex flex-1 items-center justify-between gap-2 rounded-2xl border-2 border-success bg-success/15 px-3 py-2 text-sm" role="status">
-              <span className="truncate font-semibold">{savedPhone}</span>
-              <span className="flex shrink-0 items-center gap-1 font-bold text-success"><Check className="h-4 w-4" /> Saved</span>
-            </div>
-            <button className="btn-soft shrink-0" aria-label="Edit phone number" title="Edit phone number" onClick={() => setEditingPhone(true)}>
-              <Pencil className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      ) : (
-      <label className="mt-3 block text-sm font-semibold">
-        Your phone (so they can call you)
-        <div className="mt-1 flex gap-2">
-          <input
-            type="tel"
-            className="field"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+1 919 555 0100"
-          />
-          <button className="btn-aqua shrink-0" onClick={savePhone}>
-            Save
-          </button>
-        </div>
-      </label>
-      )}
-
-      <h3 className="mt-4 text-sm font-bold uppercase text-muted-foreground">Session invites</h3>
+      <h3 className="mt-3 text-sm font-bold uppercase text-muted-foreground">Session invites</h3>
       {sessions.length === 0 ? (
         <p className="mt-1 text-sm text-muted-foreground">No invites right now.</p>
       ) : (

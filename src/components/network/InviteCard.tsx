@@ -29,7 +29,7 @@ export function InviteCard({
       .catch((e) => console.error("[welcome]", e));
   }
 
-  const linkFor = (code: string) => `${window.location.origin}/people?code=${code}`;
+  const linkFor = (code: string) => `${window.location.origin}/support?code=${code}`;
 
   async function run(fn: () => Promise<void>) {
     setBusy(true);

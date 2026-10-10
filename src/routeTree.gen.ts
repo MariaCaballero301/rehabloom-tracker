@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PeopleRouteImport } from './routes/people'
+import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as SupportRouteImport } from './routes/support'
 import { Route as SupportTokenRouteImport } from './routes/support/$token'
 import { Route as ApiCronMissedSessionsRouteImport } from './routes/api/cron/missed-sessions'
 
@@ -24,10 +26,20 @@ const PeopleRoute = PeopleRouteImport.update({
   path: '/people',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SupportTokenRoute = SupportTokenRouteImport.update({
-  id: '/support/$token',
-  path: '/support/$token',
+const ProgressRoute = ProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportTokenRoute = SupportTokenRouteImport.update({
+  id: '/$token',
+  path: '/$token',
+  getParentRoute: () => SupportRoute,
 } as any)
 const ApiCronMissedSessionsRoute = ApiCronMissedSessionsRouteImport.update({
   id: '/api/cron/missed-sessions',
@@ -38,12 +50,16 @@ const ApiCronMissedSessionsRoute = ApiCronMissedSessionsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/people': typeof PeopleRoute
+  '/progress': typeof ProgressRoute
+  '/support': typeof SupportRouteWithChildren
   '/support/$token': typeof SupportTokenRoute
   '/api/cron/missed-sessions': typeof ApiCronMissedSessionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/people': typeof PeopleRoute
+  '/progress': typeof ProgressRoute
+  '/support': typeof SupportRouteWithChildren
   '/support/$token': typeof SupportTokenRoute
   '/api/cron/missed-sessions': typeof ApiCronMissedSessionsRoute
 }
@@ -51,18 +67,34 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/people': typeof PeopleRoute
+  '/progress': typeof ProgressRoute
+  '/support': typeof SupportRouteWithChildren
   '/support/$token': typeof SupportTokenRoute
   '/api/cron/missed-sessions': typeof ApiCronMissedSessionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/people' | '/support/$token' | '/api/cron/missed-sessions'
+  fullPaths:
+    | '/'
+    | '/people'
+    | '/progress'
+    | '/support'
+    | '/support/$token'
+    | '/api/cron/missed-sessions'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/people' | '/support/$token' | '/api/cron/missed-sessions'
+  to:
+    | '/'
+    | '/people'
+    | '/progress'
+    | '/support'
+    | '/support/$token'
+    | '/api/cron/missed-sessions'
   id:
     | '__root__'
     | '/'
     | '/people'
+    | '/progress'
+    | '/support'
     | '/support/$token'
     | '/api/cron/missed-sessions'
   fileRoutesById: FileRoutesById
@@ -70,7 +102,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PeopleRoute: typeof PeopleRoute
-  SupportTokenRoute: typeof SupportTokenRoute
+  ProgressRoute: typeof ProgressRoute
+  SupportRoute: typeof SupportRouteWithChildren
   ApiCronMissedSessionsRoute: typeof ApiCronMissedSessionsRoute
 }
 
@@ -90,12 +123,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PeopleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/progress': {
+      id: '/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/support/$token': {
       id: '/support/$token'
-      path: '/support/$token'
+      path: '/$token'
       fullPath: '/support/$token'
       preLoaderRoute: typeof SupportTokenRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SupportRoute
     }
     '/api/cron/missed-sessions': {
       id: '/api/cron/missed-sessions'
@@ -107,10 +154,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SupportRouteChildren {
+  SupportTokenRoute: typeof SupportTokenRoute
+}
+
+const SupportRouteChildren: SupportRouteChildren = {
+  SupportTokenRoute: SupportTokenRoute,
+}
+
+const SupportRouteWithChildren =
+  SupportRoute._addFileChildren(SupportRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PeopleRoute: PeopleRoute,
-  SupportTokenRoute: SupportTokenRoute,
+  ProgressRoute: ProgressRoute,
+  SupportRoute: SupportRouteWithChildren,
   ApiCronMissedSessionsRoute: ApiCronMissedSessionsRoute,
 }
 export const routeTree = rootRouteImport

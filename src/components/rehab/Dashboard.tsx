@@ -176,7 +176,7 @@ function CheckinCard({ existing, todayKey, onSaved }: { existing: Checkin | unde
       <fieldset className="mt-3">
         <legend className="text-sm font-semibold">Today</legend>
         <div className="mt-2 grid grid-cols-3 gap-1.5 text-sm">
-          {[["normal", "On track"], ["rest", "Rest day"], ["unable", "Unable"]].map(([v, l]) => (
+          {([["normal", "On track"], ["rest", "Rest day"], ["unable", "Unable"]] as const).map(([v, l]) => (
             <button key={v} type="button" aria-pressed={status === v} onClick={() => setStatus(v)}
               className={`min-h-10 rounded-full border px-2 font-semibold ${status === v ? "btn-aqua btn-leaf min-h-10 px-2" : "bg-card"}`}>
               {l}

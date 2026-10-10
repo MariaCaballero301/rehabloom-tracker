@@ -12,3 +12,4 @@
 - [x] Make Inbox available across signed-in pages and separate non-account contacts from deduplicated Rehab buddies.
 - [x] Move Reminders directly under Daily check-in on Home; stretch Invite family & friends full width on Support.
 - [ ] Verify sending/receiving in Jaiden's maria conversation; blocked until Jaiden signs in through the preview (current session belongs to another account).
+- [ ] Add glossy buddy bubble with real relationship stats and private opt-in exercise totals; verify saving and sharing.

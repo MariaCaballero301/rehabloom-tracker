@@ -9,6 +9,7 @@ import { MAX_ENCOURAGEMENT_LENGTH } from "@/lib/network";
 import { cheerCount, MAX_XP_CHEERS_PER_DAY, XP_PER_CHEER } from "@/lib/rehab";
 import { ProfileAvatar } from "./ProfileAvatar";
 import type { InboxChannel } from "./useInbox";
+import { useInboxTyping } from "./useInboxTyping";
 
 export function InboxConversation({ userId, person, revision, onRead, onSent }: { userId: string; person: InboxChannel; revision: number; onRead: () => void; onSent: () => void }) {
   const [messages, setMessages] = useState<InboxMessage[]>([]);
@@ -18,6 +19,7 @@ export function InboxConversation({ userId, person, revision, onRead, onSent }: 
   const [more, setMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [presets, setPresets] = useState(false);
+  const { typing, updateTyping } = useInboxTyping(userId, person.user_id, person.can_message);
   const scroll = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
   const onReadRef = useRef(onRead);
@@ -63,6 +65,7 @@ export function InboxConversation({ userId, person, revision, onRead, onSent }: 
     const clean = message.trim();
     if (!clean || sending || !person.can_message) return;
     setSending(true);
+    updateTyping(false);
     try {
       const { error } = await supabase.rpc("send_encouragement", { p_to: person.user_id, p_message: clean });
       if (error) throw error;
@@ -92,16 +95,22 @@ export function InboxConversation({ userId, person, revision, onRead, onSent }: 
         {messages.map((m) => {
           const own = m.from_user === userId;
           return <div key={m.id} className={`flex flex-col ${own ? "items-end" : "items-start"}`}>
-            <p className={`max-w-[88%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${own ? "rounded-br-sm bg-primary text-primary-foreground" : "rounded-bl-sm border bg-popover text-popover-foreground"}`}>{m.message}</p>
+            <p className={`max-w-[88%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${own ? "rounded-br-sm bg-primary text-primary-foreground" : "inbox-received rounded-bl-sm"}`}>{m.message}</p>
             <time dateTime={m.created_at} className="mt-1 text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</time>
           </div>;
         })}
+      </div>
+      <div className="flex h-10 shrink-0 items-center px-4" role="status" aria-live="polite">
+        {typing && <div className="flex min-w-0 items-center gap-2">
+          <span className="inbox-received inbox-typing-dots flex shrink-0 items-center gap-1 rounded-2xl px-3 py-2" aria-hidden="true"><span /><span /><span /></span>
+          <span className="truncate text-xs text-muted-foreground">{person.name} is typing…</span>
+        </div>}
       </div>
       {person.can_message ? <footer className="shrink-0 border-t bg-card p-3">
         {presets && <div className="mb-2 flex flex-col gap-2">{INBOX_QUICK_MESSAGES.map((m) => <Button key={m} variant="ghost" className="btn-soft h-auto whitespace-normal text-left text-xs" disabled={sending} onClick={() => void send(m)}>{m}</Button>)}</div>}
         <form className="flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); void send(text); }}>
           <Button type="button" variant="ghost" size="icon" className="btn-soft shrink-0 rounded-full" aria-label="Quick messages" title="Quick messages" aria-expanded={presets} onClick={() => setPresets((v) => !v)}><Smile /></Button>
-          <textarea className="field min-w-0 resize-none text-sm" rows={2} maxLength={MAX_ENCOURAGEMENT_LENGTH} value={text} disabled={sending} aria-label={`Message to ${person.name}`} placeholder="Message…" onChange={(e) => setText(e.target.value)} />
+          <textarea className="field min-w-0 resize-none text-sm" rows={2} maxLength={MAX_ENCOURAGEMENT_LENGTH} value={text} disabled={sending} aria-label={`Message to ${person.name}`} placeholder="Message…" onChange={(e) => { setText(e.target.value); updateTyping(Boolean(e.target.value.trim())); }} onBlur={() => updateTyping(false)} />
           <Button variant="ghost" size="icon" className="btn-aqua shrink-0 rounded-full p-2" disabled={sending || !text.trim()} aria-label="Send message" title="Send message"><Send /></Button>
         </form>
       </footer> : <p className="border-t p-3 text-sm text-muted-foreground">This connection has ended. Your conversation history is still here.</p>}

@@ -108,3 +108,15 @@ describe("stage progress bar", () => {
     expect(stageProgress(25)).toBe(0.5);
   });
 });
+
+import { cheerCount, XP_PER_CHEER } from "@/lib/rehab";
+describe("cheer XP", () => {
+  it("gives 2 XP per cheer", () => {
+    expect(XP_PER_CHEER).toBe(2);
+    expect(computeXp(0, 0, cheerCount([{ created_at: "2026-10-10T12:00:00" }]))).toBe(2);
+  });
+  it("caps XP cheers at 5 per day", () => {
+    const day = Array.from({ length: 8 }, () => ({ created_at: "2026-10-10T12:00:00" }));
+    expect(cheerCount([...day, { created_at: "2026-10-11T12:00:00" }])).toBe(6);
+  });
+});

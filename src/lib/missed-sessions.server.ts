@@ -130,6 +130,18 @@ export async function runMissedSessionJob(appUrl: string, today = new Date()): P
         else console.error("[alerts] could not record alert", error.message);
         continue;
       }
+      // In-app pop-up for supporters who use Rehabloom (replaces real SMS).
+      if (contact.connected_user_id) {
+        const { error: nErr } = await db.from("support_notifications").insert({
+          recipient_id: contact.connected_user_id,
+          patient_id: patientId,
+          patient_name: patientName,
+          missed_days: streak.days,
+          support_token: alert.token,
+        });
+        if (nErr) console.error("[alerts] could not create notification", nErr.message);
+        else alerted = true;
+      }
       if (!phone) continue;
 
       const body = buildAlertMessage({

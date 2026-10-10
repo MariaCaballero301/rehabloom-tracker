@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Ban, HeartHandshake, MessageCircleHeart, UserMinus } from "lucide-react";
 import { KIND_LABEL, MAX_ENCOURAGEMENT_LENGTH, QUICK_ENCOURAGEMENTS } from "@/lib/network";
+import { XP_PER_CHEER } from "@/lib/rehab";
 import { db, rpc, type Block, type Contact, type Supported } from "./useNetwork";
 import { ProfileAvatar } from "./ProfileAvatar";
 import { supportGroups } from "@/lib/support-groups";
@@ -20,7 +21,7 @@ function Encourage({ to, name, onDone }: { to: string; name: string; onDone: () 
     setSending(true);
     try {
       await rpc("send_encouragement", { p_to: to, p_message: message });
-      celebrateXp(`Sent to ${name} 💌 +2 XP`);
+      celebrateXp(`+${XP_PER_CHEER} XP`);
       onDone();
     } catch (e) {
       toast.error((e as Error).message);

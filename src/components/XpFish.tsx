@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import butterfly from "@/assets/fish-butterfly.png";
 import tang from "@/assets/fish-tang.png";
 import clown from "@/assets/fish-clown.png";
+import { xpBadgeText } from "@/lib/xp-message";
 
 const FISH = [
   { src: butterfly, facesLeft: false },
@@ -39,7 +40,7 @@ export function XpFishLayer() {
           <div key={s.id} className="xp-fish-swim" style={{ top: `${s.top}%` }}>
             <div className="xp-fish-bob">
               <img src={f.src} alt="" className={f.facesLeft ? "xp-fish-img xp-fish-flip" : "xp-fish-img"} />
-              <span className="xp-fish-text">{s.message}</span>
+              <span className="xp-fish-text">{xpBadgeText(s.message)}</span>
             </div>
           </div>
         );

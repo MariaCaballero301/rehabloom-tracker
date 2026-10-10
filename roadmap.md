@@ -13,5 +13,6 @@
 - [x] Move Reminders directly under Daily check-in on Home; stretch Invite family & friends full width on Support.
 - [ ] Verify sending/receiving in Jaiden's maria conversation; blocked until Jaiden signs in through the preview (current session belongs to another account).
 - [x] Add glossy buddy bubble with real relationship stats and private opt-in exercise totals; verify saving and sharing.
+- [x] Add a name search bar at the top of "Find support" so buddies are discoverable by name.
 - [ ] Build participant-only Session room, shared live progress/reactions/finish, reusable today's exercises and Start session entry — blocked until existing session feature is merged (user chose to wait).
 - [ ] Add phone links and separate-tab video calls; refresh Session room state on return and verify the flow — blocked until existing session feature is merged.

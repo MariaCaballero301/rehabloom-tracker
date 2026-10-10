@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { conversationFilter, INBOX_PAGE_SIZE, INBOX_QUICK_MESSAGES, mergeInboxMessages, type InboxMessage } from "@/lib/inbox";
 import { MAX_ENCOURAGEMENT_LENGTH } from "@/lib/network";
-import { cheerCount, MAX_XP_CHEERS_PER_DAY } from "@/lib/rehab";
+import { cheerCount, MAX_XP_CHEERS_PER_DAY, XP_PER_CHEER } from "@/lib/rehab";
 import { ProfileAvatar } from "./ProfileAvatar";
 import type { InboxChannel } from "./useInbox";
 
@@ -70,7 +70,7 @@ export function InboxConversation({ userId, person, revision, onRead, onSent }: 
       await load(); onSent();
       const { data } = await supabase.from("encouragements").select("created_at").eq("from_user", userId)
         .gte("created_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString());
-      if (data && data.length <= MAX_XP_CHEERS_PER_DAY && cheerCount(data) > 0) celebrateXp("Message sent · +2 XP");
+      if (data && data.length <= MAX_XP_CHEERS_PER_DAY && cheerCount(data) > 0) celebrateXp(`+${XP_PER_CHEER} XP`);
       else toast.success("Message sent");
     } catch (e) { toast.error(e instanceof Error ? e.message : (e as { message?: string }).message ?? "Message couldn't be sent."); }
     finally { setSending(false); }

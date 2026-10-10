@@ -23,3 +23,4 @@
 - [x] Weekly progress & PT report card below Progress history (Ines)
 - [x] Gemini AI monthly summary on Progress (Jaiden)
 - [ ] Add Monthly/Weekly AI summary choices, distinct date pickers and period-aware generation/history; test and verify.
+- [ ] Fix Sessions placement, hide both floating bubbles during either panel, and verify mobile/desktop exclusivity and toast Open.

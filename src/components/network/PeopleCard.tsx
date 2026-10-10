@@ -5,6 +5,7 @@ import { Ban, HeartHandshake, MessageCircleHeart, UserMinus } from "lucide-react
 import { KIND_LABEL, MAX_ENCOURAGEMENT_LENGTH, QUICK_ENCOURAGEMENTS } from "@/lib/network";
 import { db, rpc, type Block, type Contact, type Supported } from "./useNetwork";
 import { ProfileAvatar } from "./ProfileAvatar";
+import { supportGroups } from "@/lib/support-groups";
 
 function Encourage({ to, name, onDone }: { to: string; name: string; onDone: () => void }) {
   const [text, setText] = useState("");
@@ -67,6 +68,7 @@ export function PeopleCard({
   onChange: () => void;
 }) {
   const [open, setOpen] = useState<string | null>(null);
+  const { familyFriends, buddyContacts, supportingOnly } = supportGroups(contacts, supporting);
 
   async function toggleNotify(c: Contact) {
     const { error } = await db
@@ -137,13 +139,15 @@ export function PeopleCard({
         or plan a session together.
       </p>
 
-      {contacts.length === 0 ? (
-        <p className="mt-3 rounded-2xl border border-dashed p-4 text-center text-sm text-muted-foreground">
-          No one yet — invite family and friends below, or find a rehab buddy.
-        </p>
-      ) : (
+      {[
+        { title: "Family & friends", people: familyFriends, empty: "No family or friends yet." },
+        { title: "Rehab buddies", people: buddyContacts, empty: "No rehab buddies yet." },
+      ].map((group) => (
+        <div key={group.title}>
+        <h3 className="mt-5 text-sm font-bold text-muted-foreground">{group.title}</h3>
+        {group.people.length === 0 && (group.title !== "Rehab buddies" || supportingOnly.length === 0) && <p className="mt-2 text-sm text-muted-foreground">{group.empty}</p>}
         <ul className="mt-3 space-y-2">
-          {contacts.map((c) => (
+          {group.people.map((c) => (
             <li key={c.id} className="rounded-2xl border bg-popover p-3 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2"><ProfileAvatar userId={c.connected_user_id} name={c.name} /><p className="min-w-0 break-words font-semibold">
@@ -182,7 +186,7 @@ export function PeopleCard({
                 {c.connected_user_id && (
                   <button
                     className="btn-soft text-sm"
-                    onClick={() => block(c.connected_user_id!, c.name)}
+                    onClick={() => { if (c.connected_user_id) void block(c.connected_user_id, c.name); }}
                   >
                     <Ban className="h-4 w-4" /> Block
                   </button>
@@ -194,15 +198,13 @@ export function PeopleCard({
             </li>
           ))}
         </ul>
-      )}
+        </div>
+      ))}
 
-      {supporting.length > 0 && (
+      {supportingOnly.length > 0 && (
         <>
-          <h3 className="mt-5 text-sm font-bold uppercase text-muted-foreground">
-            People you support
-          </h3>
           <ul className="mt-2 space-y-2">
-            {supporting.map((s) => {
+            {supportingOnly.map((s) => {
               const key = `s-${s.user_id}`;
               return (
                 <li key={key} className="rounded-2xl border bg-popover p-3 text-sm">

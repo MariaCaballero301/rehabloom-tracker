@@ -50,6 +50,7 @@ export type Database = {
           day: string
           exercise_id: string
           id: string
+          status: string
           user_id: string
         }
         Insert: {
@@ -57,6 +58,7 @@ export type Database = {
           day: string
           exercise_id: string
           id?: string
+          status?: string
           user_id?: string
         }
         Update: {
@@ -64,6 +66,7 @@ export type Database = {
           day?: string
           exercise_id?: string
           id?: string
+          status?: string
           user_id?: string
         }
         Relationships: [

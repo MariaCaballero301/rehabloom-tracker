@@ -1,0 +1,1 @@
+ALTER TABLE public.completions ADD COLUMN status text NOT NULL DEFAULT 'complete' CHECK (status IN ('complete', 'skip'));

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, Pencil, Trash2, Plus, LogOut, Bell, X } from "lucide-react";
+import { Check, Minus, Pencil, Trash2, Plus, LogOut, Bell, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
-import { computeXp, stageFor, dayKey, lastNDays, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
+import { computeXp, stageFor, dayKey, lastNDays, currentWeek, completedRecords, nextExerciseStatus, type ExerciseStatus, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
@@ -17,6 +18,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const today = new Date();
   const todayKey = dayKey(today);
@@ -37,21 +39,29 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
 
   useEffect(() => { load(); }, [load]);
 
-  const xp = computeXp(completions.length, checkins.length);
+  const completed = completedRecords(completions);
+  const xp = computeXp(completed.length, checkins.length);
   const stage = stageFor(xp);
   const todays = exercises.filter((e) => e.days.includes(today.getDay()));
-  const doneToday = new Set(completions.filter((c) => c.day === todayKey).map((c) => c.exercise_id));
+  const doneToday = new Set(completed.filter((c) => c.day === todayKey).map((c) => c.exercise_id));
   const todayCheckin = checkins.find((c) => c.day === todayKey);
 
-  async function toggle(ex: Exercise): Promise<void> {
-    if (doneToday.has(ex.id)) {
-      await supabase.from("completions").delete().eq("exercise_id", ex.id).eq("day", todayKey);
-    } else {
-      const { error } = await supabase.from("completions").insert({ exercise_id: ex.id, day: todayKey });
+  async function track(ex: Exercise, day: string, requested: ExerciseStatus): Promise<void> {
+    if (saving || day > todayKey) return;
+    setSaving(true);
+    try {
+      const existing = completions.find((c) => c.exercise_id === ex.id && c.day === day);
+      const status = nextExerciseStatus(existing?.status, requested);
+      const { error } = status === null
+        ? await supabase.from("completions").delete().eq("exercise_id", ex.id).eq("day", day)
+        : await supabase.from("completions").upsert({ exercise_id: ex.id, day, status }, { onConflict: "exercise_id,day" });
       if (error) return void toast.error(error.message);
-      toast.success(`+${XP_PER_EXERCISE} XP — nice work!`);
+      if (status === "complete") toast.success(`+${XP_PER_EXERCISE} XP — nice work!`);
+      else toast.success(status === "skip" ? "Exercise skipped" : "Exercise reset");
+      await load();
+    } finally {
+      setSaving(false);
     }
-    load();
   }
 
   if (loading) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
@@ -92,7 +102,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
               return (
                 <li key={ex.id}>
                   <label className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition ${done ? "bg-accent/70" : "bg-card"}`}>
-                    <input type="checkbox" className="sr-only" checked={done} onChange={() => toggle(ex)} />
+                    <input type="checkbox" className="sr-only" checked={done} disabled={saving} onChange={() => track(ex, todayKey, "complete")} />
                     <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${done ? "btn-aqua btn-leaf min-h-0 border-success p-0" : "border-input bg-card"}`} aria-hidden>
                       {done && <Check className="h-5 w-5" />}
                     </span>
@@ -100,6 +110,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
                       <span className={`block font-bold ${done ? "line-through opacity-70" : ""}`}>{ex.name}</span>
                       <span className="block text-sm text-muted-foreground">{ex.reps}</span>
                       {ex.notes && <span className="block text-xs text-muted-foreground">{ex.notes}</span>}
+                      {completions.some((c) => c.exercise_id === ex.id && c.day === todayKey && c.status === "skip") && <span className="block text-xs font-semibold text-muted-foreground">Skipped today</span>}
                     </span>
                   </label>
                 </li>
@@ -129,8 +140,8 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
         </section>
 
         <CheckinCard existing={todayCheckin} todayKey={todayKey} onSaved={load} />
-        <HistoryCard exercises={exercises} completions={completions} checkins={checkins} />
-        <ExerciseManager exercises={exercises} onChange={load} />
+        <HistoryCard exercises={exercises} completions={completed} checkins={checkins} />
+        <ExerciseManager exercises={exercises} completions={completions} todayKey={todayKey} saving={saving} onTrack={track} onChange={load} />
         {prefs && <SettingsCard prefs={prefs} email={email} onSaved={load} />}
       </div>
     </div>
@@ -217,8 +228,16 @@ function HistoryCard({ exercises, completions, checkins }: { exercises: Exercise
   );
 }
 
-function ExerciseManager({ exercises, onChange }: { exercises: Exercise[]; onChange: () => void }) {
+function ExerciseManager({ exercises, completions, todayKey, saving, onTrack, onChange }: {
+  exercises: Exercise[];
+  completions: Completion[];
+  todayKey: string;
+  saving: boolean;
+  onTrack: (exercise: Exercise, day: string, status: ExerciseStatus) => Promise<void>;
+  onChange: () => void;
+}) {
   const [editing, setEditing] = useState<Partial<Exercise> | null>(null);
+  const week = currentWeek();
 
   async function save(): Promise<void> {
     if (!editing?.name?.trim()) return void toast.error("Please enter the exercise name");
@@ -266,7 +285,7 @@ function ExerciseManager({ exercises, onChange }: { exercises: Exercise[]; onCha
                 const on = editing.days?.includes(i);
                 return (
                   <button key={l} type="button" aria-pressed={on}
-                    onClick={() => setEditing({ ...editing, days: on ? editing.days!.filter((d) => d !== i) : [...(editing.days ?? []), i].sort() })}
+                    onClick={() => setEditing({ ...editing, days: on ? (editing.days ?? []).filter((d) => d !== i) : [...(editing.days ?? []), i].sort() })}
                     className={`h-10 w-12 rounded-full border text-sm font-bold ${on ? "btn-aqua min-h-0 p-0" : "bg-card"}`}>
                     {l}
                   </button>
@@ -284,17 +303,57 @@ function ExerciseManager({ exercises, onChange }: { exercises: Exercise[]; onCha
       <ul className="mt-4 divide-y divide-input">
         {exercises.length === 0 && <li className="py-2 text-sm text-muted-foreground">No exercises yet.</li>}
         {exercises.map((ex) => (
-          <li key={ex.id} className="flex items-center gap-2 py-2">
+          <li key={ex.id} className="py-4">
+            <div className="flex flex-wrap items-center gap-2">
             <div className="min-w-0 flex-1">
-              <p className="font-bold">{ex.name}</p>
+              <p className="break-words font-bold">{ex.name}</p>
               <p className="text-xs text-muted-foreground">{ex.reps} · {ex.days.length === 7 ? "Every day" : ex.days.map((d) => DAY_LABELS[d]).join(", ")}</p>
+              {ex.notes && <p className="break-words text-xs text-muted-foreground">{ex.notes}</p>}
             </div>
-            <button className="btn-soft px-3" aria-label={`Edit ${ex.name}`} onClick={() => setEditing(ex)}><Pencil className="h-4 w-4" /></button>
-            <button className="btn-soft px-3 text-destructive" aria-label={`Remove ${ex.name}`} onClick={() => remove(ex.id)}><Trash2 className="h-4 w-4" /></button>
+            <div className="flex shrink-0 items-center gap-1">
+              <TrackingButtons exercise={ex} day={todayKey} status={completions.find((c) => c.exercise_id === ex.id && c.day === todayKey)?.status} disabled={saving} onTrack={onTrack} />
+              <Button variant="outline" size="icon" className="rounded-full" title="Edit exercise" aria-label={`Edit ${ex.name}`} onClick={() => setEditing(ex)}><Pencil /></Button>
+              <Button variant="outline" size="icon" className="rounded-full text-destructive" title="Remove exercise" aria-label={`Remove ${ex.name}`} onClick={() => remove(ex.id)}><Trash2 /></Button>
+            </div>
+            </div>
+            <ul className="mt-3 divide-y divide-input border-t border-input">
+              {week.map((date) => {
+                const day = dayKey(date);
+                const scheduled = ex.days.includes(date.getDay());
+                const record = completions.find((c) => c.exercise_id === ex.id && c.day === day);
+                const isToday = day === todayKey;
+                const canTrack = day <= todayKey && (scheduled || Boolean(record));
+                return (
+                  <li key={day} className={`flex min-h-11 flex-wrap items-center justify-between gap-2 px-2 py-1.5 ${isToday ? "bg-secondary/70" : ""}`}>
+                    <div className="flex flex-wrap items-center gap-x-2 text-sm">
+                      <span className="font-semibold">{DAY_LABELS[date.getDay()]}</span>
+                      <span className="text-xs text-muted-foreground">{date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+                      {isToday && <span className="font-bold text-primary">Today</span>}
+                      <span className={`text-xs ${record?.status === "complete" ? "font-semibold text-success" : "text-muted-foreground"}`}>
+                        {record?.status === "complete" ? "Complete" : record?.status === "skip" ? "Skipped" : !scheduled ? "Not scheduled" : day > todayKey ? "Upcoming" : "Not checked off"}
+                      </span>
+                    </div>
+                    <TrackingButtons exercise={ex} day={day} status={record?.status} disabled={saving || !canTrack} onTrack={onTrack} />
+                  </li>
+                );
+              })}
+            </ul>
           </li>
         ))}
       </ul>
     </section>
+  );
+}
+
+function TrackingButtons({ exercise, day, status, disabled, onTrack }: {
+  exercise: Exercise; day: string; status: string | undefined; disabled: boolean;
+  onTrack: (exercise: Exercise, day: string, status: ExerciseStatus) => Promise<void>;
+}) {
+  return (
+    <div className="flex shrink-0 gap-1">
+      <Button variant="outline" size="icon" className={`rounded-full ${status === "complete" ? "border-success bg-accent text-accent-foreground" : ""}`} title="Complete" aria-label={`Complete ${exercise.name} on ${day}`} aria-pressed={status === "complete"} disabled={disabled} onClick={() => onTrack(exercise, day, "complete")}><Check /></Button>
+      <Button variant="outline" size="icon" className={`rounded-full ${status === "skip" ? "border-primary bg-secondary text-secondary-foreground" : ""}`} title="Skip" aria-label={`Skip ${exercise.name} on ${day}`} aria-pressed={status === "skip"} disabled={disabled} onClick={() => onTrack(exercise, day, "skip")}><Minus /></Button>
+    </div>
   );
 }
 

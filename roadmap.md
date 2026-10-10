@@ -1,0 +1,3 @@
+- [x] Add persistent complete/skip controls shared by both exercise lists.
+- [x] Show daily check-off lines for the current week with Today labels.
+- [x] Test tracking rules and verify the signed-in flow.

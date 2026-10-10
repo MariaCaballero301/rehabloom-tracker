@@ -86,3 +86,19 @@ describe("invite codes", () => {
     expect(toggleIn(["a", "b"], "a")).toEqual(["b"]);
   });
 });
+
+import { areasOf } from "@/lib/network";
+describe("multi-area matching", () => {
+  const meMulti = { rehab_area: "knee", rehab_areas: ["knee", "hip"], languages: [], availability: [] };
+  it("areasOf falls back to the single area and ignores other", () => {
+    expect(areasOf({ rehab_area: "knee", rehab_areas: [] })).toEqual(["knee"]);
+    expect(areasOf({ rehab_area: "other", rehab_areas: ["other", "neck"] })).toEqual(["neck"]);
+  });
+  it("+3 when any area is shared", () => {
+    expect(buddyScore(meMulti, { rehab_area: "hip", languages: [], availability: [] })).toBe(3);
+    expect(buddyScore(meMulti, { rehab_area: "neck", rehab_areas: ["neck"], languages: [], availability: [] })).toBe(0);
+  });
+  it("lists shared areas in reasons", () => {
+    expect(matchReasons(meMulti, { rehab_area: "knee", rehab_areas: ["knee", "hip"], languages: [], availability: [] })).toEqual(["Also knee, hip rehab"]);
+  });
+});

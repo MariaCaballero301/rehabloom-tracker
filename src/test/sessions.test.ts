@@ -21,7 +21,7 @@ describe("splitSessions", () => {
     const r = splitSessions(rows, "me", now);
     expect(r.invites.map((x) => x.id)).toEqual(["inv"]);
     expect(r.waiting.map((x) => x.id)).toEqual(["wait"]);
-    expect(r.upcoming.map((x) => x.id)).toEqual(["early", "inv"].includes("x") ? [] : ["early", "late"]);
+    expect(r.upcoming.map((x) => x.id)).toEqual(["early", "late"]);
   });
 });
 

@@ -45,6 +45,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
+    if (STALE_CHUNK.test(error?.message ?? "") && reloadForStaleChunk()) return;
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
@@ -118,9 +119,33 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+// After an update, old page chunks are gone; reload once so the browser fetches the new version.
+const STALE_CHUNK = /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module/i;
+function reloadForStaleChunk() {
+  const key = "rehabloom:chunk-reload";
+  const last = Number(sessionStorage.getItem(key) || 0);
+  if (Date.now() - last < 10_000) return false;
+  sessionStorage.setItem(key, String(Date.now()));
+  window.location.reload();
+  return true;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { user } = useSessionUser();
+
+  useEffect(() => {
+    const onPreload = (e: Event) => { if (reloadForStaleChunk()) e.preventDefault(); };
+    const onRejection = (e: PromiseRejectionEvent) => {
+      if (STALE_CHUNK.test(String((e.reason as Error)?.message ?? e.reason))) reloadForStaleChunk();
+    };
+    window.addEventListener("vite:preloadError", onPreload);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      window.removeEventListener("vite:preloadError", onPreload);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

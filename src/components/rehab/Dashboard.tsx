@@ -406,8 +406,8 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
           const available = weeklyAvailability(ex, completions, today);
           const scheduledToday = scheduledCount(ex, today) > 0 && (!interval || available.available);
           const lines = daily
-            ? (weekOffset ? [] : Array.from({ length: ex.occurrences }, (_, i) => ({ key: `o${i + 1}`, label: `Occurrence ${i + 1}`, day: todayKey, occ: i + 1, date: new Date() })))
-            : (interval ? week : week.filter((d) => ex.days.includes(d.getDay()))).map((d) => ({ key: dayKey(d), label: longDate(d), day: dayKey(d), occ: 1, date: d }));
+            ? Array.from({ length: ex.occurrences }, (_, i) => ({ key: `o${i + 1}`, label: `Occurrence ${i + 1}`, day: todayKey, occ: i + 1, date: new Date() }))
+            : [];
           return (
             <li key={ex.id} className="py-4">
               <div className="flex flex-wrap items-center gap-2">

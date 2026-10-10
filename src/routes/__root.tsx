@@ -151,7 +151,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      {user ? <HomeInbox key={user.id} userId={user.id}><Outlet /><SessionsBubble userId={user.id} /></HomeInbox> : <Outlet />}
+      {user ? <><HomeInbox key={user.id} userId={user.id}><Outlet /></HomeInbox><SessionsBubble key={`sessions-${user.id}`} userId={user.id} /></> : <Outlet />}
       <Toaster position="top-center" richColors />
       <XpFishLayer />
       <SupportPopups />

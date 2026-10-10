@@ -71,7 +71,7 @@ export function HistoryCard({ exercises, completions, allCompletions, checkins, 
               const done = mine.filter((r) => r.status === "complete").length;
               const skipped = mine.some((r) => r.status === "skip");
               const state = done >= total ? "Done" : skipped ? "Skipped" : key > todayKey ? "Upcoming" : key === todayKey ? "To do" : "Not done";
-              const tone = state === "Done" ? "text-success" : state === "Skipped" ? "text-warning-foreground" : "text-muted-foreground";
+              const tone = state === "Done" ? "text-success" : state === "Skipped" ? "text-foreground" : "text-muted-foreground";
               return (
                 <li key={e.id} className="flex items-start justify-between gap-2 rounded-xl bg-card px-3 py-2">
                   <span className="min-w-0">

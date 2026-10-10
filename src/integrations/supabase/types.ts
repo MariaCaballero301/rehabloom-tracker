@@ -364,6 +364,51 @@ export type Database = {
         }
         Relationships: []
       }
+      rehab_sessions: {
+        Row: {
+          created_at: string
+          guest_id: string
+          guest_name: string
+          id: string
+          meeting_url: string
+          mode: string
+          note: string
+          organizer_id: string
+          organizer_name: string
+          place: string
+          starts_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          guest_id: string
+          guest_name?: string
+          id?: string
+          meeting_url?: string
+          mode: string
+          note?: string
+          organizer_id: string
+          organizer_name?: string
+          place?: string
+          starts_at: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          guest_id?: string
+          guest_name?: string
+          id?: string
+          meeting_url?: string
+          mode?: string
+          note?: string
+          organizer_id?: string
+          organizer_name?: string
+          place?: string
+          starts_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       shared_sessions: {
         Row: {
           alert_id: string
@@ -519,6 +564,7 @@ export type Database = {
       can_read_profile_photo: { Args: { p_path: string }; Returns: boolean }
       can_view_profile_photo: { Args: { p_user_id: string }; Returns: boolean }
       cancel_connection_request: { Args: { p_id: string }; Returns: undefined }
+      cancel_rehab_session: { Args: { p_id: string }; Returns: undefined }
       create_invite_code: { Args: { p_relationship: string }; Returns: string }
       disconnect_person: { Args: { p_other: string }; Returns: undefined }
       inbox_channels: {
@@ -530,6 +576,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      network_are_connected: {
+        Args: { a: string; b: string }
+        Returns: boolean
+      }
       network_directory: {
         Args: never
         Returns: {
@@ -540,6 +590,7 @@ export type Database = {
           languages: string[]
           mentor_bio: string
           rehab_area: string
+          rehab_areas: string[]
           user_id: string
         }[]
       }
@@ -553,8 +604,22 @@ export type Database = {
           user_id: string
         }[]
       }
+      propose_rehab_session: {
+        Args: {
+          p_mode: string
+          p_note?: string
+          p_place?: string
+          p_starts_at: string
+          p_with: string
+        }
+        Returns: string
+      }
       redeem_invite_code: { Args: { p_code: string }; Returns: string }
       respond_connection_request: {
+        Args: { p_accept: boolean; p_id: string }
+        Returns: undefined
+      }
+      respond_rehab_session: {
         Args: { p_accept: boolean; p_id: string }
         Returns: undefined
       }
@@ -566,6 +631,8 @@ export type Database = {
         Args: { p_message: string; p_to: string }
         Returns: undefined
       }
+      simulate_missed_sessions: { Args: never; Returns: number }
+      supported_person_phone: { Args: { p_user: string }; Returns: string }
       visible_profile_photo: { Args: { p_user_id: string }; Returns: string }
     }
     Enums: {

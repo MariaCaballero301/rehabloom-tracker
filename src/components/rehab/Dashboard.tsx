@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
-import { computeXp, stageFor, dayKey, lastNDays, currentWeek, completedRecords, nextExerciseStatus, type ExerciseStatus, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
+import { ChevronRight, ChevronLeft } from "lucide-react";
+import { computeXp, stageFor, dayKey, lastNDays, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, longDate, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
@@ -42,26 +43,53 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
   const completed = completedRecords(completions);
   const xp = computeXp(completed.length, checkins.length);
   const stage = stageFor(xp);
-  const todays = exercises.filter((e) => e.days.includes(today.getDay()));
-  const doneToday = new Set(completed.filter((c) => c.day === todayKey).map((c) => c.exercise_id));
+  const sorted = sortExercises(exercises);
+  const todays = sorted.filter((e) => scheduledCount(e, today) > 0);
   const todayCheckin = checkins.find((c) => c.day === todayKey);
+  const [waitNotes, setWaitNotes] = useState<Record<string, string>>({});
 
-  async function track(ex: Exercise, day: string, requested: ExerciseStatus): Promise<void> {
-    if (saving || day > todayKey) return;
+  function blockReason(ex: Exercise, occurrence: number): string | null {
+    const mine = completed.filter((c) => c.exercise_id === ex.id);
+    if (ex.frequency === "daily") {
+      const last = mine.filter((c) => c.day === todayKey && c.occurrence !== occurrence)
+        .map((c) => c.created_at).sort().at(-1);
+      const ms = cooldownRemainingMs(last, ex.cooldown_minutes);
+      return ms > 0 ? `Please wait ${formatWait(ms)} before the next occurrence.` : null;
+    }
+    const lastDay = mine.filter((c) => c.day < todayKey).map((c) => c.day).sort().at(-1);
+    const d = gapDaysRemaining(lastDay, ex.gap_days, todayKey);
+    return d > 0 ? `Please wait ${d} more day${d === 1 ? "" : "s"} before doing this again.` : null;
+  }
+
+  async function track(ex: Exercise, day: string, requested: ExerciseStatus, occurrence = 1): Promise<void> {
+    if (saving || day !== todayKey) return;
+    const existing = completions.find((c) => c.exercise_id === ex.id && c.day === day && c.occurrence === occurrence);
+    const status = nextExerciseStatus(existing?.status, requested);
+    if (status === "complete") {
+      const reason = blockReason(ex, occurrence);
+      setWaitNotes((n) => ({ ...n, [ex.id]: reason ?? "" }));
+      if (reason) return;
+    }
     setSaving(true);
     try {
-      const existing = completions.find((c) => c.exercise_id === ex.id && c.day === day);
-      const status = nextExerciseStatus(existing?.status, requested);
       const { error } = status === null
-        ? await supabase.from("completions").delete().eq("exercise_id", ex.id).eq("day", day)
-        : await supabase.from("completions").upsert({ exercise_id: ex.id, day, status }, { onConflict: "exercise_id,day" });
+        ? await supabase.from("completions").delete().eq("exercise_id", ex.id).eq("day", day).eq("occurrence", occurrence)
+        : await supabase.from("completions").upsert({ exercise_id: ex.id, day, occurrence, status, created_at: new Date().toISOString() }, { onConflict: "exercise_id,day,occurrence" });
       if (error) return void toast.error(error.message);
       if (status === "complete") toast.success(`+${XP_PER_EXERCISE} XP — nice work!`);
-      else toast.success(status === "skip" ? "Exercise skipped" : "Exercise reset");
+      else toast.success(status === "skip" ? "Skipped for today" : "Exercise reset");
       await load();
     } finally {
       setSaving(false);
     }
+  }
+
+  function toggleToday(ex: Exercise) {
+    const total = scheduledCount(ex, today);
+    const doneOcc = completed.filter((c) => c.exercise_id === ex.id && c.day === todayKey).map((c) => c.occurrence);
+    const next = Array.from({ length: total }, (_, i) => i + 1).find((o) => !doneOcc.includes(o));
+    if (next) return track(ex, todayKey, "complete", next);
+    return track(ex, todayKey, "complete", Math.max(...doneOcc));
   }
 
   if (loading) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
@@ -98,19 +126,21 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
               <li className="text-sm text-muted-foreground">No exercises scheduled today. Add your prescribed exercises below.</li>
             )}
             {todays.map((ex) => {
-              const done = doneToday.has(ex.id);
+              const total = scheduledCount(ex, today);
+              const count = completed.filter((c) => c.exercise_id === ex.id && c.day === todayKey).length;
+              const done = count >= total;
               return (
                 <li key={ex.id}>
                   <label className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition ${done ? "bg-accent/70" : "bg-card"}`}>
-                    <input type="checkbox" className="sr-only" checked={done} disabled={saving} onChange={() => track(ex, todayKey, "complete")} />
+                    <input type="checkbox" className="sr-only" checked={done} disabled={saving} onChange={() => toggleToday(ex)} />
                     <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${done ? "btn-aqua btn-leaf min-h-0 border-success p-0" : "border-input bg-card"}`} aria-hidden>
                       {done && <Check className="h-5 w-5" />}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className={`block font-bold ${done ? "line-through opacity-70" : ""}`}>{ex.name}</span>
-                      <span className="block text-sm text-muted-foreground">{ex.reps}</span>
+                      <span className="block text-sm text-muted-foreground">{ex.reps}{total > 1 ? ` · ${count}/${total} today` : ""}</span>
                       {ex.notes && <span className="block text-xs text-muted-foreground">{ex.notes}</span>}
-                      {completions.some((c) => c.exercise_id === ex.id && c.day === todayKey && c.status === "skip") && <span className="block text-xs font-semibold text-muted-foreground">Skipped today</span>}
+                      {waitNotes[ex.id] && <span className="block text-xs font-semibold text-destructive">{waitNotes[ex.id]}</span>}
                     </span>
                   </label>
                 </li>
@@ -141,7 +171,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string }) 
 
         <CheckinCard existing={todayCheckin} todayKey={todayKey} onSaved={load} />
         <HistoryCard exercises={exercises} completions={completed} checkins={checkins} />
-        <ExerciseManager exercises={exercises} completions={completions} todayKey={todayKey} saving={saving} onTrack={track} onChange={load} />
+        <ExerciseManager exercises={sorted} completions={completions} todayKey={todayKey} saving={saving} waitNotes={waitNotes} onTrack={track} onChange={load} />
         {prefs && <SettingsCard prefs={prefs} email={email} onSaved={load} />}
       </div>
     </div>
@@ -208,7 +238,7 @@ function HistoryCard({ exercises, completions, checkins }: { exercises: Exercise
       <div className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-3">
         {days.map((d) => {
           const k = dayKey(d);
-          const scheduled = exercises.filter((e) => e.days.includes(d.getDay()) && dayKey(new Date(e.created_at)) <= k).length;
+          const scheduled = exercises.filter((e) => dayKey(new Date(e.created_at)) <= k).reduce((s, e) => s + scheduledCount(e, d), 0);
           const done = completions.filter((c) => c.day === k).length;
           const ci = checkins.find((c) => c.day === k);
           const pct = scheduled ? Math.min(100, Math.round((done / scheduled) * 100)) : 0;
@@ -228,21 +258,31 @@ function HistoryCard({ exercises, completions, checkins }: { exercises: Exercise
   );
 }
 
-function ExerciseManager({ exercises, completions, todayKey, saving, onTrack, onChange }: {
+function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, onTrack, onChange }: {
   exercises: Exercise[];
   completions: Completion[];
   todayKey: string;
   saving: boolean;
-  onTrack: (exercise: Exercise, day: string, status: ExerciseStatus) => Promise<void>;
+  waitNotes: Record<string, string>;
+  onTrack: (exercise: Exercise, day: string, status: ExerciseStatus, occurrence?: number) => Promise<void>;
   onChange: () => void;
 }) {
   const [editing, setEditing] = useState<Partial<Exercise> | null>(null);
-  const week = currentWeek();
+  const [weekOffset, setWeekOffset] = useState(0);
+  const week = weekAt(weekOffset);
+  const todayDow = new Date().getDay();
 
   async function save(): Promise<void> {
     if (!editing?.name?.trim()) return void toast.error("Please enter the exercise name");
-    if (!editing.days?.length) return void toast.error("Pick at least one day");
-    const payload = { name: editing.name.trim(), reps: editing.reps ?? "", notes: editing.notes ?? "", days: editing.days };
+    const frequency = (editing.frequency ?? "weekly") as Frequency;
+    if (frequency === "weekly" && !editing.days?.length) return void toast.error("Pick at least one day");
+    const payload = {
+      name: editing.name.trim(), reps: editing.reps ?? "", notes: editing.notes ?? "", frequency,
+      days: frequency === "daily" ? [0, 1, 2, 3, 4, 5, 6] : editing.days ?? [],
+      occurrences: frequency === "daily" ? editing.occurrences ?? 1 : 1,
+      cooldown_minutes: Math.max(0, Math.round(editing.cooldown_minutes ?? 0)),
+      gap_days: Math.max(0, Math.round(editing.gap_days ?? 0)),
+    };
     const { error } = editing.id
       ? await supabase.from("exercises").update(payload).eq("id", editing.id)
       : await supabase.from("exercises").insert(payload);
@@ -257,15 +297,24 @@ function ExerciseManager({ exercises, completions, todayKey, saving, onTrack, on
     onChange();
   }
 
+  const freq = (editing?.frequency ?? "weekly") as Frequency;
+  const cdH = Math.floor((editing?.cooldown_minutes ?? 0) / 60);
+  const cdM = (editing?.cooldown_minutes ?? 0) % 60;
+
   return (
     <section className="glass p-5 lg:col-span-2" aria-labelledby="ex-h">
       <div className="flex items-center justify-between gap-2">
         <h2 id="ex-h" className="text-xl">My Prescribed Exercises</h2>
-        <button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", days: [1, 2, 3, 4, 5] })}>
-          <Plus className="h-4 w-4" /> Add
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
+            <Plus className="h-4 w-4" /> Add
+          </button>
+          <Button variant="outline" size="icon" className="rounded-full" aria-label={weekOffset ? "Show this week" : "Show next week"} title={weekOffset ? "Back to this week" : "Show next week's schedule"} onClick={() => setWeekOffset(weekOffset ? 0 : 1)}>
+            {weekOffset ? <ChevronLeft /> : <ChevronRight />}
+          </Button>
+        </div>
       </div>
-      <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.</p>
+      <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.{weekOffset ? " Showing next week's schedule." : ""}</p>
 
       {editing && (
         <div className="mt-4 space-y-3 rounded-2xl border bg-card p-4">
@@ -279,20 +328,59 @@ function ExerciseManager({ exercises, completions, todayKey, saving, onTrack, on
             <input className="field mt-1" value={editing.notes ?? ""} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} />
           </label>
           <fieldset>
-            <legend className="text-sm font-semibold">Schedule</legend>
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              {DAY_LABELS.map((l, i) => {
-                const on = editing.days?.includes(i);
-                return (
-                  <button key={l} type="button" aria-pressed={on}
-                    onClick={() => setEditing({ ...editing, days: on ? (editing.days ?? []).filter((d) => d !== i) : [...(editing.days ?? []), i].sort() })}
-                    className={`h-10 w-12 rounded-full border text-sm font-bold ${on ? "btn-aqua min-h-0 p-0" : "bg-card"}`}>
-                    {l}
-                  </button>
-                );
-              })}
+            <legend className="text-sm font-semibold">Frequency</legend>
+            <div className="mt-1 grid grid-cols-2 gap-1.5">
+              {(["daily", "weekly"] as const).map((f) => (
+                <button key={f} type="button" aria-pressed={freq === f} onClick={() => setEditing({ ...editing, frequency: f })}
+                  className={`min-h-10 rounded-full border font-bold ${freq === f ? "btn-aqua min-h-10" : "bg-card"}`}>
+                  {f === "daily" ? "Daily" : "Weekly"}
+                </button>
+              ))}
             </div>
           </fieldset>
+          {freq === "daily" ? (
+            <>
+              <fieldset>
+                <legend className="text-sm font-semibold">Times per day</legend>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                    <button key={n} type="button" aria-pressed={editing.occurrences === n} onClick={() => setEditing({ ...editing, occurrences: n })}
+                      className={`h-10 w-10 rounded-full border text-sm font-bold ${editing.occurrences === n ? "btn-aqua btn-leaf min-h-0 p-0" : "btn-soft min-h-0 p-0"}`}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend className="text-sm font-semibold">Time between occurrences</legend>
+                <div className="mt-1 flex items-center gap-2 text-sm">
+                  <input type="number" min={0} max={23} className="field w-20" aria-label="Hours" value={cdH} onChange={(e) => setEditing({ ...editing, cooldown_minutes: Math.max(0, +e.target.value) * 60 + cdM })} /> hours
+                  <input type="number" min={0} max={59} className="field w-20" aria-label="Minutes" value={cdM} onChange={(e) => setEditing({ ...editing, cooldown_minutes: cdH * 60 + Math.min(59, Math.max(0, +e.target.value)) })} /> minutes
+                </div>
+              </fieldset>
+            </>
+          ) : (
+            <>
+              <fieldset>
+                <legend className="text-sm font-semibold">Days of the week</legend>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {DAY_LABELS.map((l, i) => {
+                    const on = editing.days?.includes(i);
+                    return (
+                      <button key={l} type="button" aria-pressed={on}
+                        onClick={() => setEditing({ ...editing, days: on ? (editing.days ?? []).filter((d) => d !== i) : [...(editing.days ?? []), i].sort() })}
+                        className={`h-10 w-12 rounded-full border text-sm font-bold ${on ? "btn-aqua min-h-0 p-0" : "bg-card"}`}>
+                        {l}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+              <label className="block text-sm font-semibold">Days in between
+                <input type="number" min={0} max={6} className="field mt-1 w-24" value={editing.gap_days ?? 0} onChange={(e) => setEditing({ ...editing, gap_days: Math.min(6, Math.max(0, +e.target.value)) })} />
+              </label>
+            </>
+          )}
           <div className="flex gap-2">
             <button className="btn-aqua" onClick={save}>Save</button>
             <button className="btn-soft" onClick={() => setEditing(null)}><X className="h-4 w-4" /> Cancel</button>
@@ -302,58 +390,71 @@ function ExerciseManager({ exercises, completions, todayKey, saving, onTrack, on
 
       <ul className="mt-4 divide-y divide-input">
         {exercises.length === 0 && <li className="py-2 text-sm text-muted-foreground">No exercises yet.</li>}
-        {exercises.map((ex) => (
-          <li key={ex.id} className="py-4">
-            <div className="flex flex-wrap items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <p className="break-words font-bold">{ex.name}</p>
-              <p className="text-xs text-muted-foreground">{ex.reps} · {ex.days.length === 7 ? "Every day" : ex.days.map((d) => DAY_LABELS[d]).join(", ")}</p>
-              {ex.notes && <p className="break-words text-xs text-muted-foreground">{ex.notes}</p>}
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <TrackingButtons exercise={ex} day={todayKey} status={completions.find((c) => c.exercise_id === ex.id && c.day === todayKey)?.status} disabled={saving} onTrack={onTrack} />
-              <Button variant="outline" size="icon" className="rounded-full" title="Edit exercise" aria-label={`Edit ${ex.name}`} onClick={() => setEditing(ex)}><Pencil /></Button>
-              <Button variant="outline" size="icon" className="rounded-full text-destructive" title="Remove exercise" aria-label={`Remove ${ex.name}`} onClick={() => remove(ex.id)}><Trash2 /></Button>
-            </div>
-            </div>
-            <ul className="mt-3 divide-y divide-input border-t border-input">
-              {week.map((date) => {
-                const day = dayKey(date);
-                const scheduled = ex.days.includes(date.getDay());
-                const record = completions.find((c) => c.exercise_id === ex.id && c.day === day);
-                const isToday = day === todayKey;
-                const canTrack = day <= todayKey && (scheduled || Boolean(record));
-                return (
-                  <li key={day} className={`flex min-h-11 flex-wrap items-center justify-between gap-2 px-2 py-1.5 ${isToday ? "bg-secondary/70" : ""}`}>
-                    <div className="flex flex-wrap items-center gap-x-2 text-sm">
-                      <span className="font-semibold">{DAY_LABELS[date.getDay()]}</span>
-                      <span className="text-xs text-muted-foreground">{date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
-                      {isToday && <span className="font-bold text-primary">Today</span>}
-                      <span className={`text-xs ${record?.status === "complete" ? "font-semibold text-success" : "text-muted-foreground"}`}>
-                        {record?.status === "complete" ? "Complete" : record?.status === "skip" ? "Skipped" : !scheduled ? "Not scheduled" : day > todayKey ? "Upcoming" : "Not checked off"}
-                      </span>
-                    </div>
-                    <TrackingButtons exercise={ex} day={day} status={record?.status} disabled={saving || !canTrack} onTrack={onTrack} />
-                  </li>
-                );
-              })}
-            </ul>
-          </li>
-        ))}
+        {exercises.map((ex) => {
+          const daily = ex.frequency === "daily";
+          const scheduledToday = daily || ex.days.includes(todayDow);
+          const lines = daily
+            ? (weekOffset ? [] : Array.from({ length: ex.occurrences }, (_, i) => ({ key: `o${i + 1}`, label: `Occurrence ${i + 1}`, day: todayKey, occ: i + 1, date: new Date() })))
+            : week.filter((d) => ex.days.includes(d.getDay())).map((d) => ({ key: dayKey(d), label: longDate(d), day: dayKey(d), occ: 1, date: d }));
+          return (
+            <li key={ex.id} className="py-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className={`group relative min-w-0 flex-1 ${scheduledToday ? "" : "opacity-60"}`}>
+                  <p className="break-words font-bold">
+                    {ex.name}
+                    {daily && <span className="ml-2 rounded-full bg-accent px-2 py-0.5 align-middle text-[11px] font-bold text-accent-foreground">Daily</span>}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {ex.reps} · {daily ? `${ex.occurrences}× per day${ex.cooldown_minutes ? `, ${formatWait(ex.cooldown_minutes * 60_000)} apart` : ""}` : `${ex.days.length === 7 ? "Every day" : ex.days.map((d) => DAY_LABELS[d]).join(", ")}${ex.gap_days ? `, ${ex.gap_days} day${ex.gap_days === 1 ? "" : "s"} in between` : ""}`}
+                  </p>
+                  {ex.notes && <p className="break-words text-xs text-muted-foreground">{ex.notes}</p>}
+                  {!scheduledToday && (
+                    <span className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden rounded-xl border bg-popover px-2 py-1 text-xs text-popover-foreground shadow group-hover:block">
+                      It's not the right day yet! Check this off when you complete it on the scheduled date.
+                    </span>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button variant="outline" size="icon" className="rounded-full" title="Edit exercise" aria-label={`Edit ${ex.name}`} onClick={() => setEditing(ex)}><Pencil /></Button>
+                  <Button variant="outline" size="icon" className="rounded-full text-destructive" title="Remove exercise" aria-label={`Remove ${ex.name}`} onClick={() => remove(ex.id)}><Trash2 /></Button>
+                </div>
+              </div>
+              {waitNotes[ex.id] && <p className="mt-2 rounded-xl bg-secondary px-3 py-1.5 text-xs font-semibold text-secondary-foreground" role="status">{waitNotes[ex.id]}</p>}
+              {lines.length > 0 && (
+                <ul className="mt-2 space-y-1 rounded-2xl border bg-card/60 p-2 text-xs">
+                  {lines.map((line) => {
+                    const record = completions.find((c) => c.exercise_id === ex.id && c.day === line.day && c.occurrence === line.occ);
+                    const isToday = line.day === todayKey;
+                    const note = line.day > todayKey ? "Upcoming" : line.day < todayKey ? "Past" : null;
+                    return (
+                      <li key={line.key} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl px-2 py-1 ${isToday ? "" : "opacity-50"}`}
+                        title={isToday ? undefined : `It's not ${line.date.toLocaleDateString("en-US", { weekday: "long" })} yet! Check this off when you complete it on the appropriate date.`}>
+                        <span className="flex items-center gap-2">
+                          <span className="font-semibold">{line.label}</span>
+                          {isToday && !daily && <span className="font-bold text-primary">Today</span>}
+                          {note && <span className="text-muted-foreground">{note}</span>}
+                          {record && <span className={record.status === "complete" ? "font-semibold text-success" : "text-muted-foreground"}>{record.status === "complete" ? "Completed" : "Skipped"}</span>}
+                        </span>
+                        <span className="flex gap-1">
+                          <button type="button" disabled={saving || !isToday} aria-pressed={record?.status === "complete"} onClick={() => onTrack(ex, line.day, "complete", line.occ)}
+                            className={`rounded-full border px-2.5 py-1 font-semibold disabled:cursor-not-allowed ${record?.status === "complete" ? "border-success bg-accent text-accent-foreground" : "bg-card"}`}>
+                            Mark as complete
+                          </button>
+                          <button type="button" disabled={saving || !isToday} aria-pressed={record?.status === "skip"} onClick={() => onTrack(ex, line.day, "skip", line.occ)}
+                            className={`rounded-full border px-2.5 py-1 font-semibold disabled:cursor-not-allowed ${record?.status === "skip" ? "border-primary bg-secondary text-secondary-foreground" : "bg-card"}`}>
+                            Skip for today
+                          </button>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </section>
-  );
-}
-
-function TrackingButtons({ exercise, day, status, disabled, onTrack }: {
-  exercise: Exercise; day: string; status: string | undefined; disabled: boolean;
-  onTrack: (exercise: Exercise, day: string, status: ExerciseStatus) => Promise<void>;
-}) {
-  return (
-    <div className="flex shrink-0 gap-1">
-      <Button variant="outline" size="icon" className={`rounded-full ${status === "complete" ? "border-success bg-accent text-accent-foreground" : ""}`} title="Complete" aria-label={`Complete ${exercise.name} on ${day}`} aria-pressed={status === "complete"} disabled={disabled} onClick={() => onTrack(exercise, day, "complete")}><Check /></Button>
-      <Button variant="outline" size="icon" className={`rounded-full ${status === "skip" ? "border-primary bg-secondary text-secondary-foreground" : ""}`} title="Skip" aria-label={`Skip ${exercise.name} on ${day}`} aria-pressed={status === "skip"} disabled={disabled} onClick={() => onTrack(exercise, day, "skip")}><Minus /></Button>
-    </div>
   );
 }
 

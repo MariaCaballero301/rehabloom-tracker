@@ -15,6 +15,13 @@
       "when": 1791653192470,
       "tag": "0001_exercise_completion_status",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791655406092,
+      "tag": "0002_exercise_frequency_occurrences",
+      "breakpoints": true
     }
   ]
 }

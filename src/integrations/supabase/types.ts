@@ -50,6 +50,7 @@ export type Database = {
           day: string
           exercise_id: string
           id: string
+          occurrence: number
           status: string
           user_id: string
         }
@@ -58,6 +59,7 @@ export type Database = {
           day: string
           exercise_id: string
           id?: string
+          occurrence?: number
           status?: string
           user_id?: string
         }
@@ -66,6 +68,7 @@ export type Database = {
           day?: string
           exercise_id?: string
           id?: string
+          occurrence?: number
           status?: string
           user_id?: string
         }
@@ -81,29 +84,41 @@ export type Database = {
       }
       exercises: {
         Row: {
+          cooldown_minutes: number
           created_at: string
           days: number[]
+          frequency: string
+          gap_days: number
           id: string
           name: string
           notes: string
+          occurrences: number
           reps: string
           user_id: string
         }
         Insert: {
+          cooldown_minutes?: number
           created_at?: string
           days?: number[]
+          frequency?: string
+          gap_days?: number
           id?: string
           name: string
           notes?: string
+          occurrences?: number
           reps?: string
           user_id?: string
         }
         Update: {
+          cooldown_minutes?: number
           created_at?: string
           days?: number[]
+          frequency?: string
+          gap_days?: number
           id?: string
           name?: string
           notes?: string
+          occurrences?: number
           reps?: string
           user_id?: string
         }

@@ -1,0 +1,356 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Check, Pencil, Trash2, Plus, LogOut, Bell, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
+import { Plant } from "./Plant";
+import { computeXp, stageFor, dayKey, lastNDays, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN } from "@/lib/rehab";
+
+type Exercise = Tables<"exercises">;
+type Completion = Tables<"completions">;
+type Checkin = Tables<"checkins">;
+type Prefs = Tables<"preferences">;
+
+export function Dashboard({ userId, email }: { userId: string; email: string }) {
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [completions, setCompletions] = useState<Completion[]>([]);
+  const [checkins, setCheckins] = useState<Checkin[]>([]);
+  const [prefs, setPrefs] = useState<Prefs | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const today = new Date();
+  const todayKey = dayKey(today);
+
+  const load = useCallback(async () => {
+    const [ex, co, ci, pr] = await Promise.all([
+      supabase.from("exercises").select("*").order("created_at"),
+      supabase.from("completions").select("*"),
+      supabase.from("checkins").select("*"),
+      supabase.from("preferences").select("*").maybeSingle(),
+    ]);
+    setExercises(ex.data ?? []);
+    setCompletions(co.data ?? []);
+    setCheckins(ci.data ?? []);
+    setPrefs(pr.data ?? { user_id: userId, partner_email: "", reminder_time: "09:00:00", reminders_enabled: true, updated_at: "" });
+    setLoading(false);
+  }, [userId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const xp = computeXp(completions.length, checkins.length);
+  const stage = stageFor(xp);
+  const todays = exercises.filter((e) => e.days.includes(today.getDay()));
+  const doneToday = new Set(completions.filter((c) => c.day === todayKey).map((c) => c.exercise_id));
+  const todayCheckin = checkins.find((c) => c.day === todayKey);
+
+  async function toggle(ex: Exercise) {
+    if (doneToday.has(ex.id)) {
+      await supabase.from("completions").delete().eq("exercise_id", ex.id).eq("day", todayKey);
+    } else {
+      const { error } = await supabase.from("completions").insert({ exercise_id: ex.id, day: todayKey });
+      if (error) return toast.error(error.message);
+      toast.success(`+${XP_PER_EXERCISE} XP — nice work!`);
+    }
+    load();
+  }
+
+  if (loading) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
+
+  return (
+    <div className="mx-auto max-w-5xl p-4 sm:p-6">
+      <header className="mb-5 flex items-center justify-between gap-3">
+        <h1 className="text-2xl text-primary sm:text-3xl">Rehabloom</h1>
+        <div className="flex items-center gap-2">
+          <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
+          <button className="btn-soft" onClick={() => supabase.auth.signOut()} aria-label="Sign out">
+            <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Sign out</span>
+          </button>
+        </div>
+      </header>
+
+      <p className="mb-5 rounded-2xl bg-secondary/70 px-4 py-2 text-xs text-secondary-foreground">
+        Rehabloom helps you follow your therapist's plan. It doesn't give medical advice. If pain increases, stop and contact your physical therapist.
+      </p>
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <section className="glass p-5 lg:col-span-2" aria-labelledby="today-h">
+          <h2 id="today-h" className="text-xl">Today's exercises</h2>
+          <p className="text-sm text-muted-foreground">
+            {today.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+          </p>
+          {todayCheckin && todayCheckin.status !== "normal" && (
+            <p className="mt-3 rounded-xl bg-accent px-3 py-2 text-sm text-accent-foreground">
+              You marked today as {todayCheckin.status === "rest" ? "a rest day" : "unable to complete"}. That's okay — listening to your body counts.
+            </p>
+          )}
+          <ul className="mt-4 space-y-2">
+            {todays.length === 0 && (
+              <li className="text-sm text-muted-foreground">No exercises scheduled today. Add your prescribed exercises below.</li>
+            )}
+            {todays.map((ex) => {
+              const done = doneToday.has(ex.id);
+              return (
+                <li key={ex.id}>
+                  <label className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition ${done ? "bg-accent/70" : "bg-card"}`}>
+                    <input type="checkbox" className="sr-only" checked={done} onChange={() => toggle(ex)} />
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${done ? "btn-aqua btn-leaf min-h-0 border-success p-0" : "border-input bg-card"}`} aria-hidden>
+                      {done && <Check className="h-5 w-5" />}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className={`block font-bold ${done ? "line-through opacity-70" : ""}`}>{ex.name}</span>
+                      <span className="block text-sm text-muted-foreground">{ex.reps}</span>
+                      {ex.notes && <span className="block text-xs text-muted-foreground">{ex.notes}</span>}
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        <section className="glass flex flex-col items-center p-5 text-center" aria-labelledby="plant-h">
+          <h2 id="plant-h" className="text-xl">Your plant</h2>
+          <Plant stage={stage.index} />
+          <p className="font-bold">{stage.name}</p>
+          <p className="text-2xl font-extrabold text-success">{xp} XP</p>
+          {stage.nextAt !== null ? (
+            <>
+              <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={xp} aria-valuemax={stage.nextAt}>
+                <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, (xp / stage.nextAt) * 100)}%` }} />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{stage.nextAt - xp} XP to next stage</p>
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground">Fully grown!</p>
+          )}
+          <p className="mt-3 text-xs text-muted-foreground">
+            +{XP_PER_EXERCISE} per exercise, +{XP_PER_CHECKIN} per check-in (rest days included). Pain level never changes XP.
+          </p>
+        </section>
+
+        <CheckinCard existing={todayCheckin} todayKey={todayKey} onSaved={load} />
+        <HistoryCard exercises={exercises} completions={completions} checkins={checkins} />
+        <ExerciseManager exercises={exercises} onChange={load} />
+        {prefs && <SettingsCard prefs={prefs} email={email} onSaved={load} />}
+      </div>
+    </div>
+  );
+}
+
+function CheckinCard({ existing, todayKey, onSaved }: { existing?: Checkin; todayKey: string; onSaved: () => void }) {
+  const [pain, setPain] = useState(existing?.pain ?? 0);
+  const [motivation, setMotivation] = useState(existing?.motivation ?? 3);
+  const [status, setStatus] = useState<string>(existing?.status ?? "normal");
+
+  async function save() {
+    const { error } = await supabase.from("checkins").upsert(
+      { day: todayKey, pain, motivation, status },
+      { onConflict: "user_id,day" },
+    );
+    if (error) return toast.error(error.message);
+    toast.success(existing ? "Check-in updated" : `Checked in — +${XP_PER_CHECKIN} XP`);
+    onSaved();
+  }
+
+  return (
+    <section className="glass p-5" aria-labelledby="ci-h">
+      <h2 id="ci-h" className="text-xl">Daily check-in</h2>
+      <label className="mt-3 block text-sm font-semibold">
+        Pain level: <span className="text-primary">{pain}/10</span>
+        <input type="range" min={0} max={10} value={pain} onChange={(e) => setPain(+e.target.value)} className="mt-2 w-full accent-primary" />
+      </label>
+      {pain >= 7 && (
+        <p className="mt-1 text-xs text-destructive">High pain — consider resting and contacting your physical therapist.</p>
+      )}
+      <fieldset className="mt-3">
+        <legend className="text-sm font-semibold">Motivation</legend>
+        <div className="mt-2 flex gap-1.5">
+          {[1, 2, 3, 4, 5].map((m) => (
+            <button key={m} type="button" aria-pressed={motivation === m} onClick={() => setMotivation(m)}
+              className={`h-10 flex-1 rounded-full border font-bold ${motivation === m ? "btn-aqua min-h-0 p-0" : "bg-card"}`}>
+              {m}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="mt-3">
+        <legend className="text-sm font-semibold">Today</legend>
+        <div className="mt-2 grid grid-cols-3 gap-1.5 text-sm">
+          {[["normal", "On track"], ["rest", "Rest day"], ["unable", "Unable"]].map(([v, l]) => (
+            <button key={v} type="button" aria-pressed={status === v} onClick={() => setStatus(v)}
+              className={`min-h-10 rounded-full border px-2 font-semibold ${status === v ? "btn-aqua btn-leaf min-h-10 px-2" : "bg-card"}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <button className="btn-aqua mt-4 w-full" onClick={save}>{existing ? "Update check-in" : "Save check-in"}</button>
+    </section>
+  );
+}
+
+function HistoryCard({ exercises, completions, checkins }: { exercises: Exercise[]; completions: Completion[]; checkins: Checkin[] }) {
+  const days = lastNDays(7);
+  return (
+    <section className="glass p-5 lg:col-span-2" aria-labelledby="hist-h">
+      <h2 id="hist-h" className="text-xl">Last 7 days</h2>
+      <div className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-3">
+        {days.map((d) => {
+          const k = dayKey(d);
+          const scheduled = exercises.filter((e) => e.days.includes(d.getDay()) && dayKey(new Date(e.created_at)) <= k).length;
+          const done = completions.filter((c) => c.day === k).length;
+          const ci = checkins.find((c) => c.day === k);
+          const pct = scheduled ? Math.min(100, Math.round((done / scheduled) * 100)) : 0;
+          const label = ci?.status === "rest" ? "Rest" : ci?.status === "unable" ? "Unable" : scheduled ? `${done}/${scheduled}` : "—";
+          return (
+            <div key={k} className="flex flex-col items-center gap-1 text-center">
+              <span className="text-xs font-semibold text-muted-foreground">{DAY_LABELS[d.getDay()]}</span>
+              <div className="relative flex h-20 w-full items-end overflow-hidden rounded-xl border bg-card" aria-label={`${d.toDateString()}: ${label}`}>
+                <div className={`w-full ${ci && ci.status !== "normal" ? "bg-secondary" : "bg-success"}`} style={{ height: ci && ci.status !== "normal" ? "100%" : `${pct}%` }} />
+              </div>
+              <span className="text-[11px] font-bold">{label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function ExerciseManager({ exercises, onChange }: { exercises: Exercise[]; onChange: () => void }) {
+  const [editing, setEditing] = useState<Partial<Exercise> | null>(null);
+
+  async function save() {
+    if (!editing?.name?.trim()) return toast.error("Please enter the exercise name");
+    if (!editing.days?.length) return toast.error("Pick at least one day");
+    const payload = { name: editing.name.trim(), reps: editing.reps ?? "", notes: editing.notes ?? "", days: editing.days };
+    const { error } = editing.id
+      ? await supabase.from("exercises").update(payload).eq("id", editing.id)
+      : await supabase.from("exercises").insert(payload);
+    if (error) return toast.error(error.message);
+    setEditing(null);
+    onChange();
+  }
+
+  async function remove(id: string) {
+    if (!confirm("Remove this exercise?")) return;
+    await supabase.from("exercises").delete().eq("id", id);
+    onChange();
+  }
+
+  return (
+    <section className="glass p-5 lg:col-span-2" aria-labelledby="ex-h">
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="ex-h" className="text-xl">My prescribed exercises</h2>
+        <button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", days: [1, 2, 3, 4, 5] })}>
+          <Plus className="h-4 w-4" /> Add
+        </button>
+      </div>
+      <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.</p>
+
+      {editing && (
+        <div className="mt-4 space-y-3 rounded-2xl border bg-card p-4">
+          <label className="block text-sm font-semibold">Exercise name
+            <input className="field mt-1" value={editing.name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="e.g. Heel slides" />
+          </label>
+          <label className="block text-sm font-semibold">Repetitions / sets
+            <input className="field mt-1" value={editing.reps ?? ""} onChange={(e) => setEditing({ ...editing, reps: e.target.value })} placeholder="e.g. 3 sets of 10" />
+          </label>
+          <label className="block text-sm font-semibold">Therapist's notes (optional)
+            <input className="field mt-1" value={editing.notes ?? ""} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} />
+          </label>
+          <fieldset>
+            <legend className="text-sm font-semibold">Schedule</legend>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {DAY_LABELS.map((l, i) => {
+                const on = editing.days?.includes(i);
+                return (
+                  <button key={l} type="button" aria-pressed={on}
+                    onClick={() => setEditing({ ...editing, days: on ? editing.days!.filter((d) => d !== i) : [...(editing.days ?? []), i].sort() })}
+                    className={`h-10 w-12 rounded-full border text-sm font-bold ${on ? "btn-aqua min-h-0 p-0" : "bg-card"}`}>
+                    {l}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+          <div className="flex gap-2">
+            <button className="btn-aqua" onClick={save}>Save</button>
+            <button className="btn-soft" onClick={() => setEditing(null)}><X className="h-4 w-4" /> Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <ul className="mt-4 divide-y divide-input">
+        {exercises.length === 0 && <li className="py-2 text-sm text-muted-foreground">No exercises yet.</li>}
+        {exercises.map((ex) => (
+          <li key={ex.id} className="flex items-center gap-2 py-2">
+            <div className="min-w-0 flex-1">
+              <p className="font-bold">{ex.name}</p>
+              <p className="text-xs text-muted-foreground">{ex.reps} · {ex.days.length === 7 ? "Every day" : ex.days.map((d) => DAY_LABELS[d]).join(", ")}</p>
+            </div>
+            <button className="btn-soft px-3" aria-label={`Edit ${ex.name}`} onClick={() => setEditing(ex)}><Pencil className="h-4 w-4" /></button>
+            <button className="btn-soft px-3 text-destructive" aria-label={`Remove ${ex.name}`} onClick={() => remove(ex.id)}><Trash2 className="h-4 w-4" /></button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function SettingsCard({ prefs, email, onSaved }: { prefs: Prefs; email: string; onSaved: () => void }) {
+  const [partner, setPartner] = useState(prefs.partner_email);
+  const [time, setTime] = useState(prefs.reminder_time.slice(0, 5));
+  const [enabled, setEnabled] = useState(prefs.reminders_enabled);
+  const [preview, setPreview] = useState(false);
+
+  async function save() {
+    const { error } = await supabase.from("preferences").upsert({
+      partner_email: partner.trim(), reminder_time: time, reminders_enabled: enabled, updated_at: new Date().toISOString(),
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Settings saved");
+    onSaved();
+  }
+
+  const sample = useMemo(() => ({
+    to: email,
+    cc: partner || "(no partner set)",
+    subject: "Rehabloom reminder: your exercises for today",
+    body: `Hi there,\n\nThis is your ${time} reminder to do the exercises your physical therapist prescribed. Open Rehabloom to check them off and water your plant.\n\nIf you're in pain or need rest today, it's okay to log a rest day.\n\n— Rehabloom`,
+  }), [email, partner, time]);
+
+  return (
+    <section className="glass p-5" aria-labelledby="set-h">
+      <h2 id="set-h" className="text-xl">Reminders</h2>
+      <label className="mt-3 block text-sm font-semibold">Accountability partner email
+        <input type="email" className="field mt-1" value={partner} onChange={(e) => setPartner(e.target.value)} placeholder="friend@example.com" />
+      </label>
+      <label className="mt-3 block text-sm font-semibold">Reminder time
+        <input type="time" className="field mt-1" value={time} onChange={(e) => setTime(e.target.value)} />
+      </label>
+      <label className="mt-3 flex items-center justify-between gap-2 text-sm font-semibold">
+        Reminders {enabled ? "on" : "paused"}
+        <button type="button" role="switch" aria-checked={enabled} onClick={() => setEnabled(!enabled)}
+          className={`relative h-8 w-14 rounded-full border transition ${enabled ? "bg-success" : "bg-muted"}`}>
+          <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-card shadow transition-all ${enabled ? "left-7" : "left-0.5"}`} />
+        </button>
+      </label>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button className="btn-aqua" onClick={save}>Save</button>
+        <button className="btn-soft" onClick={() => { setPreview(true); toast.info(enabled ? "Test reminder simulated — no email was sent." : "Reminders are paused, but here's a preview."); }}>
+          <Bell className="h-4 w-4" /> Test reminder
+        </button>
+      </div>
+      {preview && (
+        <div className="mt-4 rounded-2xl border bg-popover p-3 text-sm" aria-live="polite">
+          <p className="mb-1 text-xs font-bold uppercase text-muted-foreground">Sample email (simulation only)</p>
+          <p><b>To:</b> {sample.to}</p>
+          <p><b>CC:</b> {sample.cc}</p>
+          <p><b>Subject:</b> {sample.subject}</p>
+          <p className="mt-2 whitespace-pre-line text-muted-foreground">{sample.body}</p>
+        </div>
+      )}
+    </section>
+  );
+}

@@ -24,5 +24,5 @@
 - [x] Gemini AI monthly summary on Progress (Jaiden)
 - [x] Add Monthly/Weekly AI summary choices, distinct date pickers and period-aware generation/history; test and verify.
 - [x] Fix Sessions placement, hide both floating bubbles during either panel, and verify mobile/desktop exclusivity and toast Open.
-- [ ] Diagnose and resolve the reported Support hook crash; verify signed-in navigation.
-- [ ] Add subtle bubble-pop sounds on appropriate active bubble clicks and verify playback.
+- [x] Diagnose reported mixed-version React crash; add guarded preview recovery and verify signed-in Support navigation.
+- [x] Add subtle bubble-pop sounds on appropriate active bubble clicks and verify playback.

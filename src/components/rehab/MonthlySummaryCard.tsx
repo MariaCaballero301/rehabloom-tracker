@@ -31,8 +31,8 @@ export function MonthlySummaryCard() {
       .then(({ data }) => {
         const rows: Summary[] = (data ?? []).map((row) => {
           const stats = row.stats && typeof row.stats === "object" && !Array.isArray(row.stats) ? row.stats : {};
-          const weekly = stats.reportPeriod === "weekly" && typeof stats.periodStart === "string";
-          return { ...row, period: weekly ? "weekly" : "monthly", periodDate: weekly ? String(stats.periodStart) : row.month };
+          const weekly = stats["reportPeriod"] === "weekly" && typeof stats["periodStart"] === "string";
+          return { ...row, period: weekly ? "weekly" : "monthly", periodDate: weekly ? String(stats["periodStart"]) : row.month };
         });
         setList(rows); setCurrent(rows[0] ?? null);
       });

@@ -73,8 +73,11 @@ export function Dashboard({ userId, email, joinedAt }: { userId: string; email: 
     const status = nextExerciseStatus(existing?.status, requested);
     if (status === "complete") {
       const reason = blockReason(ex, occurrence);
-      setWaitNotes((n) => ({ ...n, [ex.id]: reason ?? "" }));
-      if (reason) return;
+      if (reason && waitNotes[ex.id] !== reason) {
+        setWaitNotes((n) => ({ ...n, [ex.id]: `${reason} Tap again to do it anyway.` }));
+        return;
+      }
+      setWaitNotes((n) => ({ ...n, [ex.id]: "" }));
     }
     setSaving(true);
     try {

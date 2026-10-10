@@ -8,6 +8,7 @@ vi.mock("@/integrations/supabase/client", () => {
     eq: () => query,
     in: () => Promise.resolve({ error: null }),
     update: () => query,
+    maybeSingle: () => Promise.resolve({ data: null, error: null }),
     delete: () => query,
   };
   return {

@@ -20,14 +20,14 @@ export function InviteCard({
   return (
     <section className="glass p-5 sm:p-6" aria-labelledby="invite-h">
       <h2 id="invite-h" className="text-xl">Invite family & friends</h2>
-      <p className="mt-1 text-xs text-slate-600">
+      <p className="mt-1 text-xs text-muted-foreground">
         Share your code with someone you trust — they can redeem it after signing up.
       </p>
       <CreateInvite code={permanent?.code ?? null} onChange={onChange} />
       {permanent && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <ShareInviteButton code={permanent.code} />
-          <p className="text-xs text-slate-500">Your code never expires — share it anytime.</p>
+          <p className="text-xs text-muted-foreground">Your code never expires — share it anytime.</p>
         </div>
       )}
       <PendingInviteRedeemer />
@@ -54,8 +54,8 @@ export function RedeemCodeForm({ initialCode = "", onChange, standalone = false 
     } finally { setBusy(false); }
   }
   return (
-      <form onSubmit={onRedeem} className={standalone ? "glass p-5 sm:p-6" : "mt-5 border-t border-sky-100 pt-4"}>
-        <label className="text-xs font-semibold text-sky-800" htmlFor="redeem-code">
+      <form onSubmit={onRedeem} className={standalone ? "glass p-5 sm:p-6" : "mt-5 border-t border-border pt-4"}>
+        <label className="text-xs font-semibold text-foreground" htmlFor="redeem-code">
           Got a code from someone?
         </label>
         <div className="mt-1 flex gap-2">
@@ -70,8 +70,8 @@ export function RedeemCodeForm({ initialCode = "", onChange, standalone = false 
             {busy ? "…" : "Join"}
           </button>
         </div>
-        {result && <p className="mt-2 text-sm font-semibold text-emerald-700">{result}</p>}
-        {error && <p className="mt-2 text-sm font-semibold text-rose-600">{error}</p>}
+        {result && <p className="mt-2 text-sm font-semibold text-success">{result}</p>}
+        {error && <p className="mt-2 text-sm font-semibold text-destructive">{error}</p>}
       </form>
   );
 }

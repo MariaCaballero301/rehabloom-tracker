@@ -87,7 +87,7 @@ export function PeopleCard({
   const buddyContacts = groups.buddies.contacts;
   const supportingOnly = groups.buddies.supporting;
 
-  function renderGroup(title: string, group: { contacts: Contact[]; supporting: Supported[] }, empty: string, showKind = true) {
+  function renderGroup(title: string, group: { contacts: Contact[]; supporting: Supported[] }, empty: string, showKind = true, canEncourage = true) {
     return (
       <div>
         <h3 className="mt-5 text-sm font-bold text-muted-foreground">{title}</h3>

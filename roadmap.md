@@ -38,4 +38,4 @@
 - [x] Make the fish swim sound last the whole swim and let sound effects overlap without cutting each other off.
 - [x] Make the Home/Progress/Support navigation sticky on every page with a faint glossy white underlay once the user scrolls.
 - [x] Remove Send by email from invites; make Share work (fallback when unsupported)
-- [ ] Invites: one permanent code per relationship, no delete; single 'Copy code' button (remove Share/Copy link)
+- [x] Invites: one permanent code per relationship, no delete; single 'Copy code' button (remove Share/Copy link)

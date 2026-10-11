@@ -20,8 +20,6 @@ export function InviteCard({
   const [relationship, setRelationship] = useState("family");
   const [redeem, setRedeem] = useState(initialCode);
   const [busy, setBusy] = useState(false);
-  const [canShare, setCanShare] = useState(false);
-  useEffect(() => setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function"), []);
   const [manual, setManual] = useState({ name: "", phone: "", kind: "family", notify: true });
 
   // Fire-and-forget: a failed welcome text never blocks adding the contact.
@@ -31,7 +29,6 @@ export function InviteCard({
       .catch((e) => console.error("[welcome]", e));
   }
 
-  const linkFor = (code: string) => `${window.location.origin}/support?code=${code}`;
 
   async function run(fn: () => Promise<void>) {
     setBusy(true);
@@ -43,19 +40,6 @@ export function InviteCard({
       setBusy(false);
     }
   }
-
-  // Reuse an active code for this relationship, or create one.
-  async function ensureCode(): Promise<string> {
-    const existing = invites.find((i) => i.relationship === relationship && new Date(i.expires_at) > new Date());
-    if (existing) return existing.code;
-    const code = await rpc<string>("create_invite_code", { p_relationship: relationship });
-    onChange();
-    return code;
-  }
-
-  const SUBJECT = "Join my rehab support circle on Rehabloom 💚";
-  const message = (code: string) =>
-    `Hi! I'm using Rehabloom to keep up with my physical therapy, and I'd love for you to be part of my support circle. Join here: ${linkFor(code)}\n\nOr enter my code in the app: ${formatInviteCode(code)}`;
 
   // One permanent code per relationship, created automatically the first time it's needed.
   const current = invites.find((i) => i.relationship === relationship && new Date(i.expires_at) > new Date());

@@ -38,3 +38,18 @@ export function journeyTotals(
   const first = [...active].sort()[0] ?? finishedDay;
   return { daysActive: active.size, exercisesCompleted: done.length, bestStreak: best, firstDay: first };
 }
+
+/** Recovery story range: account creation (or first completion, if earlier) → finished day; never a single day. */
+export function recoveryRange(joinedDay: string, completions: { day: string; status: string }[], finishedDay: string) {
+  const first = completions.filter((c) => c.status === "complete").map((c) => c.day).sort()[0];
+  let from = first && first < joinedDay ? first : joinedDay;
+  if (from >= finishedDay) {
+    const d = new Date(`${finishedDay}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 1);
+    from = d.toISOString().slice(0, 10);
+  }
+  return { from, to: finishedDay };
+}
+
+/** "1 person", "2 people", "1 session"… */
+export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;

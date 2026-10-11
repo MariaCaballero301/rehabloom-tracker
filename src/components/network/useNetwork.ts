@@ -101,7 +101,6 @@ export function useNetwork(userId: string) {
           .from("invite_codes")
           .select("id, code, relationship, expires_at")
           .is("used_at", null)
-          .gt("expires_at", new Date().toISOString())
           .order("created_at", { ascending: false }),
         db.from("blocks").select("blocked_id, blocked_name"),
         db.rpc("buddy_relationship_stats", { p_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }),

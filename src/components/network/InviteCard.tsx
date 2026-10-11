@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CreateInvite, ShareInviteButton, redeemCode } from "./CreateInvite";
 import { PendingInviteRedeemer } from "./PendingInvite";
 import type { InviteCode } from "./useNetwork";
+import { isInviteActive } from "@/lib/network";
 
 export function InviteCard({
   invites,
@@ -19,7 +20,7 @@ export function InviteCard({
 
   // The permanent code (one per account) — created on first visit, so take
   // the newest invite; there is at most one now that codes never expire.
-  const permanent = [...invites].sort((a, b) => (a.id < b.id ? 1 : -1))[0] ?? null;
+  const permanent = invites.filter((i) => isInviteActive(i)).sort((a, b) => (a.id < b.id ? 1 : -1))[0] ?? null;
 
   async function onRedeem(e: React.FormEvent) {
     e.preventDefault();

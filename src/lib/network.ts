@@ -147,3 +147,10 @@ export function formatInviteCode(code: string) {
 export function toggleIn<T>(list: T[], item: T) {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 }
+
+/** Invites with expires_at "infinity" (permanent) or any unparsable date never expire. */
+export function isInviteActive(invite: { expires_at?: string | null; used_at?: string | null }, now: Date = new Date()) {
+  if (invite.used_at) return false;
+  const t = Date.parse(invite.expires_at ?? "");
+  return Number.isNaN(t) || t > now.getTime();
+}

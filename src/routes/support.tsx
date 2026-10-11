@@ -13,9 +13,13 @@ import { DiscoverCard } from "@/components/network/DiscoverCard";
 import { InviteCard } from "@/components/network/InviteCard";
 
 export const Route = createFileRoute("/support")({
-  validateSearch: (search: Record<string, unknown>): { code?: string } => {
+  validateSearch: (search: Record<string, unknown>): { code?: string; edit?: string } => {
     const code = search["code"];
-    return typeof code === "string" ? { code: code.slice(0, 12) } : {};
+    const edit = search["edit"];
+    return {
+      code: typeof code === "string" ? code.slice(0, 12) : undefined,
+      edit: edit === "profile" ? "profile" : undefined,
+    };
   },
   head: () => ({
     meta: [
@@ -58,6 +62,7 @@ function SupportPage() {
 
 function People({ userId, email, initialCode }: { userId: string; email: string; initialCode: string }) {
   const n = useNetwork(userId);
+  const { edit } = Route.useSearch();
 
   // Don't suggest people we're already connected with or have a pending request with.
   const excluded = useMemo(() => {
@@ -79,7 +84,7 @@ function People({ userId, email, initialCode }: { userId: string; email: string;
         <p className="p-10 text-center text-muted-foreground">Loading…</p>
       ) : (
         <div className="space-y-4">
-          <ProfileCard profile={n.profile} saved={n.hasProfile && !!n.profile.display_name} onSaved={n.reload} />
+          <ProfileCard profile={n.profile} saved={n.hasProfile && !!n.profile.display_name} onSaved={n.reload} openEditRequest={edit} />
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-4">
               <SupportAlertsPanel userId={userId} />

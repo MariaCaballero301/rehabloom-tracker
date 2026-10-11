@@ -42,7 +42,7 @@
 - Use shared pure period helpers for monthly and Monday–Sunday weekly ranges; persist period metadata in the existing private summary stats JSON to preserve old monthly history without duplicating reports.
 
 ## Interaction audio
-- Install one root-level click listener with lazy Web Audio synthesis for active glossy controls; audio failures must never block actions or play during background updates.
+- Use sounds.ts for a gesture-gated shared Web Audio context, quiet master gain and anti-spam guard; one delegated root listener chooses tap/pop/success through a pure tested selector, with persistent mute and explicit action overrides so audio never blocks controls.
 
 ## Preview recovery
 - Detect mixed Vite React/renderer optimization versions in development and use the shared guarded reload; a stale renderer cannot safely execute hooks from a newer React module.

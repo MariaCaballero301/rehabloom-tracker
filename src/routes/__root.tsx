@@ -19,7 +19,7 @@ import { SupportPopups } from "@/components/alerts/SupportPopups";
 import { HomeInbox } from "@/components/network/HomeInbox";
 import { SessionsBubble } from "@/components/sessions/SessionsBubble";
 import { useSessionUser } from "@/hooks/use-session-user";
-import { installBubbleSounds } from "@/lib/bubble-sound";
+import { installSounds } from "@/lib/sounds";
 import { hasMixedReactVersions } from "@/lib/stale-react";
 import { AccountProfileProvider } from "@/components/AccountProfile";
 
@@ -138,7 +138,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { user } = useSessionUser();
 
-  useEffect(() => installBubbleSounds(), []);
+  useEffect(() => installSounds(), []);
 
   useEffect(() => {
     if (!import.meta.env.DEV || typeof PerformanceObserver === "undefined") return;

@@ -144,7 +144,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
               return (
                 <li key={ex.id}>
                   <label className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition ${done ? "bg-accent/70" : "bg-card"}`}>
-                    <input type="checkbox" className="sr-only" checked={done} disabled={saving} onChange={() => toggleToday(ex)} />
+                    <input type="checkbox" data-sound={done ? undefined : "success"} className="sr-only" checked={done} disabled={saving} onChange={() => toggleToday(ex)} />
                     <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${done ? "border-success bg-card text-success" : "bubble border-transparent"}`} aria-hidden>
                       {done && <Check className="h-5 w-5" />}
                     </span>
@@ -255,7 +255,7 @@ function CheckinCard({ existing, todayKey, onSaved }: { existing: Checkin | unde
           ))}
         </div>
       </fieldset>
-      <Button className="btn-aqua mt-4 w-full" onClick={save} disabled={submitting}>{existing || justSaved ? "Update check-in" : "Save check-in"}</Button>
+      <Button data-sound="success" className="btn-aqua mt-4 w-full" onClick={save} disabled={submitting}>{existing || justSaved ? "Update check-in" : "Save check-in"}</Button>
     </section>
   );
 }
@@ -467,6 +467,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                             disabled={saving || !scheduled || blocked || (isToday ? !scheduledToday : !status)}
                             aria-label={label}
                             aria-pressed={status === "complete"}
+                            data-sound={isToday && !status && !blocked ? "success" : undefined}
                             title={blocked ? "Please wait one more day before doing this exercise." : past ? (status ? "Undo available below" : "Past — can no longer be edited") : future ? "Upcoming — it's not this day yet! Check this off when you complete it on the appropriate date." : isToday ? (status ? "Right-click to undo" : "Mark as complete") : label}
                             onClick={() => isToday && !status && !blocked && onTrack(ex, key, "complete", 1)}
                             onContextMenu={(e) => { e.preventDefault(); if (status && (isToday || past)) onTrack(ex, key, status as ExerciseStatus, 1); }}
@@ -519,7 +520,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
                           {record && <span className={record.status === "complete" ? "font-semibold text-success" : "text-muted-foreground"}>{record.status === "complete" ? "Completed" : "Skipped"}</span>}
                         </span>
                         <span className="flex gap-1">
-                          <Button variant="outline" type="button" disabled={saving || !canTrack} aria-pressed={record?.status === "complete"} onClick={() => onTrack(ex, line.day, "complete", line.occ)}
+                          <Button data-sound={record?.status === "complete" ? undefined : "success"} variant="outline" type="button" disabled={saving || !canTrack} aria-pressed={record?.status === "complete"} onClick={() => onTrack(ex, line.day, "complete", line.occ)}
                             className={`rounded-full border px-2.5 py-1 font-semibold disabled:cursor-not-allowed ${record?.status === "complete" ? "border-success bg-accent text-accent-foreground" : "bg-card"}`}>
                             Mark as complete
                           </Button>

@@ -184,7 +184,7 @@ export function SessionsBubble({ userId }: { userId: string }) {
       {open && <aside id="sessions-panel" className="inbox-sidebar" aria-label="Sessions">
         <header className="flex shrink-0 items-center justify-between gap-2 px-4 py-4">
           <h1 className="flex items-center gap-2 text-xl"><CalendarHeart className="h-5 w-5" /> Sessions</h1>
-          <Button ref={closeBtn} variant="ghost" size="icon" className="btn-soft rounded-full" aria-label="Close Sessions" title="Close Sessions" onClick={() => { setOpen(false); trigger.current?.focus(); }}><X /></Button>
+          <Button data-sound="pop" ref={closeBtn} variant="ghost" size="icon" className="btn-soft rounded-full" aria-label="Close Sessions" title="Close Sessions" onClick={() => { setOpen(false); trigger.current?.focus(); }}><X /></Button>
         </header>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
           <div>
@@ -232,7 +232,7 @@ export function SessionsBubble({ userId }: { userId: string }) {
                     <p className="font-semibold">{inviteLabel(s, rescheduled, now)}</p>
                     <SessionDetails s={s} />
                     <div className="mt-2 flex gap-2">
-                      <button className="btn-aqua btn-leaf text-sm" onClick={() => void act("respond_rehab_session", { p_id: s.id, p_accept: true }, "Session accepted — enjoy it together!")}><Check className="h-4 w-4" /> Accept</button>
+                      <button data-sound="success" className="btn-aqua btn-leaf text-sm" onClick={() => void act("respond_rehab_session", { p_id: s.id, p_accept: true }, "Session accepted — enjoy it together!")}><Check className="h-4 w-4" /> Accept</button>
                       <button className="btn-soft text-sm" onClick={() => void act("respond_rehab_session", { p_id: s.id, p_accept: false }, "Invite declined")}><X className="h-4 w-4" /> Not this time</button>
                     </div>
                   </li>
@@ -242,7 +242,7 @@ export function SessionsBubble({ userId }: { userId: string }) {
                     <p className="font-semibold">{s.contact_name || "Someone"} · {formatWhen(s.proposed_for, now)}</p>
                     {s.note && <p className="text-muted-foreground">“{s.note}”</p>}
                     <div className="mt-2 flex gap-2">
-                      <button className="btn-aqua btn-leaf text-sm" onClick={() => void answerShared(s.id, "accepted")}><Check className="h-4 w-4" /> Accept</button>
+                      <button data-sound="success" className="btn-aqua btn-leaf text-sm" onClick={() => void answerShared(s.id, "accepted")}><Check className="h-4 w-4" /> Accept</button>
                       <button className="btn-soft text-sm" onClick={() => void answerShared(s.id, "declined")}><X className="h-4 w-4" /> Not this time</button>
                     </div>
                   </li>

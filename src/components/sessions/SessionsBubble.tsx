@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { db, rpc } from "@/components/network/useNetwork";
 import { PlanSessionDialog, type PlanTarget } from "@/components/sessions/PlanSessionDialog";
-import { buildIcs, canJoin, formatWhen, inviteLabel, otherPerson, sessionsBadgeCount, splitSessions, startingSoon, type RehabSession } from "@/lib/sessions";
+import { buildIcs, canFinishSession, canJoin, formatWhen, inviteLabel, otherPerson, sessionsBadgeCount, splitSessions, startingSoon, type RehabSession } from "@/lib/sessions";
 import { playSound } from "@/lib/sounds";
 
 export const OPEN_SESSIONS_EVENT = "rehabloom:open-sessions";
@@ -53,6 +53,7 @@ export function SessionsBubble({ userId }: { userId: string }) {
   const [shared, setShared] = useState<Shared[]>([]);
   const [now, setNow] = useState(() => new Date());
   const [plan, setPlan] = useState<PlanTarget | null>(null);
+  const [finishing, setFinishing] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     const since = new Date(Date.now() - 2 * 3600_000).toISOString();
@@ -84,11 +85,14 @@ export function SessionsBubble({ userId }: { userId: string }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "rehab_sessions", filter: `organizer_id=eq.${userId}` }, () => void load())
       .subscribe();
     const tick = setInterval(() => setNow(new Date()), 60_000);
-    const onFocus = () => void load();
+    const onFocus = () => { setNow(new Date()); void load(); };
+    const onVisible = () => { if (document.visibilityState === "visible") onFocus(); };
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       clearInterval(tick);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
       void supabase.removeChannel(channel);
     };
   }, [userId, load, reKey]);
@@ -177,6 +181,22 @@ export function SessionsBubble({ userId }: { userId: string }) {
     if (error) return void toast.error(error.message);
     toast.success(status === "accepted" ? "Session accepted — enjoy it together!" : "Invite declined");
     void load();
+  }
+
+  async function finishSession(s: RehabSession) {
+    if (finishing.has(s.id) || !canFinishSession(s, new Date())) return;
+    if (!confirm(`Mark your session with ${otherPerson(s, userId).name} as finished?`)) return;
+    setFinishing((prev) => new Set(prev).add(s.id));
+    try {
+      await rpc("complete_rehab_session", { p_id: s.id });
+      setSessions((prev) => prev.filter((row) => row.id !== s.id));
+      toast.success("Session finished");
+      await load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setFinishing((prev) => { const next = new Set(prev); next.delete(s.id); return next; });
+    }
   }
 
   const { invites, upcoming, waiting } = splitSessions(sessions, userId, now);
@@ -269,6 +289,7 @@ export function SessionsBubble({ userId }: { userId: string }) {
                       <p className="font-semibold">With {other.name} · {formatWhen(s.starts_at, now)}</p>
                       <SessionDetails s={s} />
                       <div className="mt-2 flex flex-wrap gap-2">
+                        {canFinishSession(s, now) && <Button variant="ghost" className="btn-aqua h-auto text-sm" disabled={finishing.has(s.id)} onClick={() => void finishSession(s)}><Check className="h-4 w-4" /> {finishing.has(s.id) ? "Finishing…" : "Session finished"}</Button>}
                         {s.mode === "video" && (joinable ? (
                           <a className="btn-aqua text-sm" href={s.meeting_url} target="_blank" rel="noopener noreferrer"><Video className="h-4 w-4" /> Join video call</a>
                         ) : (

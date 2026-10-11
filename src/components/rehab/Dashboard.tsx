@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
+import { MentorHome } from "./MentorMode";
 import { AppNav } from "@/components/AppNav";
 import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, stageProgress, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN, XP_PER_CHEER, MAX_XP_CHEERS_PER_DAY, cheerCount } from "@/lib/rehab";
 
@@ -20,17 +21,20 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
   const [cheers, setCheers] = useState<{ created_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [finished, setFinished] = useState(false);
 
   const today = new Date();
   const todayKey = dayKey(today);
 
   const load = useCallback(async () => {
-    const [ex, co, ci, ch] = await Promise.all([
+    const [ex, co, ci, ch, np] = await Promise.all([
       supabase.from("exercises").select("*").order("created_at"),
       supabase.from("completions").select("*"),
       supabase.from("checkins").select("*"),
       supabase.from("encouragements").select("created_at").eq("from_user", userId),
+      supabase.from("network_profiles").select("finished_therapy").eq("user_id", userId).maybeSingle(),
     ]);
+    setFinished(np.data?.finished_therapy === true);
     setCheers(ch.data ?? []);
     setExercises(ex.data ?? []);
     setCompletions(co.data ?? []);
@@ -114,6 +118,11 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
         Rehabloom helps you follow your therapist's plan. It doesn't give medical advice. If pain increases, stop and contact your physical therapist.
       </p>
 
+      {finished ? (
+        <MentorHome userId={userId} xp={xp} onSwitched={() => void load()} maintenance={
+          <ExerciseManager exercises={sorted} completions={completions} todayKey={todayKey} saving={saving} waitNotes={waitNotes} undone={undone} onTrack={track} onChange={load} />
+        } />
+      ) : (
       <div className="grid gap-5 lg:grid-cols-3">
         <section className="glass p-5 sm:p-6 lg:col-span-3" aria-labelledby="plant-h">
           <div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:items-start">
@@ -183,6 +192,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
         </div>
         <ExerciseManager exercises={sorted} completions={completions} todayKey={todayKey} saving={saving} waitNotes={waitNotes} undone={undone} onTrack={track} onChange={load} />
       </div>
+      )}
     </div>
   );
 }

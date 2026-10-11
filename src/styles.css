@@ -182,7 +182,8 @@
   align-items: center;
   gap: 0.5rem;
   min-height: 2.75rem;
-  padding: 0.35rem 1.1rem 0.35rem 0.4rem;
+  padding: 0.35rem 1.1rem;
+  &:has(.nav-bubble-icon) { padding-left: 0.4rem; }
   border-radius: 9999px;
   font-weight: 700;
   color: var(--foreground);

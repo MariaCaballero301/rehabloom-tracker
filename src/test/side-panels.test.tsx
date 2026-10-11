@@ -28,7 +28,7 @@ afterEach(() => { cleanup(); mocks.callbacks.length = 0; mocks.toast.mockClear()
 
 describe("exclusive side panels", () => {
   it("opens Sessions from the real toast Open action and closes Inbox", async () => {
-    render(<><HomeInbox userId="owner"><p>Home</p></HomeInbox><SessionsBubble userId="owner" /><SupportPopups /></>);
+    render(<><div className="nav-triggers"><span id="nav-slot-sessions" /><span id="nav-slot-inbox" /></div><HomeInbox userId="owner"><p>Home</p></HomeInbox><SessionsBubble userId="owner" /><SupportPopups /></>);
     fireEvent.click(screen.getByRole("button", { name: "Open Inbox" }));
     expect(screen.getByRole("complementary", { name: "Inbox" })).toBeInTheDocument();
     await waitFor(() => expect(mocks.callbacks).toHaveLength(7));

@@ -44,5 +44,6 @@
 - [x] Add saved participant-only Session finished action and refresh on return; premature completion rejected in the signed-in app.
 - [ ] Verify successful session completion removes the call after reload — current real call has not started, so no eligible session is available yet.
 - [x] Add Home multi-file/text Gemini plan importer with a fictional demo note, extraction preview and confirmed exercise saving; real Gemini image/PDF/text analysis and save/read-back verified.
-- [ ] Move Sessions + Inbox buttons into the sticky top navigation; side panels unchanged
-- [ ] Plan importer: inline "Set how often" picker for unscheduled exercises + disabled-reason helper with test
+- [x] Move Sessions + Inbox buttons into the sticky top navigation; side panels unchanged
+- [x] Plan importer: inline "Set how often" picker for unscheduled exercises + disabled-reason helper with test
+- [x] Mark a session together as done (+15 XP, Did it happen?, live toast, Progress counts)

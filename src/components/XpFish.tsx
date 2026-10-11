@@ -4,7 +4,7 @@ import butterfly from "@/assets/fish-butterfly.png";
 import tang from "@/assets/fish-tang.png";
 import clown from "@/assets/fish-clown.png";
 import { xpBadgeText } from "@/lib/xp-message";
-import { playSound } from "@/lib/sounds";
+import { playSound, startSwimSound } from "@/lib/sounds";
 
 const FISH = [
   { src: butterfly, facesLeft: false },
@@ -28,7 +28,8 @@ export function XpFishLayer() {
       const id = ++n;
       const message = String((e as CustomEvent).detail ?? "");
       playSound("success");
-      playSound("swim");
+      // Swishy water sound lasts the whole swim and fades as the fish exits.
+      startSwimSound(3.6);
       setSwims((s) => [...s, { id, message, fish: Math.floor(Math.random() * FISH.length), top: 18 + Math.random() * 30 }]);
       window.setTimeout(() => setSwims((s) => s.filter((x) => x.id !== id)), 3800);
     };

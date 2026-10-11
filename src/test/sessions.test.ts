@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canJoin, formatWhen, otherPerson, splitSessions, toStartsAt, type RehabSession } from "@/lib/sessions";
+import { canFinishSession, canJoin, formatWhen, otherPerson, splitSessions, toStartsAt, type RehabSession } from "@/lib/sessions";
 
 const now = new Date(2026, 9, 10, 12, 0); // Sat Oct 10 2026, noon local
 const at = (h: number, m = 0, dayOffset = 0) => new Date(2026, 9, 10 + dayOffset, h, m).toISOString();
@@ -9,6 +9,12 @@ const s = (over: Partial<RehabSession>): RehabSession => ({
 });
 
 describe("splitSessions", () => {
+  it("removes finished calls for both participants without removing other accepted calls", () => {
+    const rows = [s({ id: "finished", status: "completed", starts_at: at(11) }), s({ id: "active", starts_at: at(11) })];
+    for (const participant of ["me", "you"]) {
+      expect(splitSessions(rows, participant, now).upcoming.map((row) => row.id)).toEqual(["active"]);
+    }
+  });
   it("sorts invites, upcoming and waiting and drops ended sessions", () => {
     const rows = [
       s({ id: "inv", organizer_id: "you", guest_id: "me", status: "proposed" }),
@@ -22,6 +28,15 @@ describe("splitSessions", () => {
     expect(r.invites.map((x) => x.id)).toEqual(["inv"]);
     expect(r.waiting.map((x) => x.id)).toEqual(["wait"]);
     expect(r.upcoming.map((x) => x.id)).toEqual(["early", "late"]);
+  });
+});
+
+describe("canFinishSession", () => {
+  it("allows an accepted call to finish at its start, but not before or in another status", () => {
+    expect(canFinishSession(s({ starts_at: at(12) }), now)).toBe(true);
+    expect(canFinishSession(s({ starts_at: at(12, 1) }), now)).toBe(false);
+    expect(canFinishSession(s({ starts_at: at(11), status: "proposed" }), now)).toBe(false);
+    expect(canFinishSession(s({ starts_at: at(11), status: "completed" }), now)).toBe(false);
   });
 });
 

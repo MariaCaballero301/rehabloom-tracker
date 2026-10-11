@@ -22,6 +22,11 @@ export const MAX_SESSION_NOTE_LENGTH = 200;
 const startMs = (s: Pick<RehabSession, "starts_at">) => new Date(s.starts_at).getTime();
 const byStart = (a: RehabSession, b: RehabSession) => startMs(a) - startMs(b);
 
+/** Only accepted sessions that have started can be marked finished. */
+export function canFinishSession(s: Pick<RehabSession, "status" | "starts_at">, now: Date) {
+  return s.status === "accepted" && startMs(s) <= now.getTime();
+}
+
 /** Split my sessions into invites to answer, upcoming accepted ones, and my invites waiting for a reply. */
 export function splitSessions(rows: RehabSession[], me: string, now: Date) {
   const t = now.getTime();

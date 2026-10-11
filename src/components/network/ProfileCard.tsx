@@ -10,7 +10,7 @@ import { ProfileAvatar } from "./ProfileAvatar";
 import { normalizePhone } from "@/lib/alerts";
 import { AVAILABILITY, LANGUAGES, MAX_BIO_LENGTH, REHAB_AREAS, toggleIn } from "@/lib/network";
 import { db, type MyProfile } from "./useNetwork";
-import { PROFILE_SAVED_EVENT } from "@/components/AccountProfile";
+import { PROFILE_SAVED_EVENT, PROFILE_EDIT_EVENT } from "@/components/AccountProfile";
 
 function Chip({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) {
   return (
@@ -53,7 +53,7 @@ function Switch({
 const EVERY_DAY = AVAILABILITY.map((a) => a.value as string);
 type Full = MyProfile & { rehab_areas?: string[] };
 
-export function ProfileCard({ profile, saved, onSaved }: { profile: MyProfile; saved: boolean; onSaved: () => void }) {
+export function ProfileCard({ profile, saved, onSaved, openEditRequest }: { profile: MyProfile; saved: boolean; onSaved: () => void; openEditRequest?: string | undefined }) {
   const profileAreas = (profile as Full).rehab_areas;
   const initialAreas = profileAreas?.length ? profileAreas : profile.rehab_area !== "other" ? [profile.rehab_area] : [];
   const [p, setP] = useState(profile);
@@ -73,6 +73,15 @@ export function ProfileCard({ profile, saved, onSaved }: { profile: MyProfile; s
   }, [photo]);
   useEffect(() => setP(profile), [profile]);
   useEffect(() => setEditing(!saved), [saved]);
+  // "Edit Profile" in the account header: open via ?edit=profile or the header event.
+  useEffect(() => {
+    if (openEditRequest === "profile") setEditing(true);
+  }, [openEditRequest]);
+  useEffect(() => {
+    const open = () => setEditing(true);
+    window.addEventListener(PROFILE_EDIT_EVENT, open);
+    return () => window.removeEventListener(PROFILE_EDIT_EVENT, open);
+  }, []);
   useEffect(() => {
     void db.from("support_profiles").select("phone").eq("user_id", profile.user_id).maybeSingle()
       .then(({ data }) => setPhone((data as { phone?: string } | null)?.phone ?? ""));

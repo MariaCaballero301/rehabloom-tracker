@@ -1,12 +1,14 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import type { User } from "@supabase/supabase-js";
-import { CalendarDays, Mail } from "lucide-react";
+import { CalendarDays, Mail, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileAvatar } from "@/components/network/ProfileAvatar";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export const PROFILE_SAVED_EVENT = "rehabloom:profile-saved";
+export const PROFILE_EDIT_EVENT = "rehabloom:profile-edit";
 type Account = { user: User; name: string; photoPath: string | null };
 const AccountContext = createContext<Account | null>(null);
 
@@ -41,6 +43,7 @@ export function AccountProfileProvider({ user, children }: { user: User; childre
 
 export function AccountProfile() {
   const account = useContext(AccountContext);
+  const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -48,6 +51,13 @@ export function AccountProfile() {
   if (!account) return null;
   const enter = () => { clearTimeout(timer.current); setHovered(true); };
   const leave = () => { timer.current = setTimeout(() => setHovered(false), 150); };
+  const openEditor = () => {
+    setPinned(false);
+    setHovered(false);
+    void navigate({ to: "/profile", search: { edit: "profile" } });
+    // If the profile card is already mounted (e.g. on /profile), open it directly.
+    window.dispatchEvent(new Event(PROFILE_EDIT_EVENT));
+  };
   const date = new Date(account.user.created_at);
   const joined = Number.isNaN(date.getTime()) ? "Unavailable" : date.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
   return (
@@ -67,6 +77,9 @@ export function AccountProfile() {
           <div><dt className="flex items-center gap-2 text-muted-foreground"><Mail className="size-4" /> Email account</dt><dd className="mt-1 break-all">{account.user.email || "Unavailable"}</dd></div>
           <div><dt className="flex items-center gap-2 text-muted-foreground"><CalendarDays className="size-4" /> Joined Rehabloom</dt><dd className="mt-1">{joined}</dd></div>
         </dl>
+        <Button variant="ghost" className="btn-aqua mt-4 w-full rounded-full" onClick={openEditor}>
+          <Pencil className="h-4 w-4" /> Edit Profile
+        </Button>
       </PopoverContent>
     </Popover>
   );

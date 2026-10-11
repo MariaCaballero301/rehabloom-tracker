@@ -1,4 +1,4 @@
-export type Sound = "tap" | "pop" | "success";
+export type Sound = "tap" | "pop" | "success" | "swim";
 export type SoundElement = { disabled?: boolean; override?: string | null; bubble?: boolean; interactive?: boolean };
 /** Pure selection, independent of browser state or audio. */
 export function soundForElement(element: SoundElement): Sound | null {
@@ -28,25 +28,34 @@ export function setSoundEnabled(value: boolean) {
 }
 
 export function playSound(sound: Sound) {
-  if (!gestureReceived || !enabled || Date.now() - lastPlayed < 100) return;
+  // Success and swim accompany the same click as a tap, so they bypass the anti-spam guard.
+  if (!gestureReceived || !enabled || (sound !== "success" && sound !== "swim" && Date.now() - lastPlayed < 100)) return;
   try {
     if (!window.AudioContext) return;
     context ??= new AudioContext();
     const audio = context;
     if (!master) {
       master = audio.createGain();
-      master.gain.value = 0.05;
-      master.connect(audio.destination);
+      master.gain.value = 0.6;
+      // Compressor keeps the louder output from clipping.
+      const compressor = audio.createDynamicsCompressor();
+      compressor.threshold.value = -10;
+      compressor.knee.value = 10;
+      compressor.ratio.value = 4;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.1;
+      master.connect(compressor);
+      compressor.connect(audio.destination);
     }
     const output = master;
     lastPlayed = Date.now();
     void audio.resume().then(() => {
       if (audio.state !== "running" || !enabled) return;
-      const tone = (from: number, to: number, offset: number, duration: number, volume: number) => {
+      const tone = (from: number, to: number, offset: number, duration: number, volume: number, type: OscillatorType = "triangle") => {
         const oscillator = audio.createOscillator();
         const gain = audio.createGain();
         const time = audio.currentTime + offset;
-        oscillator.type = "sine";
+        oscillator.type = type;
         oscillator.frequency.setValueAtTime(from, time);
         oscillator.frequency.exponentialRampToValueAtTime(to, time + duration * 0.7);
         gain.gain.setValueAtTime(0.0001, time);
@@ -56,9 +65,20 @@ export function playSound(sound: Sound) {
         oscillator.start(time); oscillator.stop(time + duration + 0.01);
         oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
       };
-      if (sound === "tap") tone(470, 340, 0, 0.045, 0.35);
-      if (sound === "pop") { tone(230, 740, 0, 0.105, 0.55); tone(1250, 900, 0.075, 0.045, 0.16); }
-      if (sound === "success") { tone(520, 570, 0, 0.18, 0.4); tone(700, 780, 0.12, 0.22, 0.4); }
+      if (sound === "tap") tone(1000, 700, 0, 0.07, 0.45);
+      if (sound === "pop") { tone(450, 1400, 0, 0.12, 0.8); tone(2200, 1600, 0.08, 0.05, 0.35, "sine"); }
+      if (sound === "success") {
+        tone(660, 700, 0, 0.2, 0.55);
+        tone(880, 990, 0.13, 0.28, 0.55);
+        tone(1320, 1320, 0.13, 0.3, 0.2, "sine");
+      }
+      if (sound === "swim") {
+        // Watery swim-by: a soft low sweep with rising blub-bloop bubbles.
+        tone(180, 420, 0, 0.4, 0.22, "sine");
+        tone(500, 800, 0.05, 0.09, 0.3, "sine");
+        tone(700, 1000, 0.14, 0.09, 0.3, "sine");
+        tone(900, 1300, 0.23, 0.11, 0.3, "sine");
+      }
     }).catch(() => {});
   } catch { /* Audio must never prevent an action. */ }
 }

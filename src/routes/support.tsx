@@ -1,4 +1,4 @@
-// /support — the whole support network on one page: profile, alerts, people, find support, invites.
+// /support — the whole support network on one page: alerts, find support, people, invites.
 import { createFileRoute, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { AppNav } from "@/components/AppNav";
@@ -6,7 +6,6 @@ import { SupportAlertsPanel } from "@/components/alerts/SupportAlertsPanel";
 import { useSessionUser } from "@/hooks/use-session-user";
 import { AuthCard } from "@/components/rehab/AuthCard";
 import { useNetwork } from "@/components/network/useNetwork";
-import { ProfileCard } from "@/components/network/ProfileCard";
 import { InboxCard } from "@/components/network/InboxCard";
 import { PeopleCard } from "@/components/network/PeopleCard";
 import { DiscoverCard } from "@/components/network/DiscoverCard";
@@ -79,7 +78,6 @@ function People({ userId, email, initialCode }: { userId: string; email: string;
         <p className="p-10 text-center text-muted-foreground">Loading…</p>
       ) : (
         <div className="space-y-4">
-          <ProfileCard profile={n.profile} saved={n.hasProfile && !!n.profile.display_name} onSaved={n.reload} />
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-4">
               <SupportAlertsPanel userId={userId} />

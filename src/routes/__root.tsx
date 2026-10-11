@@ -20,6 +20,7 @@ import { HomeInbox } from "@/components/network/HomeInbox";
 import { SessionsBubble } from "@/components/sessions/SessionsBubble";
 import { useSessionUser } from "@/hooks/use-session-user";
 import { installSounds } from "@/lib/sounds";
+import { BackgroundMusic } from "@/components/BackgroundMusic";
 import { hasMixedReactVersions } from "@/lib/stale-react";
 import { AccountProfileProvider } from "@/components/AccountProfile";
 
@@ -168,7 +169,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      {user ? <AccountProfileProvider key={user.id} user={user}><HomeInbox key={user.id} userId={user.id}><Outlet /></HomeInbox><SessionsBubble key={`sessions-${user.id}`} userId={user.id} /></AccountProfileProvider> : <Outlet />}
+      {user ? <AccountProfileProvider key={user.id} user={user}><HomeInbox key={user.id} userId={user.id}><Outlet /></HomeInbox><SessionsBubble key={`sessions-${user.id}`} userId={user.id} /><BackgroundMusic key={`music-${user.id}`} /></AccountProfileProvider> : <Outlet />}
       <Toaster position="top-center" richColors />
       <XpFishLayer />
       <SupportPopups />

@@ -155,6 +155,13 @@
       "when": 1791676480398,
       "tag": "0021_inbox_typing",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791678036436,
+      "tag": "0022_redeem_invite_updates_kind",
+      "breakpoints": true
     }
   ]
 }

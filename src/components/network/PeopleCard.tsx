@@ -7,7 +7,7 @@ import { KIND_LABEL, MAX_ENCOURAGEMENT_LENGTH, QUICK_ENCOURAGEMENTS } from "@/li
 import { XP_PER_CHEER } from "@/lib/rehab";
 import { db, rpc, type Block, type Contact, type Supported } from "./useNetwork";
 import { ProfileAvatar } from "./ProfileAvatar";
-import { supportGroups } from "@/lib/support-groups";
+import { supportGroups, supportingLabel } from "@/lib/support-groups";
 import { BuddyBubble, BuddyMetrics, IconAction } from "./BuddyBubble";
 import { BellRing, CalendarPlus } from "lucide-react";
 import { PlanSessionDialog, type PlanTarget } from "@/components/sessions/PlanSessionDialog";
@@ -81,7 +81,90 @@ export function PeopleCard({
   const [open, setOpen] = useState<string | null>(null);
   const [buddyPage, setBuddyPage] = useState(0);
   const [plan, setPlan] = useState<PlanTarget | null>(null);
-  const { familyFriends, buddyContacts, supportingOnly } = supportGroups(contacts, supporting);
+  const groups = supportGroups(contacts, supporting);
+  const buddyContacts = groups.buddies.contacts;
+  const supportingOnly = groups.buddies.supporting;
+
+  function renderGroup(title: string, group: { contacts: Contact[]; supporting: Supported[] }, empty: string) {
+    return (
+      <div>
+        <h3 className="mt-5 text-sm font-bold text-muted-foreground">{title}</h3>
+        {group.contacts.length === 0 && group.supporting.length === 0 && (
+          <p className="mt-2 text-sm text-muted-foreground">{empty}</p>
+        )}
+        <ul className="mt-3 space-y-2">
+          {group.contacts.map((c) => (
+            <li key={c.id} className="rounded-2xl border bg-popover p-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2"><ProfileAvatar userId={c.connected_user_id} name={c.name} /><p className="min-w-0 break-words font-semibold">
+                  {c.name}{" "}
+                  <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-bold">
+                    {KIND_LABEL[c.kind] ?? c.kind}
+                  </span>
+                </p></div>
+                <label className="flex items-center gap-2 text-xs font-semibold">
+                  <input type="checkbox" className="h-4 w-4" checked={c.notify_on_missed} onChange={() => toggleNotify(c)} />
+                  Alert them if I miss sessions
+                </label>
+              </div>
+              {!c.connected_user_id && !c.phone && c.notify_on_missed && (
+                <p className="mt-1 text-xs text-muted-foreground">No phone number saved, so they can't be texted yet.</p>
+              )}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {c.connected_user_id && (
+                  <button className="btn-soft text-sm" onClick={() => setOpen(open === c.id ? null : c.id)}>
+                    <MessageCircleHeart className="h-4 w-4" /> Send encouragement
+                  </button>
+                )}
+                {c.connected_user_id && (
+                  <button className="btn-aqua text-sm" onClick={() => { if (c.connected_user_id) setPlan({ id: c.connected_user_id, name: c.name }); }}>
+                    <CalendarPlus className="h-4 w-4" /> Plan a session
+                  </button>
+                )}
+                <button className="btn-soft text-sm" onClick={() => remove(c)}>
+                  <UserMinus className="h-4 w-4" /> {c.connected_user_id ? "Disconnect" : "Remove"}
+                </button>
+                {c.connected_user_id && (
+                  <button className="btn-soft text-sm" onClick={() => { if (c.connected_user_id) void block(c.connected_user_id, c.name); }}>
+                    <Ban className="h-4 w-4" /> Block
+                  </button>
+                )}
+              </div>
+              {open === c.id && c.connected_user_id && (
+                <Encourage to={c.connected_user_id} name={c.name} onDone={() => { setOpen(null); onChange(); }} />
+              )}
+            </li>
+          ))}
+          {group.supporting.map((s) => {
+            const key = `s-${s.user_id}`;
+            return (
+              <li key={key} className="rounded-2xl border bg-popover p-3 text-sm">
+                <div className="flex min-w-0 items-center gap-2"><ProfileAvatar userId={s.user_id} name={s.name} /><p className="min-w-0 break-words font-semibold">
+                  {s.name}{" "}
+                  <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-bold">{supportingLabel(s.kind)}</span>
+                </p></div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button className="btn-soft text-sm" onClick={() => setOpen(open === key ? null : key)}>
+                    <MessageCircleHeart className="h-4 w-4" /> Send encouragement
+                  </button>
+                  <button className="btn-aqua text-sm" onClick={() => setPlan({ id: s.user_id, name: s.name })}>
+                    <CalendarPlus className="h-4 w-4" /> Plan a session
+                  </button>
+                  <button className="btn-soft text-sm" onClick={() => disconnect(s.user_id, s.name)}>
+                    <UserMinus className="h-4 w-4" /> Disconnect
+                  </button>
+                  <button className="btn-soft text-sm" onClick={() => block(s.user_id, s.name)}>
+                    <Ban className="h-4 w-4" /> Block
+                  </button>
+                </div>
+                {open === key && <Encourage to={s.user_id} name={s.name} onDone={() => { setOpen(null); onChange(); }} />}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+  }
 
   async function toggleNotify(c: Contact) {
     const { error } = await db
@@ -152,72 +235,7 @@ export function PeopleCard({
         or plan a session together.
       </p>
 
-      {[
-        { title: "Family & friends", people: familyFriends, empty: "No family or friends yet." },
-      ].map((group) => (
-        <div key={group.title}>
-        <h3 className="mt-5 text-sm font-bold text-muted-foreground">{group.title}</h3>
-        {group.people.length === 0 && (group.title !== "Rehab buddies" || supportingOnly.length === 0) && <p className="mt-2 text-sm text-muted-foreground">{group.empty}</p>}
-        <ul className="mt-3 space-y-2">
-          {group.people.map((c) => (
-            <li key={c.id} className="rounded-2xl border bg-popover p-3 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2"><ProfileAvatar userId={c.connected_user_id} name={c.name} /><p className="min-w-0 break-words font-semibold">
-                  {c.name}{" "}
-                  <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-bold">
-                    {KIND_LABEL[c.kind] ?? c.kind}
-                  </span>
-                </p></div>
-                <label className="flex items-center gap-2 text-xs font-semibold">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4"
-                    checked={c.notify_on_missed}
-                    onChange={() => toggleNotify(c)}
-                  />
-                  Alert them if I miss sessions
-                </label>
-              </div>
-              {!c.connected_user_id && !c.phone && c.notify_on_missed && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  No phone number saved, so they can't be texted yet.
-                </p>
-              )}
-              <div className="mt-2 flex flex-wrap gap-2">
-                {c.connected_user_id && (
-                  <button
-                    className="btn-soft text-sm"
-                    onClick={() => setOpen(open === c.id ? null : c.id)}
-                  >
-                    <MessageCircleHeart className="h-4 w-4" /> Send encouragement
-                  </button>
-                )}
-                {c.connected_user_id && (
-                  <button className="btn-aqua text-sm" onClick={() => { if (c.connected_user_id) setPlan({ id: c.connected_user_id, name: c.name }); }}>
-                    <CalendarPlus className="h-4 w-4" /> Plan a session
-                  </button>
-                )}
-                <button className="btn-soft text-sm" onClick={() => remove(c)}>
-                  <UserMinus className="h-4 w-4" /> {c.connected_user_id ? "Disconnect" : "Remove"}
-                </button>
-                {c.connected_user_id && (
-                  <button
-                    className="btn-soft text-sm"
-                    onClick={() => { if (c.connected_user_id) void block(c.connected_user_id, c.name); }}
-                  >
-                    <Ban className="h-4 w-4" /> Block
-                  </button>
-                )}
-              </div>
-              {open === c.id && c.connected_user_id && (
-                <Encourage to={c.connected_user_id} name={c.name} onDone={() => setOpen(null)} />
-              )}
-            </li>
-          ))}
-        </ul>
-        </div>
-      ))}
-
+      {renderGroup("Family & friends", groups.familyFriends, "No family or friends yet")}
       <BuddyBubble
         empty={buddyContacts.length === 0 && supportingOnly.length === 0}
         total={buddyContacts.length + supportingOnly.length}
@@ -259,7 +277,7 @@ export function PeopleCard({
                 <div className="flex flex-col items-center gap-1 text-center">
                   <ProfileAvatar userId={s.user_id} name={s.name} />
                   <p className="w-full break-words font-bold leading-tight">{s.name}</p>
-                  <span className="text-[0.7em] font-semibold text-muted-foreground">{s.kind === "mentor" ? "You're their mentor" : KIND_LABEL[s.kind]}</span>
+                  <span className="text-[0.7em] font-semibold text-muted-foreground">{supportingLabel(s.kind)}</span>
                 </div>
                 <BuddyMetrics stats={buddyStats.find((stat) => stat.user_id === s.user_id)} error={statsError} />
                 <div className="mt-2 flex justify-center gap-1.5">
@@ -274,6 +292,7 @@ export function PeopleCard({
           })()}
         </ul>
       </BuddyBubble>
+      {renderGroup("Mentors", groups.mentors, "No mentors yet")}
 
       <PlanSessionDialog target={plan} onClose={() => setPlan(null)} />
 

@@ -60,8 +60,8 @@ describe("Your people cards render", () => {
     );
     expect(screen.getByText("Mom")).toBeTruthy();
     expect(screen.getByText("Rehab buddy")).toBeTruthy();
-    // One buddy shows at a time in the bubble; cycle to the person I support.
-    await fireEvent.click(screen.getByLabelText("Next buddy"));
+    // People I mentor appear in the Mentors group, not the buddy bubble.
+    expect(screen.getByText("Mentors")).toBeTruthy();
     expect(screen.getByText("You're their mentor")).toBeTruthy();
     expect(screen.getByText(/No phone number saved/)).toBeTruthy();
     expect(screen.getByText("Blocked (1)")).toBeTruthy();

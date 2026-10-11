@@ -15,6 +15,7 @@ import { Route as PeopleRouteImport } from './routes/people'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as SupportRouteImport } from './routes/support'
+import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as SupportTokenRouteImport } from './routes/support/$token'
 import { Route as ApiCronMissedSessionsRouteImport } from './routes/api/cron/missed-sessions'
 
@@ -48,6 +49,11 @@ const SupportRoute = SupportRouteImport.update({
   path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RCodeRoute = RCodeRouteImport.update({
+  id: '/r/$code',
+  path: '/r/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SupportTokenRoute = SupportTokenRouteImport.update({
   id: '/$token',
   path: '/$token',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
   '/support': typeof SupportRouteWithChildren
+  '/r/$code': typeof RCodeRoute
   '/support/$token': typeof SupportTokenRoute
   '/api/cron/missed-sessions': typeof ApiCronMissedSessionsRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
   '/support': typeof SupportRouteWithChildren
+  '/r/$code': typeof RCodeRoute
   '/support/$token': typeof SupportTokenRoute
   '/api/cron/missed-sessions': typeof ApiCronMissedSessionsRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
   '/support': typeof SupportRouteWithChildren
+  '/r/$code': typeof RCodeRoute
   '/support/$token': typeof SupportTokenRoute
   '/api/cron/missed-sessions': typeof ApiCronMissedSessionsRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/progress'
     | '/support'
+    | '/r/$code'
     | '/support/$token'
     | '/api/cron/missed-sessions'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/progress'
     | '/support'
+    | '/r/$code'
     | '/support/$token'
     | '/api/cron/missed-sessions'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/progress'
     | '/support'
+    | '/r/$code'
     | '/support/$token'
     | '/api/cron/missed-sessions'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   ProgressRoute: typeof ProgressRoute
   SupportRoute: typeof SupportRouteWithChildren
+  RCodeRoute: typeof RCodeRoute
   ApiCronMissedSessionsRoute: typeof ApiCronMissedSessionsRoute
 }
 
@@ -177,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/r/$code': {
+      id: '/r/$code'
+      path: '/r/$code'
+      fullPath: '/r/$code'
+      preLoaderRoute: typeof RCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/support/$token': {
       id: '/support/$token'
       path: '/$token'
@@ -212,6 +232,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   ProgressRoute: ProgressRoute,
   SupportRoute: SupportRouteWithChildren,
+  RCodeRoute: RCodeRoute,
   ApiCronMissedSessionsRoute: ApiCronMissedSessionsRoute,
 }
 export const routeTree = rootRouteImport

@@ -107,7 +107,7 @@ export function MonthlySummaryCard({ journey }: { journey?: { from: string; to: 
           <summary className="cursor-pointer font-semibold">Earlier summaries ({list.length})</summary>
           <ul className="mt-2 space-y-1">
             {list.map((s) => (
-               <li key={s.id}><Button variant="link" className="h-auto max-w-full whitespace-normal px-0 text-left" onClick={() => { setCurrent(s); setPeriod(s.period ?? "monthly"); if (s.period === "weekly") setWeek(s.periodDate ?? week); else if (s.period !== "journey") setMonth(s.month); }}>
+               <li key={s.id}><Button variant="link" className="h-auto max-w-full whitespace-normal px-0 text-left" onClick={() => { setCurrent(s); setPeriod(s.period === "journey" && !journey ? "monthly" : s.period ?? "monthly"); if (s.period === "weekly") setWeek(s.periodDate ?? week); else if (s.period !== "journey") setMonth(s.month); }}>
                  {reportLabel(s)}{s.is_demo ? " (demo)" : ""} · {new Date(s.created_at).toLocaleString()}
                </Button></li>
             ))}

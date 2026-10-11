@@ -11,7 +11,7 @@ export function soundForElement(element: SoundElement): Sound | null {
 const KEY = "rehabloom:sound-enabled";
 export const SOUND_SETTING_EVENT = "rehabloom:sound-setting";
 const BUBBLES = ".bubble, .inbox-trigger, .sessions-trigger, .nav-bubble, .buddy-icon-btn, .buddy-cycle-btn";
-const CONTROLS = 'button, a[href], input[type="checkbox"], input[type="radio"], select, [role="button"], [role="switch"], [role="checkbox"], [role="combobox"]]';
+const CONTROLS = 'button, a[href], input[type="checkbox"], input[type="radio"], select, [role="button"], [role="switch"], [role="checkbox"], [role="combobox"]';
 let enabled = true;
 let context: AudioContext | undefined;
 let master: GainNode | undefined;

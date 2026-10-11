@@ -39,3 +39,5 @@
 - [x] Make the Home/Progress/Support navigation sticky on every page with a faint glossy white underlay once the user scrolls.
 - [x] Remove Send by email from invites; make Share work (fallback when unsupported)
 - [x] Invites: one permanent code per relationship, no delete; single 'Copy code' button (remove Share/Copy link)
+- [x] Mentor mode polish (invite infinity bug, recovery range, Progress/Support hiding, impact tiles, blossom palette)
+- [x] Remove "Send encouragement" for Family & friends; restore Invite family & friends card background/formatting

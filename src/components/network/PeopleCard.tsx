@@ -87,7 +87,7 @@ export function PeopleCard({
   const buddyContacts = groups.buddies.contacts;
   const supportingOnly = groups.buddies.supporting;
 
-  function renderGroup(title: string, group: { contacts: Contact[]; supporting: Supported[] }, empty: string, showKind = true) {
+  function renderGroup(title: string, group: { contacts: Contact[]; supporting: Supported[] }, empty: string, showKind = true, canEncourage = true) {
     return (
       <div>
         <h3 className="mt-5 text-sm font-bold text-muted-foreground">{title}</h3>
@@ -115,7 +115,7 @@ export function PeopleCard({
                 <p className="mt-1 text-xs text-muted-foreground">No phone number saved, so they can't be texted yet.</p>
               )}
               <div className="mt-2 flex flex-wrap gap-2">
-                {c.connected_user_id && (
+                {canEncourage && c.connected_user_id && (
                   <button className="btn-soft text-sm" onClick={() => setOpen(open === c.id ? null : c.id)}>
                     <MessageCircleHeart className="h-4 w-4" /> Send encouragement
                   </button>
@@ -150,9 +150,9 @@ export function PeopleCard({
                   )}
                 </p></div>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <button className="btn-soft text-sm" onClick={() => setOpen(open === key ? null : key)}>
+                  {canEncourage && <button className="btn-soft text-sm" onClick={() => setOpen(open === key ? null : key)}>
                     <MessageCircleHeart className="h-4 w-4" /> Send encouragement
-                  </button>
+                  </button>}
                   <button className="btn-aqua text-sm" onClick={() => setPlan({ id: s.user_id, name: s.name })}>
                     <CalendarPlus className="h-4 w-4" /> Plan a session
                   </button>
@@ -241,7 +241,7 @@ export function PeopleCard({
         or plan a session together.
       </p>
 
-      {renderGroup("Family & friends", groups.familyFriends, "No family or friends yet", false)}
+      {renderGroup("Family & friends", groups.familyFriends, "No family or friends yet", false, false)}
       <BuddyBubble
         empty={buddyContacts.length === 0 && supportingOnly.length === 0}
         total={buddyContacts.length + supportingOnly.length}

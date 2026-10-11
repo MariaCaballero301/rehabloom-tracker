@@ -1,7 +1,7 @@
 // /support — the whole support network on one page: alerts, find support, people, invites.
 import { createFileRoute, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
-import { savePendingInvite } from "@/components/network/PendingInvite";
+import { PendingInviteRedeemer, savePendingInvite } from "@/components/network/PendingInvite";
 import { AppNav } from "@/components/AppNav";
 import { SupportAlertsPanel } from "@/components/alerts/SupportAlertsPanel";
 import { useSessionUser } from "@/hooks/use-session-user";
@@ -10,7 +10,7 @@ import { useNetwork } from "@/components/network/useNetwork";
 import { InboxCard } from "@/components/network/InboxCard";
 import { PeopleCard } from "@/components/network/PeopleCard";
 import { DiscoverCard } from "@/components/network/DiscoverCard";
-import { InviteCard } from "@/components/network/InviteCard";
+import { InviteCard, RedeemCodeForm } from "@/components/network/InviteCard";
 import { MentoringCard, MenteeFinder } from "@/components/network/MentorSupport";
 
 export const Route = createFileRoute("/support")({
@@ -103,7 +103,7 @@ function People({ userId, email, initialCode }: { userId: string; email: string;
             </div>
           </div>
           <PeopleCard contacts={n.contacts} supporting={n.supporting} blocks={n.blocks} buddyStats={n.buddyStats} statsError={n.statsError} hideAlerts={mentor} onChange={n.reload} />
-          <InviteCard invites={n.invites} initialCode={initialCode} onChange={n.reload} />
+          {mentor ? <><RedeemCodeForm standalone initialCode={initialCode} onChange={n.reload} /><PendingInviteRedeemer /></> : <InviteCard invites={n.invites} initialCode={initialCode} onChange={n.reload} />}
         </div>
       )}
     </div>

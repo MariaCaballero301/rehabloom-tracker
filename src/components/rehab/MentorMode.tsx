@@ -17,6 +17,7 @@ export function BackInRehabButton({ userId, onDone }: { userId: string; onDone: 
     const { error } = await db.from("network_profiles").update(BACK_IN_REHAB).eq("user_id", userId);
     setBusy(false);
     if (error) return void toast.error(error.message);
+    window.dispatchEvent(new Event("rehabloom:profile-saved"));
     toast.success("Welcome back — your rehab plan is on Home again");
     onDone();
   }

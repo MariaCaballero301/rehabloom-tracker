@@ -36,3 +36,24 @@ describe("recovery journey", () => {
     expect(isAfterRecovery("2026-03-08", null)).toBe(false);
   });
 });
+
+import { recoveryRange, plural } from "@/lib/mentor-mode";
+import { isInviteActive } from "@/lib/network";
+describe("mentor polish", () => {
+  it("permanent 'infinity' invites never expire", () => {
+    expect(isInviteActive({ expires_at: "infinity" })).toBe(true);
+    expect(isInviteActive({ expires_at: "2020-01-01T00:00:00Z" }, new Date("2026-01-01"))).toBe(false);
+  });
+  it("recovery story starts at account creation or an earlier first completion, ends at finished day", () => {
+    expect(recoveryRange("2026-09-01", [{ day: "2026-08-20", status: "complete" }], "2026-10-01")).toEqual({ from: "2026-08-20", to: "2026-10-01" });
+    expect(recoveryRange("2026-09-01", [], "2026-10-01")).toEqual({ from: "2026-09-01", to: "2026-10-01" });
+  });
+  it("never uses the same start and end day", () => {
+    const r = recoveryRange("2026-10-01", [], "2026-10-01");
+    expect(r.from < r.to).toBe(true);
+  });
+  it("uses singular and plural", () => {
+    expect(plural(1, "person", "people")).toBe("1 person");
+    expect(plural(2, "session", "sessions")).toBe("2 sessions");
+  });
+});

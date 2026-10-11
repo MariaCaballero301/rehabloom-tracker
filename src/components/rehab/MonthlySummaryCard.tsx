@@ -70,9 +70,9 @@ export function MonthlySummaryCard({ journey }: { journey?: { from: string; to: 
     <section className="aero-report glass mt-5 p-5 sm:p-6" aria-labelledby="ai-h">
       <h2 id="ai-h" className="flex items-center gap-2 text-xl"><Sparkles className="h-5 w-5 shrink-0 text-primary" /> {period === "journey" ? "Recovery story" : period === "monthly" ? "Monthly AI summary" : "Weekly AI summary"}</h2>
       <p className="text-xs text-muted-foreground">Written by Google Gemini from anonymous numbers only (no names or emails). Not medical advice.</p>
-      <div className="mt-4 inline-flex gap-2" role="group" aria-label="Summary period">
+      {!journey && <div className="mt-4 inline-flex gap-2" role="group" aria-label="Summary period">
         {([...(journey ? ["journey"] : []), "monthly", "weekly"] as SummaryPeriod[]).map((mode) => <Button key={mode} variant="ghost" className="nav-bubble justify-center px-5" data-active={period === mode} aria-pressed={period === mode} disabled={busy} onClick={() => setPeriod(mode)}>{mode === "journey" ? "Recovery story" : mode === "monthly" ? "Monthly" : "Weekly"}</Button>)}
-      </div>
+      </div>}
       <div className="mt-3 grid gap-3">
         {period === "journey" && journey ? <p className="text-sm font-semibold">{summaryPeriodLabel("journey", journeyKey(journey.from, journey.to))}</p> : period === "monthly" ? <label className="block max-w-xs text-sm font-semibold">Month
           <input className="field mt-1" type="month" value={month} disabled={busy} onChange={(e) => setMonth(e.target.value)} />

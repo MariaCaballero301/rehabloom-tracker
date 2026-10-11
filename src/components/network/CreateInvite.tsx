@@ -68,7 +68,7 @@ export function CreateInvite({
         </div>
       ) : (
         <div className="invite-bar">
-          <span className="text-xs text-slate-500">{error ? "Couldn't load your code" : "Loading your code…"}</span>
+          <span className="text-xs text-muted-foreground">{error ? "Couldn't load your code" : "Loading your code…"}</span>
         </div>
       )}
       {error && <p className="mt-2 text-xs font-semibold text-rose-600">{error}</p>}

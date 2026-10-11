@@ -1,5 +1,5 @@
 // /profile — the profile editor on its own page, opened from the account header's Edit Profile button.
-import { createFileRoute, useChildMatches } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppNav } from "@/components/AppNav";
 import { useSessionUser } from "@/hooks/use-session-user";
 import { AuthCard } from "@/components/rehab/AuthCard";
@@ -25,8 +25,6 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
-  const childMatches = useChildMatches();
-  if (childMatches.length > 0) return null;
   return <ProfileView />;
 }
 

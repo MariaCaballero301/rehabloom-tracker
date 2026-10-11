@@ -54,8 +54,8 @@ export function AccountProfile() {
   const openEditor = () => {
     setPinned(false);
     setHovered(false);
-    void navigate({ to: "/support", search: { edit: "profile" } });
-    // If the profile card is already mounted (e.g. on /support), open it directly.
+    void navigate({ to: "/profile", search: { edit: "profile" } });
+    // If the profile card is already mounted (e.g. on /profile), open it directly.
     window.dispatchEvent(new Event(PROFILE_EDIT_EVENT));
   };
   const date = new Date(account.user.created_at);

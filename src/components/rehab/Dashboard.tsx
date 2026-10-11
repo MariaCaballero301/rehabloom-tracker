@@ -50,7 +50,11 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
   useEffect(() => {
     const refresh = () => void load();
     window.addEventListener("rehabloom:message-sent", refresh);
-    return () => window.removeEventListener("rehabloom:message-sent", refresh);
+    window.addEventListener("rehabloom:xp-changed", refresh);
+    return () => {
+      window.removeEventListener("rehabloom:message-sent", refresh);
+      window.removeEventListener("rehabloom:xp-changed", refresh);
+    };
   }, [load]);
 
   // Exercises the user undid today: undo restores eligibility so they can redo it.

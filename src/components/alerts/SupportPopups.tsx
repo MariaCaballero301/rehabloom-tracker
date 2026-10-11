@@ -44,13 +44,13 @@ export function SupportPopups() {
         toast(`${s.organizer_name || "Someone"} invited you to a session together 🤝`, { action: open });
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rehab_sessions", filter: `guest_id=eq.${userId}` }, (payload) => {
-        const s = payload.new as { organizer_name?: string; status?: string; completed_by?: string | null };
-        if (s.status === "completed" && s.completed_by && s.completed_by !== userId) { toast.success(`${s.organizer_name || "Someone"} marked your session as done 🎉 +15 XP`); window.dispatchEvent(new Event("rehabloom:message-sent")); }
+        const s = payload.new as { id?: string; organizer_name?: string; status?: string; completed_by?: string | null };
+        if (s.status === "completed" && s.completed_by && s.completed_by !== userId && s.id) void celebrateCompletion(userId, s.id, s.organizer_name || "Someone");
         if (s.status === "proposed") toast(`${s.organizer_name || "Someone"} suggested a new time for your session 🔁`, { action: open });
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rehab_sessions", filter: `organizer_id=eq.${userId}` }, (payload) => {
-        const s = payload.new as { guest_name?: string; status?: string; completed_by?: string | null };
-        if (s.status === "completed" && s.completed_by && s.completed_by !== userId) { toast.success(`${s.guest_name || "Someone"} marked your session as done 🎉 +15 XP`); window.dispatchEvent(new Event("rehabloom:message-sent")); }
+        const s = payload.new as { id?: string; guest_name?: string; status?: string; completed_by?: string | null };
+        if (s.status === "completed" && s.completed_by && s.completed_by !== userId && s.id) void celebrateCompletion(userId, s.id, s.guest_name || "Someone");
       })
       .subscribe();
     return () => {

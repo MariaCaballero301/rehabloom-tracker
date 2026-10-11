@@ -68,8 +68,8 @@ export function playSound(sound: Sound) {
       if (sound === "tap") tone(1000, 700, 0, 0.07, 0.45);
       if (sound === "pop") { tone(450, 1400, 0, 0.12, 0.8); tone(2200, 1600, 0.08, 0.05, 0.35, "sine"); }
       if (sound === "success") {
-        tone(700, 660, 0, 0.2, 0.55);
-        tone(990, 880, 0.13, 0.28, 0.55);
+        tone(660, 700, 0, 0.2, 0.55);
+        tone(880, 990, 0.13, 0.28, 0.55);
         tone(1320, 1320, 0.13, 0.3, 0.2, "sine");
       }
     }).catch(() => {});

@@ -88,6 +88,7 @@ function People({ userId, email, initialCode }: { userId: string; email: string;
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-4">
               <SupportAlertsPanel userId={userId} mentor={mentor} />
+              {mentor ? <><RedeemCodeForm standalone initialCode={initialCode} onChange={n.reload} /><PendingInviteRedeemer /></> : <InviteCard invites={n.invites} initialCode={initialCode} onChange={n.reload} />}
               <InboxCard
                 key={n.encouragements.map((e) => e.id).join()}
                 userId={userId}
@@ -103,7 +104,7 @@ function People({ userId, email, initialCode }: { userId: string; email: string;
             </div>
           </div>
           <PeopleCard contacts={n.contacts} supporting={n.supporting} blocks={n.blocks} buddyStats={n.buddyStats} statsError={n.statsError} hideAlerts={mentor} onChange={n.reload} />
-          {mentor ? <><RedeemCodeForm standalone initialCode={initialCode} onChange={n.reload} /><PendingInviteRedeemer /></> : <InviteCard invites={n.invites} initialCode={initialCode} onChange={n.reload} />}
+
         </div>
       )}
     </div>

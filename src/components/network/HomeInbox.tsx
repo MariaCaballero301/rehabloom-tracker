@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, Inbox, X } from "lucide-react";
+import { NavSlot } from "@/components/NavSlot";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { InboxCard } from "./InboxCard";
@@ -81,10 +82,10 @@ export function HomeInbox({ userId, children, initiallyOpen = false }: { userId:
         </nav>}
       </aside>}
       <main className="home-inbox-content">{children}</main>
-      {!open && <Button ref={trigger} variant="ghost" className={`bubble inbox-trigger rounded-full p-0 text-primary ${inbox.count > 0 ? "inbox-attention" : ""}`} aria-label={inbox.count ? `Open Inbox, ${inbox.count} unread` : "Open Inbox"} title="Inbox" aria-expanded={open} aria-controls="home-inbox" onClick={() => setOpen(true)}>
+      {!open && <NavSlot id="nav-slot-inbox"><Button ref={trigger} variant="ghost" className={`bubble inbox-trigger rounded-full p-0 text-primary ${inbox.count > 0 ? "inbox-attention" : ""}`} aria-label={inbox.count ? `Open Inbox, ${inbox.count} unread` : "Open Inbox"} title="Inbox" aria-expanded={open} aria-controls="home-inbox" onClick={() => setOpen(true)}>
         <Inbox className="size-7" />
         {inbox.count > 0 && <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-popover bg-destructive px-1 text-xs font-bold text-destructive-foreground">{inbox.count > 99 ? "99+" : inbox.count}</span>}
-      </Button>}
+      </Button></NavSlot>}
     </div>
   );
 }

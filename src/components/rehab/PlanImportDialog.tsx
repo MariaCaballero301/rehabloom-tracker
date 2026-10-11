@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeTherapyPlan } from "@/lib/plan-import.functions";
-import { DEMO_PT_NOTE, MAX_PLAN_BYTES, PLAN_MIMES, importedExercisePayload, inferImportSchedule, type ImportedExercise, type ImportSchedule } from "@/lib/plan-import";
+import { DEMO_PT_NOTE, MAX_PLAN_BYTES, PLAN_MIMES, importedExercisePayload, inferImportSchedule, pickedSchedule, scheduleLabel, confirmDisabledReason, type ImportedExercise, type ImportSchedule } from "@/lib/plan-import";
+
+type Pick = { frequency?: "daily" | "weekly"; occurrences?: number; days: number[] };
+type Row = { exercise: ImportedExercise; schedule: ImportSchedule | null; selected: boolean; pick?: Pick };
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function readFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -25,7 +29,7 @@ export function PlanImportDialog({ open, onOpenChange, onSaved }: { open: boolea
   const [demo, setDemo] = useState(false);
   const [consent, setConsent] = useState(false);
   const [reviewed, setReviewed] = useState(false);
-  const [rows, setRows] = useState<{ exercise: ImportedExercise; schedule: ImportSchedule | null; selected: boolean }[]>([]);
+  const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -43,7 +47,7 @@ export function PlanImportDialog({ open, onOpenChange, onSaved }: { open: boolea
     try {
       const documents = await Promise.all(files.map(async (file) => ({ mime: file.type as typeof PLAN_MIMES[number], data: await readFile(file) })));
       const result = await analyze({ data: { text, files: documents } });
-      setRows(result.exercises.map((exercise) => ({ exercise, schedule: inferImportSchedule(exercise.frequency), selected: true })));
+      setRows(result.exercises.map((exercise) => ({ exercise, schedule: inferImportSchedule(exercise.frequency), selected: true, ...(inferImportSchedule(exercise.frequency) ? {} : { pick: { days: [] } }) })));
       setAnalyzed(true);
     } catch (e) { setError(e instanceof Error ? e.message : "The plan couldn't be analyzed. Nothing was saved."); }
     finally { setBusy(false); }
@@ -89,13 +93,35 @@ export function PlanImportDialog({ open, onOpenChange, onSaved }: { open: boolea
         <ul className="space-y-3">{rows.map((row, i) => <li key={i} className="rounded-lg border bg-card/80 p-4 shadow-sm">
           <label className="flex items-center gap-2 font-bold"><input type="checkbox" checked={row.selected} disabled={saving} onChange={(e) => { setReviewed(false); setRows(rows.map((r, index) => index === i ? { ...r, selected: e.target.checked } : r)); }} className="accent-primary" />{row.exercise.name}</label>
           <dl className="mt-2 grid grid-cols-2 gap-2 text-sm"><div><dt className="text-muted-foreground">Sets</dt><dd>{row.exercise.sets || "Not specified"}</dd></div><div><dt className="text-muted-foreground">Reps</dt><dd>{row.exercise.reps || "Not specified"}</dd></div><div className="col-span-2"><dt className="text-muted-foreground">Prescribed frequency</dt><dd className="break-words">{row.exercise.frequency || "Not specified"}</dd></div><div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd className="whitespace-pre-wrap break-words">{row.exercise.notes || "None provided"}</dd></div></dl>
-          {row.schedule ? <p className="mt-2 text-sm font-semibold text-primary">Schedule: {row.schedule.occurrences}× daily</p> : <p className="mt-2 text-sm text-muted-foreground">The schedule needs clarification. Leave this exercise unselected and add it manually after checking your therapist’s instructions.</p>}
+          {row.pick ? <SchedulePicker pick={row.pick} disabled={saving} onChange={(pick) => { setReviewed(false); setRows(rows.map((r, index) => index === i ? { ...r, pick, schedule: pickedSchedule(pick) } : r)); }} schedule={row.schedule} />
+            : row.schedule && <p className="mt-2 text-sm font-semibold text-primary">Schedule: {scheduleLabel(row.schedule)}</p>}
         </li>)}</ul>
         {rows.length > 0 && <>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={reviewed} disabled={saving} onChange={(e) => setReviewed(e.target.checked)} className="mt-1 accent-primary" /><span>I checked the selected exercises and schedule against {demo ? "the fictional demo note" : "my therapist’s instructions"}.</span></label>
-          <Button className="btn-aqua w-full whitespace-normal" disabled={saving || !reviewed || !rows.some((row) => row.selected) || rows.some((row) => row.selected && !row.schedule)} onClick={() => void save()}><Check className="h-4 w-4" />{saving ? "Adding…" : "Confirm & Add to Schedule"}</Button>
+          <Button className="btn-aqua w-full whitespace-normal" disabled={saving || !!confirmDisabledReason(rows, reviewed)} onClick={() => void save()}><Check className="h-4 w-4" />{saving ? "Adding…" : "Confirm & Add to Schedule"}</Button>
+          {!saving && confirmDisabledReason(rows, reviewed) && <p className="text-center text-sm text-muted-foreground">{confirmDisabledReason(rows, reviewed)}</p>}
         </>}
       </div>}
     </DialogContent>
   </Dialog>;
+}
+
+function SchedulePicker({ pick, schedule, disabled, onChange }: { pick: Pick; schedule: ImportSchedule | null; disabled: boolean; onChange: (p: Pick) => void }) {
+  const chip = (on: boolean) => `h-auto min-h-9 rounded-full px-3 text-sm ${on ? "btn-aqua btn-leaf" : "btn-soft"}`;
+  return <div className="mt-3 space-y-2 rounded-lg border border-dashed p-3">
+    <p className="text-sm text-muted-foreground">The schedule needs clarification. Check this with your therapist’s instructions.</p>
+    <fieldset disabled={disabled} className="space-y-2">
+      <legend className="text-sm font-semibold">Set how often</legend>
+      <div className="flex flex-wrap gap-2">
+        {(["daily", "weekly"] as const).map((f) => <Button key={f} type="button" variant="outline" aria-pressed={pick.frequency === f} className={chip(pick.frequency === f)} onClick={() => onChange({ frequency: f, days: [] })}>{f === "daily" ? "Daily" : "Specific weekdays"}</Button>)}
+      </div>
+      {pick.frequency === "daily" && <div className="flex flex-wrap items-center gap-2"><span className="text-sm">Times per day</span>
+        {[1, 2, 3].map((n) => <Button key={n} type="button" variant="outline" aria-pressed={pick.occurrences === n} className={`h-10 w-10 rounded-full p-0 font-bold ${pick.occurrences === n ? "btn-aqua btn-leaf" : "btn-soft"}`} onClick={() => onChange({ ...pick, occurrences: n })}>{n}</Button>)}
+      </div>}
+      {pick.frequency === "weekly" && <div className="flex flex-wrap gap-1.5">
+        {DAYS.map((label, d) => { const on = pick.days.includes(d); return <Button key={label} type="button" variant="outline" aria-pressed={on} className={chip(on)} onClick={() => onChange({ ...pick, days: on ? pick.days.filter((x) => x !== d) : [...pick.days, d] })}>{label}</Button>; })}
+      </div>}
+    </fieldset>
+    {schedule && <p className="text-sm font-semibold text-primary">Schedule: {scheduleLabel(schedule)} <span className="font-normal text-muted-foreground">(set by you)</span></p>}
+  </div>;
 }

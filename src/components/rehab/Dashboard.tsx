@@ -9,7 +9,7 @@ import { Plant } from "./Plant";
 import { MentorHome } from "./MentorMode";
 import { PlanImportDialog } from "./PlanImportDialog";
 import { AppNav } from "@/components/AppNav";
-import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, stageProgress, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN, XP_PER_CHEER, MAX_XP_CHEERS_PER_DAY, cheerCount } from "@/lib/rehab";
+import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, stageProgress, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN, XP_PER_CHEER, MAX_XP_CHEERS_PER_DAY, cheerCount, sessionXpCount } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
@@ -23,18 +23,21 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [sessionDays, setSessionDays] = useState(0);
 
   const today = new Date();
   const todayKey = dayKey(today);
 
   const load = useCallback(async () => {
-    const [ex, co, ci, ch, np] = await Promise.all([
+    const [ex, co, ci, ch, np, rs] = await Promise.all([
       supabase.from("exercises").select("*").order("created_at"),
       supabase.from("completions").select("*"),
       supabase.from("checkins").select("*"),
       supabase.from("encouragements").select("created_at").eq("from_user", userId),
       supabase.from("network_profiles").select("finished_therapy").eq("user_id", userId).maybeSingle(),
+      supabase.from("rehab_sessions").select("status, completed_at").eq("status", "completed"),
     ]);
+    setSessionDays(sessionXpCount(rs.data ?? []));
     setFinished(np.data?.finished_therapy === true);
     setCheers(ch.data ?? []);
     setExercises(ex.data ?? []);
@@ -53,7 +56,7 @@ export function Dashboard({ userId, email }: { userId: string; email: string; jo
   // Exercises the user undid today: undo restores eligibility so they can redo it.
   const [undone, setUndone] = useState<Set<string>>(() => new Set());
   const completed = completedRecords(completions);
-  const xp = computeXp(completed.length, checkinCount(checkins), cheerCount(cheers));
+  const xp = computeXp(completed.length, checkinCount(checkins), cheerCount(cheers), sessionDays);
   const stage = stageFor(xp);
   const sorted = sortExercises(exercises);
   const todays = sorted.filter((e) => scheduledCount(e, today) > 0 && (e.weekly_mode !== "interval" || e.frequency === "daily" || weeklyAvailability(e, completions, today).available || undone.has(e.id)));

@@ -11,7 +11,9 @@ export type RehabSession = {
   place: string;
   note: string;
   meeting_url: string;
-  status: "proposed" | "accepted" | "declined" | "cancelled" | string;
+  status: "proposed" | "accepted" | "declined" | "cancelled" | "completed" | string;
+  completed_at?: string | null;
+  completed_by?: string | null;
 };
 
 export const SESSION_LENGTH_MS = 2 * 60 * 60 * 1000;
@@ -22,9 +24,17 @@ export const MAX_SESSION_NOTE_LENGTH = 200;
 const startMs = (s: Pick<RehabSession, "starts_at">) => new Date(s.starts_at).getTime();
 const byStart = (a: RehabSession, b: RehabSession) => startMs(a) - startMs(b);
 
-/** Only accepted sessions that have started can be marked finished. */
-export function canFinishSession(s: Pick<RehabSession, "status" | "starts_at">, now: Date) {
-  return s.status === "accepted" && startMs(s) <= now.getTime();
+/** Accepted sessions can be marked done from 15 minutes before they start. */
+export function canComplete(s: Pick<RehabSession, "status" | "starts_at">, now: Date) {
+  return s.status === "accepted" && now.getTime() >= startMs(s) - JOIN_EARLY_MS;
+}
+
+/** Accepted sessions stay listed for this long after start so they never vanish without being marked. */
+export const UNCONFIRMED_KEEP_MS = 48 * 60 * 60 * 1000;
+
+/** After the 2-hour slot, an accepted session that wasn't marked done asks "Did it happen?". */
+export function needsConfirmation(s: Pick<RehabSession, "status" | "starts_at">, now: Date) {
+  return s.status === "accepted" && startMs(s) + SESSION_LENGTH_MS <= now.getTime();
 }
 
 /** Split my sessions into invites to answer, upcoming accepted ones, and my invites waiting for a reply. */
@@ -34,7 +44,7 @@ export function splitSessions(rows: RehabSession[], me: string, now: Date) {
   return {
     invites: rows.filter((s) => s.status === "proposed" && s.guest_id === me && notEnded(s)).sort(byStart),
     upcoming: rows
-      .filter((s) => s.status === "accepted" && (s.guest_id === me || s.organizer_id === me) && notEnded(s))
+      .filter((s) => s.status === "accepted" && (s.guest_id === me || s.organizer_id === me) && startMs(s) + UNCONFIRMED_KEEP_MS > t)
       .sort(byStart),
     waiting: rows.filter((s) => s.status === "proposed" && s.organizer_id === me && notEnded(s)).sort(byStart),
   };
@@ -108,7 +118,7 @@ export type DaySession = { id: string; day: string; startsAt: string; name: stri
 
 /** Status text shown on the Progress calendar. */
 export function sessionStatusLabel(status: string, startsAt: string, now: Date) {
-  if (status === "completed") return "Done together";
+  if (status === "completed") return "Done together ✅";
   if (status === "proposed") return "Waiting for reply";
   return new Date(startsAt).getTime() < now.getTime() ? "Planned" : "Scheduled";
 }

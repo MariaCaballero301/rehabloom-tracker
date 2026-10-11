@@ -14,7 +14,7 @@ export type MonthStats = {
   completionRatePct: number | null; daysWithAllDone: number; checkinDays: number; daysWithoutCheckin: number;
   restDays: number; unableDays: number; avgPain: number | null; minPain: number | null; maxPain: number | null;
   firstHalfAvgPain: number | null; secondHalfAvgPain: number | null; avgMotivation: number | null;
-  sessionsTogetherScheduled: number; sessionsTogetherStillAwaitingReply: number;
+  sessionsTogetherScheduled: number; sessionsTogetherStillAwaitingReply: number; sessionsTogetherCompleted?: number;
 };
 
 const avg = (a: number[]) => (a.length ? Math.round((a.reduce((s, x) => s + x, 0) / a.length) * 10) / 10 : null);
@@ -62,6 +62,7 @@ export function periodStats(period: SummaryPeriod, date: string, exercises: Ex[]
     avgMotivation: avg(normal.map((c) => c.motivation)),
     sessionsTogetherScheduled: sessions.filter((s) => s.status === "accepted" || s.status === "completed").length,
     sessionsTogetherStillAwaitingReply: sessions.filter((s) => s.status === "proposed").length,
+    sessionsTogetherCompleted: sessions.filter((s) => s.status === "completed").length,
   };
 }
 
@@ -100,7 +101,7 @@ export function buildPrompt(s: MonthStats) {
     "Use ONLY the numbers below. Do not invent, round differently, or estimate any statistic.",
     "Do not diagnose, do not interpret causes, and do not recommend any change to exercises or treatment.",
     "If a value is null or a count is low, say plainly that the data is missing or limited.",
-    "Pain is self-reported on a 0-10 scale; motivation on a 1-5 scale. 'Sessions together' are exercise sessions planned with a support person; 'Scheduled' and 'StillAwaitingReply' are separate, non-overlapping counts.",
+    "Pain is self-reported on a 0-10 scale; motivation on a 1-5 scale. 'Sessions together' are exercise sessions planned with a support person; 'Scheduled' and 'StillAwaitingReply' are separate, non-overlapping counts; 'Completed' (a subset of Scheduled) were marked as done by a participant.",
     "End by suggesting the patient discuss these self-reported figures with their physical therapist.",
     "Data (JSON):",
     JSON.stringify(s),

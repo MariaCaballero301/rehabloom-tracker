@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { importedExercisePayload, inferImportSchedule } from "@/lib/plan-import";
+import { confirmDisabledReason, pickedSchedule } from "@/lib/plan-import";
 import { scheduledCount } from "@/lib/rehab";
 
 describe("prescription import", () => {
@@ -24,5 +25,21 @@ describe("prescription import", () => {
   });
   it("rejects a weekly schedule without prescribed weekdays", () => {
     expect(() => importedExercisePayload({ name: "Heel slides", sets: "3", reps: "10", frequency: "", notes: "" }, { frequency: "weekly", occurrences: 1, days: [] })).toThrow("Choose the prescribed weekdays.");
+  });
+});
+describe("confirmDisabledReason", () => {
+  const daily = { frequency: "daily" as const, occurrences: 2, days: [0, 1, 2, 3, 4, 5, 6] };
+  it("asks to set how often for unscheduled selected exercises", () => {
+    expect(confirmDisabledReason([{ selected: true, schedule: null }, { selected: true, schedule: null }], true)).toBe("Set how often for 2 exercises, or unselect them.");
+    expect(confirmDisabledReason([{ selected: true, schedule: null }, { selected: false, schedule: null }], true)).toBe("Set how often for 1 exercise, or unselect it.");
+  });
+  it("asks to tick the box once schedules are set, and allows confirming after", () => {
+    expect(confirmDisabledReason([{ selected: true, schedule: daily }], false)).toBe("Tick the confirmation box first.");
+    expect(confirmDisabledReason([{ selected: true, schedule: daily }], true)).toBeNull();
+  });
+  it("has no default picked schedule", () => {
+    expect(pickedSchedule({ days: [] })).toBeNull();
+    expect(pickedSchedule({ frequency: "daily", days: [] })).toBeNull();
+    expect(pickedSchedule({ frequency: "weekly", days: [3, 1] })?.days).toEqual([1, 3]);
   });
 });

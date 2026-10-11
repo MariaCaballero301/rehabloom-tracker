@@ -51,6 +51,10 @@ export function AppNav(_props: { email?: string }) {
             {label}
           </Link>
         ))}
+        <div className="nav-triggers ml-auto flex items-center gap-2">
+          <span id="nav-slot-sessions" className="contents" />
+          <span id="nav-slot-inbox" className="contents" />
+        </div>
       </nav>
     </>
   );

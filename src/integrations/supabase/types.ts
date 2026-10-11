@@ -420,6 +420,8 @@ export type Database = {
       }
       rehab_sessions: {
         Row: {
+          completed_at: string | null
+          completed_by: string | null
           created_at: string
           guest_id: string
           guest_name: string
@@ -434,6 +436,8 @@ export type Database = {
           status: string
         }
         Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
           created_at?: string
           guest_id: string
           guest_name?: string
@@ -448,6 +452,8 @@ export type Database = {
           status?: string
         }
         Update: {
+          completed_at?: string | null
+          completed_by?: string | null
           created_at?: string
           guest_id?: string
           guest_name?: string

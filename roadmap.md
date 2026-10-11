@@ -32,3 +32,4 @@
 - [x] Show saved profile name/photo in the shared header; reveal private account email and join date on hover or click; verified Home, Progress and Support.
 - [x] Replace bubble audio with shared tap/pop/success synthesis, delegated sound selection, saved AppNav toggle and tests; verified pop playback, panel transitions and persistent mute.
 - [ ] Make tap/pop/success clearly audible: master 0.6 + compressor, triangle tones, higher pitches, success bypasses anti-spam guard.
+- [ ] Generate Frutiger Aero instrumental background music and loop it in the app; verify all bubble sounds still play.

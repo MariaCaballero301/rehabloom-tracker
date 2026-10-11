@@ -17,8 +17,8 @@ export const Route = createFileRoute("/support")({
     const code = search["code"];
     const edit = search["edit"];
     return {
-      code: typeof code === "string" ? code.slice(0, 12) : undefined,
-      edit: edit === "profile" ? "profile" : undefined,
+      ...(typeof code === "string" ? { code: code.slice(0, 12) } : {}),
+      ...(edit === "profile" ? { edit } : {}),
     };
   },
   head: () => ({

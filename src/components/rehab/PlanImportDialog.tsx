@@ -110,23 +110,6 @@ export function PlanImportDialog({ open, onOpenChange, onSaved }: { open: boolea
             {row.exercise.frequency && <div className="col-span-2"><span className="text-muted-foreground">Prescribed frequency</span><p className="break-words">{row.exercise.frequency}</p></div>}
             {row.exercise.notes && <div className="col-span-2"><span className="text-muted-foreground">Instructions</span><p className="whitespace-pre-wrap break-words">{row.exercise.notes}</p></div>}
           </div>
-          <SchedulePicker pick={row.pick} clear={row.clear} disabled={saving} onChange={(pick) => { setReviewed(false); setRows(rows.map((r, index) => index === i ? { ...r, pick, schedule: pickedSchedule(pick) } : r)); }} schedule={row.schedule} />
-        </li>)}</ul>}
-        <label className="block text-sm font-semibold">Therapist’s notes<textarea className="field mt-1 min-h-28 resize-y" maxLength={30000} value={text} placeholder="Paste your prescribed exercises here…" onChange={(e) => { invalidate(); setText(e.target.value); }} /></label>
-        {demo && <p className="rounded-lg bg-warning/20 p-2 text-sm font-semibold">Fictional demo PT note — not a real prescription.</p>}
-        <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1 accent-primary" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>I agree to send these documents and notes to Google Gemini. Remove names and personal details first. Documents are not stored in Rehabloom.</span></label>
-        <Button className="btn-aqua w-full" disabled={!consent || (!files.length && !text.trim())} onClick={() => void run()}>Analyze with Gemini</Button>
-      </fieldset>
-      {busy && <p role="status" className="flex items-center justify-center gap-2 text-sm text-primary"><Loader2 className="h-4 w-4 animate-spin" /> Reading your plan…</p>}
-      {error && <p role="alert" className="break-words rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
-      {analyzed && <div className="space-y-3">
-        <h3 className="font-bold">Review extracted exercises</h3>
-        {!rows.length && <p className="text-sm text-muted-foreground">No prescribed exercises were found. Try clearer documents or notes.</p>}
-        <ul className="space-y-3">{rows.map((row, i) => <li key={i} className="rounded-lg border bg-card/80 p-4 shadow-sm">
-          <label className="flex items-center gap-2 font-bold"><input type="checkbox" checked={row.selected} disabled={saving} onChange={(e) => { setReviewed(false); setRows(rows.map((r, index) => index === i ? { ...r, selected: e.target.checked } : r)); }} className="accent-primary" />{row.exercise.name}</label>
-          <dl className="mt-2 grid grid-cols-2 gap-2 text-sm"><div><dt className="text-muted-foreground">Sets</dt><dd>{row.exercise.sets || "Not specified"}</dd></div><div><dt className="text-muted-foreground">Reps</dt><dd>{row.exercise.reps || "Not specified"}</dd></div><div className="col-span-2"><dt className="text-muted-foreground">Prescribed frequency</dt><dd className="break-words">{row.exercise.frequency || "Not specified"}</dd></div><div className="col-span-2"><dt className="text-muted-foreground">Notes</dt><dd className="whitespace-pre-wrap break-words">{row.exercise.notes || "None provided"}</dd></div></dl>
-          {row.pick ? <SchedulePicker pick={row.pick} disabled={saving} onChange={(pick) => { setReviewed(false); setRows(rows.map((r, index) => index === i ? { ...r, pick, schedule: pickedSchedule(pick) } : r)); }} schedule={row.schedule} />
-            : row.schedule && <p className="mt-2 text-sm font-semibold text-primary">Schedule: {scheduleLabel(row.schedule)}</p>}
         </li>)}</ul>
         {rows.length > 0 && <>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={reviewed} disabled={saving} onChange={(e) => setReviewed(e.target.checked)} className="mt-1 accent-primary" /><span>I checked the selected exercises and schedule against {demo ? "the fictional demo note" : "my therapist’s instructions"}.</span></label>

@@ -1,7 +1,7 @@
 // Invite family & friends with a private code, redeem someone's code, or add a contact without the app.
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Copy, Share2, Trash2, UserRoundPlus } from "lucide-react";
+import { Copy, UserRoundPlus } from "lucide-react";
 import { normalizePhone } from "@/lib/alerts";
 import { formatInviteCode, isInviteCodeFormat, normalizeInviteCode } from "@/lib/network";
 import { sendWelcome } from "@/lib/welcome.functions";

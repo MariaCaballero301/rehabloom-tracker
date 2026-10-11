@@ -47,3 +47,6 @@
 - [x] Move Sessions + Inbox buttons into the sticky top navigation; side panels unchanged
 - [x] Plan importer: inline "Set how often" picker for unscheduled exercises + disabled-reason helper with test
 - [x] Mark a session together as done (+15 XP, Did it happen?, live toast, Progress counts)
+
+- [x] Plan importer: concise names, editable cards, auto schedule, Ready to Add
+- [x] Session celebration: fish always (+15 XP or Done together), missed-celebration fallback via localStorage + test

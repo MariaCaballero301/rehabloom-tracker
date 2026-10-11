@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { db, rpc } from "@/components/network/useNetwork";
 import { PlanSessionDialog, type PlanTarget } from "@/components/sessions/PlanSessionDialog";
-import { celebrateXp } from "@/components/XpFish";
 import { buildIcs, canComplete, canJoin, needsConfirmation, formatWhen, inviteLabel, otherPerson, sessionsBadgeCount, splitSessions, startingSoon, type RehabSession } from "@/lib/sessions";
-import { earnsSessionXp } from "@/lib/rehab";
+import { celebrateCompletion, readCelebrated, uncelebratedCompletions } from "@/lib/session-celebrations";
 import { playSound } from "@/lib/sounds";
 
 export const OPEN_SESSIONS_EVENT = "rehabloom:open-sessions";
@@ -57,6 +56,20 @@ export function SessionsBubble({ userId }: { userId: string }) {
   const [now, setNow] = useState(() => new Date());
   const [plan, setPlan] = useState<PlanTarget | null>(null);
   const [finishing, setFinishing] = useState<Set<string>>(new Set());
+
+  // Fallback: celebrate completions by the other person that the realtime toast missed.
+  useEffect(() => {
+    const check = async () => {
+      const { data } = await supabase.from("rehab_sessions").select("id, status, completed_by, completed_at, organizer_id, organizer_name, guest_name")
+        .eq("status", "completed");
+      for (const r of uncelebratedCompletions(data ?? [], userId, readCelebrated(userId), new Date()))
+        await celebrateCompletion(userId, r.id, (r.organizer_id === userId ? r.guest_name : r.organizer_name) || "Someone");
+    };
+    void check().catch(() => {});
+    const onFocus = () => void check().catch(() => {});
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [userId]);
 
   const load = useCallback(async () => {
     const since = new Date(Date.now() - 2 * 3600_000).toISOString();
@@ -192,15 +205,7 @@ export function SessionsBubble({ userId }: { userId: string }) {
     try {
       await rpc("complete_rehab_session", { p_id: s.id });
       setSessions((prev) => prev.filter((row) => row.id !== s.id));
-      const { data: mine } = await supabase.from("rehab_sessions").select("id, status, completed_at").eq("status", "completed");
-      if (earnsSessionXp(mine ?? [], s.id, new Date())) {
-        toast.success("Session done together 🎉 +15 XP");
-        celebrateXp("+15 XP");
-      } else {
-        toast.success("Session done together 🎉 (today’s session XP already earned)");
-      }
-      window.dispatchEvent(new Event("rehabloom:xp-changed"));
-      window.dispatchEvent(new Event("rehabloom:message-sent"));
+      await celebrateCompletion(userId, s.id, null);
       await load();
     } catch (e) {
       toast.error((e as Error).message);

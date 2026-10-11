@@ -12,20 +12,31 @@ export const extractedPlanSchema = z.array(extractedExerciseSchema).max(50);
 export type ImportedExercise = z.infer<typeof extractedExerciseSchema>;
 export type ImportSchedule = { frequency: "daily" | "weekly"; occurrences: number; days: number[] };
 
-/** Only map explicit daily instructions; ambiguous weekly quotas must be reviewed. */
+const DAY_WORDS: Record<string, number> = { sun: 0, sunday: 0, mon: 1, monday: 1, tue: 2, tues: 2, tuesday: 2, wed: 3, wednesday: 3, thu: 4, thur: 4, thurs: 4, thursday: 4, fri: 5, friday: 5, sat: 6, saturday: 6 };
+
+/** Map only explicit schedules: N times daily (1–3) or a plain list of weekdays. Anything else must be reviewed. */
 export function inferImportSchedule(frequency: string): ImportSchedule | null {
-  const text = frequency.trim().toLowerCase();
-  let occurrences: number | undefined;
-  if (/\btwice\s+(?:a\s+day|daily|per\s+day)\b/.test(text)) occurrences = 2;
-  else if (/\b(?:three times|thrice)\s+(?:daily|a day|per day)\b/.test(text)) occurrences = 3;
-  else {
-    const match = text.match(/\b(\d+)\s*(?:x|×|times)?\s*(?:daily|per day|a day)\b/);
-    if (match) occurrences = Number(match[1]);
-    else if (/^(?:once daily|daily|every day|once a day|once per day)$/.test(text)) occurrences = 1;
+  const text = frequency.trim().toLowerCase().replace(/[.;]+$/, "");
+  if (!text) return null;
+  const tokens = text.replace(/\b(?:every|each|on|and)\b/g, " ").split(/[\s,/&+-]+/).filter(Boolean);
+  if (tokens.length && tokens.every((t) => t in DAY_WORDS)) {
+    const days = [...new Set(tokens.map((t) => DAY_WORDS[t] ?? 0))].sort((a, b) => a - b);
+    return days.length === 7 ? { frequency: "daily", occurrences: 1, days: [0, 1, 2, 3, 4, 5, 6] } : { frequency: "weekly", occurrences: 1, days };
   }
-  if (!occurrences || occurrences > 10) return null;
+  const per = "(?:daily|a day|per day|each day|every day)";
+  let occurrences: number | undefined;
+  if (new RegExp(`\\btwice\\s+${per}`).test(text)) occurrences = 2;
+  else if (new RegExp(`\\b(?:three times|thrice)\\s+${per}`).test(text)) occurrences = 3;
+  else if (new RegExp(`\\b(?:two times)\\s+${per}`).test(text)) occurrences = 2;
+  else {
+    const match = text.match(new RegExp(`\\b(\\d+)\\s*(?:x|×|times)?\\s*${per}`));
+    if (match) occurrences = Number(match[1]);
+    else if (/^(?:once daily|daily|every day|each day|once a day|once per day|once each day)$/.test(text)) occurrences = 1;
+  }
+  // Only 1–3 times per day, matching the normal Add exercise form.
+  if (!occurrences || occurrences > 3) return null;
   // Do not erase prescribed spacing or day restrictions when auto-mapping.
-  if (/\b(?:apart|hours?|minutes?|week|monday|tuesday|wednesday|thursday|friday|saturday|sunday|rest)\b/.test(text)) return null;
+  if (/\b(?:apart|hours?|minutes?|week|monday|tuesday|wednesday|thursday|friday|saturday|sunday|rest|other)\b/.test(text)) return null;
   return { frequency: "daily", occurrences, days: [0, 1, 2, 3, 4, 5, 6] };
 }
 
@@ -57,11 +68,17 @@ export function pickedSchedule(pick: { frequency?: "daily" | "weekly"; occurrenc
 }
 
 /** Why "Confirm & Add to Schedule" is disabled, or null when it can be used. */
-export function confirmDisabledReason(rows: { selected: boolean; schedule: ImportSchedule | null }[], reviewed: boolean) {
+export function confirmDisabledReason(rows: { selected: boolean; schedule: ImportSchedule | null; name?: string }[], reviewed: boolean) {
   const selected = rows.filter((r) => r.selected);
   if (!selected.length) return "Select at least one exercise.";
+  if (selected.some((r) => r.name !== undefined && !r.name.trim())) return "Give every selected exercise a name.";
   const missing = selected.filter((r) => !r.schedule).length;
   if (missing) return `Set how often for ${missing} exercise${missing === 1 ? "" : "s"}, or unselect ${missing === 1 ? "it" : "them"}.`;
   if (!reviewed) return "Tick the confirmation box first.";
   return null;
+}
+
+/** A review card is ready once it has a name and a complete schedule. */
+export function isReadyToAdd(row: { name: string; schedule: ImportSchedule | null }) {
+  return !!row.name.trim() && !!row.schedule;
 }

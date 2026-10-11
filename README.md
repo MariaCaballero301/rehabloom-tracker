@@ -2,7 +2,7 @@
 
 **Physical therapy works only if you keep doing it. Rehabloom helps you stick with your prescribed exercises, and brings your people in when you start slipping.**
 
-🔗 **Try it:** https://rehabloom.lovable.app · Built at **HackNC 2026**
+🔗 **Try it:** https://rehabloom-progress-tracker.lovable.app · Built at **HackNC 2026**
 
 ---
 
@@ -73,6 +73,6 @@ The app expects a Lovable Cloud / Supabase project (env vars in `.env`). Optiona
 Built with 💙 at HackNC by:
 - Jaiden Oey ([@jaidenoey](https://github.com/jaidenoey))
 - María Caballero ([@MariaCaballero301](https://github.com/MariaCaballero301))
-- *(add teammates here)*
+- Ines Perez Calderon
 
 *Rehabloom supports adherence to your therapist's plan. It does not give medical advice. If pain increases, stop and contact your physical therapist.*

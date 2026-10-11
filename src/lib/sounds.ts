@@ -71,27 +71,47 @@ export function startSwimSound(duration = 3.6): () => void {
       noise.loop = true;
       const filter = audio.createBiquadFilter();
       filter.type = "bandpass";
-      filter.frequency.value = 520;
-      filter.Q.value = 1.1;
+      filter.frequency.value = 650;
+      filter.Q.value = 0.8;
       const gain = audio.createGain();
       // Slow wobble makes the swish bob like the fish.
       const lfo = audio.createOscillator();
       lfo.type = "sine";
       lfo.frequency.value = 2.3;
       const lfoGain = audio.createGain();
-      lfoGain.gain.value = 0.07;
+      lfoGain.gain.value = 0.18;
       lfo.connect(lfoGain);
       lfoGain.connect(gain.gain);
       noise.connect(filter);
       filter.connect(gain);
       gain.connect(output);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.16, now + 0.35);
-      gain.gain.setValueAtTime(0.16, now + Math.max(0.4, duration - 0.7));
+      gain.gain.exponentialRampToValueAtTime(0.5, now + 0.3);
+      gain.gain.setValueAtTime(0.5, now + Math.max(0.4, duration - 0.7));
       // Fade out exactly as the fish swims off screen.
       gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
       noise.start(now);
       lfo.start(now);
+      // Watery blub-bloops sprinkled across the whole swim.
+      const bloop = (from: number, to: number, offset: number, length: number, volume: number) => {
+        const oscillator = audio.createOscillator();
+        const bGain = audio.createGain();
+        const time = now + offset;
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(from, time);
+        oscillator.frequency.exponentialRampToValueAtTime(to, time + length * 0.7);
+        bGain.gain.setValueAtTime(0.0001, time);
+        bGain.gain.exponentialRampToValueAtTime(volume, time + 0.008);
+        bGain.gain.exponentialRampToValueAtTime(0.0001, time + length);
+        oscillator.connect(bGain);
+        bGain.connect(output);
+        oscillator.start(time);
+        oscillator.stop(time + length + 0.01);
+        oscillator.onended = () => { oscillator.disconnect(); bGain.disconnect(); };
+      };
+      for (let t = 0.1; t < duration - 0.4; t += 0.32) {
+        bloop(380 + Math.random() * 420, 700 + Math.random() * 500, t, 0.1, 0.4);
+      }
       noise.stop(now + duration + 0.05);
       lfo.stop(now + duration + 0.05);
       const end = now + duration + 0.06;

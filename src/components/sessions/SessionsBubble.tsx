@@ -60,14 +60,13 @@ export function SessionsBubble({ userId }: { userId: string }) {
   // Fallback: celebrate completions by the other person that the realtime toast missed.
   useEffect(() => {
     const check = async () => {
-      const since = new Date(Date.now() - 24 * 3600_000).toISOString();
       const { data } = await supabase.from("rehab_sessions").select("id, status, completed_by, completed_at, organizer_id, organizer_name, guest_name")
-        .eq("status", "completed").neq("completed_by", userId).gte("completed_at", since);
+        .eq("status", "completed");
       for (const r of uncelebratedCompletions(data ?? [], userId, readCelebrated(userId), new Date()))
         await celebrateCompletion(userId, r.id, (r.organizer_id === userId ? r.guest_name : r.organizer_name) || "Someone");
     };
-    void check();
-    const onFocus = () => void check();
+    void check().catch(() => {});
+    const onFocus = () => void check().catch(() => {});
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [userId]);

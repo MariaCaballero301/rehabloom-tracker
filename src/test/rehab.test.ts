@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sessionXpCount, computeXp, stageFor, completedRecords, currentWeek, dayKey, nextExerciseStatus } from "@/lib/rehab";
+import { sessionXpCount, computeXp, stageFor, completedRecords, currentWeek, dayKey, nextExerciseStatus, earnsSessionXp } from "@/lib/rehab";
 
 describe("rehab rules", () => {
   it("awards 10 XP per exercise and 5 per check-in", () => {

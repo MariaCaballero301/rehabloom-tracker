@@ -17,6 +17,7 @@ vi.mock("@/integrations/supabase/client", () => {
 });
 
 import { PeopleCard } from "@/components/network/PeopleCard";
+import { PROFILE_EDIT_EVENT } from "@/components/AccountProfile";
 import { DiscoverCard } from "@/components/network/DiscoverCard";
 import { InboxCard } from "@/components/network/InboxCard";
 import { InviteCard } from "@/components/network/InviteCard";
@@ -151,5 +152,21 @@ describe("Your people cards render", () => {
     expect(screen.queryByText("Volunteer as a mentor")).toBeNull();
     rerender(<ProfileCard saved={false} profile={{ ...me, finished_therapy: true }} onSaved={() => {}} />);
     expect(screen.getByText("Volunteer as a mentor")).toBeTruthy();
+  });
+
+  it("account header edit request opens the profile form", () => {
+    // Collapsed when saved; ?edit=profile opens the edit form.
+    const { rerender, unmount } = render(<ProfileCard saved profile={me} onSaved={() => {}} />);
+    expect(screen.queryByText("Your name")).toBeNull();
+    rerender(<ProfileCard saved profile={me} onSaved={() => {}} openEditRequest="profile" />);
+    expect(screen.getByText("Your name")).toBeTruthy();
+    unmount();
+
+    // The header's direct event also reopens it after cancel.
+    render(<ProfileCard saved profile={me} onSaved={() => {}} openEditRequest="profile" />);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByText("Your name")).toBeNull();
+    fireEvent(window, new Event(PROFILE_EDIT_EVENT));
+    expect(screen.getByText("Your name")).toBeTruthy();
   });
 });

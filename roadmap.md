@@ -48,5 +48,5 @@
 - [x] Plan importer: inline "Set how often" picker for unscheduled exercises + disabled-reason helper with test
 - [x] Mark a session together as done (+15 XP, Did it happen?, live toast, Progress counts)
 
-- [ ] Plan importer: concise names, editable cards, auto schedule, Ready to Add
-- [ ] Session celebration: fish always (+15 XP or Done together), missed-celebration fallback via localStorage + test
+- [x] Plan importer: concise names, editable cards, auto schedule, Ready to Add
+- [x] Session celebration: fish always (+15 XP or Done together), missed-celebration fallback via localStorage + test

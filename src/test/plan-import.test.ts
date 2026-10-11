@@ -43,3 +43,18 @@ describe("confirmDisabledReason", () => {
     expect(pickedSchedule({ frequency: "weekly", days: [3, 1] })?.days).toEqual([1, 3]);
   });
 });
+
+import { isReadyToAdd } from "@/lib/plan-import";
+describe("clear schedules from documents", () => {
+  it("maps 3 times each day, daily and Mon/Wed/Fri", () => {
+    expect(inferImportSchedule("3 times each day")).toMatchObject({ frequency: "daily", occurrences: 3 });
+    expect(inferImportSchedule("Daily")).toMatchObject({ frequency: "daily", occurrences: 1 });
+    expect(inferImportSchedule("Mon/Wed/Fri")).toEqual({ frequency: "weekly", occurrences: 1, days: [1, 3, 5] });
+    expect(inferImportSchedule("5 times daily")).toBeNull();
+  });
+  it("is ready only with a name and schedule", () => {
+    expect(isReadyToAdd({ name: "Quad Sets", schedule: { frequency: "daily", occurrences: 1, days: [0,1,2,3,4,5,6] } })).toBe(true);
+    expect(isReadyToAdd({ name: " ", schedule: { frequency: "daily", occurrences: 1, days: [0,1,2,3,4,5,6] } })).toBe(false);
+    expect(isReadyToAdd({ name: "Quad Sets", schedule: null })).toBe(false);
+  });
+});

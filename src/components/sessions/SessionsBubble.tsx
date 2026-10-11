@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { db, rpc } from "@/components/network/useNetwork";
 import { PlanSessionDialog, type PlanTarget } from "@/components/sessions/PlanSessionDialog";
-import { celebrateXp } from "@/components/XpFish";
 import { buildIcs, canComplete, canJoin, needsConfirmation, formatWhen, inviteLabel, otherPerson, sessionsBadgeCount, splitSessions, startingSoon, type RehabSession } from "@/lib/sessions";
 import { celebrateCompletion, readCelebrated, uncelebratedCompletions } from "@/lib/session-celebrations";
 import { playSound } from "@/lib/sounds";

@@ -41,5 +41,6 @@
 - [x] Invites: one permanent code per relationship, no delete; single 'Copy code' button (remove Share/Copy link)
 - [x] Mentor mode polish (invite infinity bug, recovery range, Progress/Support hiding, impact tiles, blossom palette)
 - [x] Remove "Send encouragement" for Family & friends; restore Invite family & friends card background/formatting
-- [ ] Remove finished calls from Sessions using a saved participant completion action and refresh on return.
-- [ ] Add Home multi-file/text Gemini plan importer with a fictional demo note, extraction preview and confirmed exercise saving.
+- [x] Add saved participant-only Session finished action and refresh on return; premature completion rejected in the signed-in app.
+- [ ] Verify successful session completion removes the call after reload — current real call has not started, so no eligible session is available yet.
+- [x] Add Home multi-file/text Gemini plan importer with a fictional demo note, extraction preview and confirmed exercise saving; real Gemini image/PDF/text analysis and save/read-back verified.

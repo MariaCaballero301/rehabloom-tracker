@@ -42,3 +42,26 @@ export function importedExercisePayload(exercise: ImportedExercise, schedule: Im
     weekly_mode: "days", cooldown_minutes: 0, gap_days: 0,
   };
 }
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** Human-readable schedule line, e.g. "2× daily" or "Mon, Wed, Fri". */
+export function scheduleLabel(s: ImportSchedule) {
+  return s.frequency === "daily" ? `${s.occurrences}× daily` : s.days.map((d) => WEEKDAYS[d]).join(", ");
+}
+
+/** A picked schedule is complete once daily has 1–3 times or weekly has at least one weekday; no defaults. */
+export function pickedSchedule(pick: { frequency?: "daily" | "weekly"; occurrences?: number; days: number[] }): ImportSchedule | null {
+  if (pick.frequency === "daily" && pick.occurrences && pick.occurrences >= 1 && pick.occurrences <= 3) return { frequency: "daily", occurrences: pick.occurrences, days: [0, 1, 2, 3, 4, 5, 6] };
+  if (pick.frequency === "weekly" && pick.days.length) return { frequency: "weekly", occurrences: 1, days: [...pick.days].sort() };
+  return null;
+}
+
+/** Why "Confirm & Add to Schedule" is disabled, or null when it can be used. */
+export function confirmDisabledReason(rows: { selected: boolean; schedule: ImportSchedule | null }[], reviewed: boolean) {
+  const selected = rows.filter((r) => r.selected);
+  if (!selected.length) return "Select at least one exercise.";
+  const missing = selected.filter((r) => !r.schedule).length;
+  if (missing) return `Set how often for ${missing} exercise${missing === 1 ? "" : "s"}, or unselect ${missing === 1 ? "it" : "them"}.`;
+  if (!reviewed) return "Tick the confirmation box first.";
+  return null;
+}

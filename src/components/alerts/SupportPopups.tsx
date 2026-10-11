@@ -3,6 +3,21 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { celebrateXp } from "@/components/XpFish";
+import { earnsSessionXp } from "@/lib/rehab";
+
+/** Toast + fish when a session is marked done; honest one-per-day XP for both people. */
+async function celebrateCompletion(userId: string, sessionId: string, name: string) {
+  const { data: mine } = await supabase.from("rehab_sessions").select("id, status, completed_at").eq("status", "completed");
+  if (earnsSessionXp(mine ?? [], sessionId, new Date())) {
+    toast.success(`${name} marked your session as done 🎉 +15 XP`);
+    celebrateXp("+15 XP");
+  } else {
+    toast.success("Session done together 🎉 (today’s session XP already earned)");
+  }
+  window.dispatchEvent(new Event("rehabloom:xp-changed"));
+  window.dispatchEvent(new Event("rehabloom:message-sent"));
+}
 
 export function SupportPopups() {
   const [userId, setUserId] = useState<string | null>(null);

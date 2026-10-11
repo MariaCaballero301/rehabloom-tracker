@@ -10,6 +10,7 @@ import { db, rpc } from "@/components/network/useNetwork";
 import { PlanSessionDialog, type PlanTarget } from "@/components/sessions/PlanSessionDialog";
 import { celebrateXp } from "@/components/XpFish";
 import { buildIcs, canComplete, canJoin, needsConfirmation, formatWhen, inviteLabel, otherPerson, sessionsBadgeCount, splitSessions, startingSoon, type RehabSession } from "@/lib/sessions";
+import { earnsSessionXp } from "@/lib/rehab";
 import { playSound } from "@/lib/sounds";
 
 export const OPEN_SESSIONS_EVENT = "rehabloom:open-sessions";

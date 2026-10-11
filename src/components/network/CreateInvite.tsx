@@ -1,41 +1,54 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { createInvite } from "@/lib/network";
+import { rpc } from "./useNetwork";
 import { INVITE_COPY } from "@/lib/network-copy";
+
+/** Format an invite code for display: WXYZ2345 → WXYZ-2345. */
+export function formatCode(code: string): string {
+  const clean = code.replace(/-/g, "").toUpperCase();
+  return clean.length > 4 ? `${clean.slice(0, 4)}-${clean.slice(4)}` : clean;
+}
 
 /**
  * Permanent invite code bar. The code never expires and is never used up:
- * the first visit creates it and every later visit shows the same one.
+ * the first visit creates it and every later visit shows the same one
+ * (the database returns the existing code instead of making a new one).
  */
-export function CreateInvite({ className }: { className?: string }) {
-  const [code, setCode] = useState<string | null>(null);
+export function CreateInvite({
+  code,
+  onChange,
+  className,
+}: {
+  code: string | null;
+  onChange: () => void;
+  className?: string;
+}) {
+  const [created, setCreated] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const shown = code ?? created;
 
   useEffect(() => {
+    if (code) return;
     let alive = true;
-    createInvite("family")
+    rpc<string>("create_invite_code", { p_relationship: "family" })
       .then((c) => {
-        if (alive) setCode(c);
+        if (alive) setCreated(c);
+        onChange();
       })
       .catch((err: unknown) => {
         if (alive) setError(err instanceof Error ? err.message : "Could not load your code.");
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
       });
     return () => {
       alive = false;
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code]);
 
   async function copy() {
-    if (!code) return;
-    const message = INVITE_COPY(code);
+    if (!shown) return;
     try {
-      await navigator.clipboard.writeText(message);
+      await navigator.clipboard.writeText(INVITE_COPY(shown));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -45,17 +58,17 @@ export function CreateInvite({ className }: { className?: string }) {
 
   return (
     <div className={cn("mt-3", className)}>
-      {code ? (
+      {shown ? (
         <div className="invite-bar invite-bar-live">
           <span className="invite-bar-label">Your code</span>
-          <span className="invite-bar-code">{code}</span>
+          <span className="invite-bar-code">{formatCode(shown)}</span>
           <button type="button" className="buddy-icon-btn" onClick={() => void copy()} title="Copy code">
             {copied ? "✓" : "📋"}
           </button>
         </div>
       ) : (
         <div className="invite-bar">
-          <span className="text-xs text-slate-500">{loading ? "Loading your code…" : "No code yet"}</span>
+          <span className="text-xs text-slate-500">{error ? "Couldn't load your code" : "Loading your code…"}</span>
         </div>
       )}
       {error && <p className="mt-2 text-xs font-semibold text-rose-600">{error}</p>}
@@ -120,9 +133,7 @@ export function ShareInviteButton({ code, disabled }: { code: string | null; dis
   );
 }
 
-/** Small "redeem an invite code" box. Returns the outcome text to display. */
+/** Redeem someone's invite code. Returns the outcome text to display. */
 export async function redeemCode(code: string): Promise<string> {
-  const { data, error } = await supabase.rpc("redeem_invite_code", { p_code: code.trim() });
-  if (error) throw new Error(error.message);
-  return data as string;
+  return rpc<string>("redeem_invite_code", { p_code: code.trim().replace(/-/g, "").toUpperCase() });
 }

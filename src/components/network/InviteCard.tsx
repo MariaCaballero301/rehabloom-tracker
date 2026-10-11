@@ -1,19 +1,25 @@
-import { CreateInvite, ShareInviteButton } from "./CreateInvite";
-import { useNetwork } from "./useNetwork";
 import { useState } from "react";
-import { INVITE_COPY } from "@/lib/network-copy";
+import { CreateInvite, ShareInviteButton, redeemCode } from "./CreateInvite";
 import { PendingInvite } from "./PendingInvite";
+import type { InviteCode } from "./useNetwork";
 
-export function InviteCard() {
-  const { invites, refresh } = useNetwork();
-  const [code, setCode] = useState("");
+export function InviteCard({
+  invites,
+  initialCode = "",
+  onChange,
+}: {
+  invites: InviteCode[];
+  initialCode?: string;
+  onChange: () => void;
+}) {
+  const [code, setCode] = useState(initialCode);
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   // The permanent code (one per account) — created on first visit, so take
   // the newest invite; there is at most one now that codes never expire.
-  const permanent = [...invites].sort((a, b) => b.created_at.localeCompare(a.created_at))[0] ?? null;
+  const permanent = [...invites].sort((a, b) => (a.id < b.id ? 1 : -1))[0] ?? null;
 
   async function onRedeem(e: React.FormEvent) {
     e.preventDefault();
@@ -22,11 +28,10 @@ export function InviteCard() {
     setError("");
     setResult("");
     try {
-      const { redeemCode } = await import("./CreateInvite");
       const name = await redeemCode(code);
       setResult(name);
       setCode("");
-      await refresh();
+      onChange();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "That code didn't work.");
     } finally {
@@ -40,13 +45,11 @@ export function InviteCard() {
       <p className="mt-1 text-xs text-slate-600">
         Share your code with someone you trust — they can redeem it after signing up.
       </p>
-      <CreateInvite />
+      <CreateInvite code={permanent?.code ?? null} onChange={onChange} />
       {permanent && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <ShareInviteButton code={permanent.code} />
-          <p className="text-xs text-slate-500">
-            Your code never expires — share it anytime.
-          </p>
+          <p className="text-xs text-slate-500">Your code never expires — share it anytime.</p>
         </div>
       )}
       <PendingInvite />
@@ -59,7 +62,7 @@ export function InviteCard() {
           <input
             id="redeem-code"
             className="input-soft flex-1"
-            placeholder="e.g. BLOOM-1234"
+            placeholder="ABCD-EFGH"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
           />
@@ -70,7 +73,6 @@ export function InviteCard() {
         {result && <p className="mt-2 text-sm font-semibold text-emerald-700">{result}</p>}
         {error && <p className="mt-2 text-sm font-semibold text-rose-600">{error}</p>}
       </form>
-      <p className="sr-only">{INVITE_COPY("")}</p>
     </div>
   );
 }

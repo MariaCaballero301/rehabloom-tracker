@@ -30,4 +30,4 @@
 - [ ] Verify incoming typing between two signed-in accounts — blocked by absence of an authorized second-account session.
 - [x] Sessions alerts: remove Call and its handler; keep primary Do a session together and soft Send encouragement only.
 - [x] Show saved profile name/photo in the shared header; reveal private account email and join date on hover or click; verified Home, Progress and Support.
-- [ ] Replace bubble audio with shared tap/pop/success synthesis, delegated sound selection, saved AppNav toggle and tests.
+- [x] Replace bubble audio with shared tap/pop/success synthesis, delegated sound selection, saved AppNav toggle and tests; verified pop playback, panel transitions and persistent mute.

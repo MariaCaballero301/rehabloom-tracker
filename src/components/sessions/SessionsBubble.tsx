@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { db, rpc } from "@/components/network/useNetwork";
 import { PlanSessionDialog, type PlanTarget } from "@/components/sessions/PlanSessionDialog";
-import { buildIcs, canFinishSession, canJoin, formatWhen, inviteLabel, otherPerson, sessionsBadgeCount, splitSessions, startingSoon, type RehabSession } from "@/lib/sessions";
+import { celebrateXp } from "@/components/XpFish";
+import { buildIcs, canComplete, canJoin, needsConfirmation, formatWhen, inviteLabel, otherPerson, sessionsBadgeCount, splitSessions, startingSoon, type RehabSession } from "@/lib/sessions";
 import { playSound } from "@/lib/sounds";
 
 export const OPEN_SESSIONS_EVENT = "rehabloom:open-sessions";
@@ -184,13 +185,14 @@ export function SessionsBubble({ userId }: { userId: string }) {
   }
 
   async function finishSession(s: RehabSession) {
-    if (finishing.has(s.id) || !canFinishSession(s, new Date())) return;
-    if (!confirm(`Mark your session with ${otherPerson(s, userId).name} as finished?`)) return;
+    if (finishing.has(s.id) || !canComplete(s, new Date())) return;
     setFinishing((prev) => new Set(prev).add(s.id));
     try {
       await rpc("complete_rehab_session", { p_id: s.id });
       setSessions((prev) => prev.filter((row) => row.id !== s.id));
-      toast.success("Session finished");
+      toast.success("Session done together 🎉 +15 XP");
+      celebrateXp("+15 XP");
+      window.dispatchEvent(new Event("rehabloom:message-sent"));
       await load();
     } catch (e) {
       toast.error((e as Error).message);
@@ -289,7 +291,9 @@ export function SessionsBubble({ userId }: { userId: string }) {
                       <p className="font-semibold">With {other.name} · {formatWhen(s.starts_at, now)}</p>
                       <SessionDetails s={s} />
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {canFinishSession(s, now) && <Button variant="ghost" className="btn-aqua h-auto text-sm" disabled={finishing.has(s.id)} onClick={() => void finishSession(s)}><Check className="h-4 w-4" /> {finishing.has(s.id) ? "Finishing…" : "Session finished"}</Button>}
+                        {needsConfirmation(s, now) && <p className="w-full text-xs font-semibold text-muted-foreground">Did it happen?</p>}
+                        <Button variant="ghost" data-sound="success" className="btn-aqua btn-leaf h-auto text-sm" disabled={finishing.has(s.id) || !canComplete(s, now)} title={canComplete(s, now) ? undefined : "Available once the session starts"} onClick={() => void finishSession(s)}><Check className="h-4 w-4" /> {finishing.has(s.id) ? "Saving…" : "Mark as done"}</Button>
+                        {needsConfirmation(s, now) && <button className="btn-soft text-sm" onClick={() => void act("cancel_rehab_session", { p_id: s.id }, "Okay, we removed it")}><X className="h-4 w-4" /> It didn't happen</button>}
                         {s.mode === "video" && (joinable ? (
                           <a className="btn-aqua text-sm" href={s.meeting_url} target="_blank" rel="noopener noreferrer"><Video className="h-4 w-4" /> Join video call</a>
                         ) : (

@@ -133,3 +133,23 @@ describe("session together XP", () => {
     expect(computeXp(0, 0, 0, n)).toBe(30);
   });
 });
+
+describe("earnsSessionXp", () => {
+  const rows = [
+    { id: "a", status: "completed", completed_at: "2026-10-10T10:00:00" },
+    { id: "b", status: "completed", completed_at: "2026-10-11T09:00:00" },
+    { id: "c", status: "accepted", completed_at: null },
+  ];
+  it("earns XP when no other completed session shares the local day", () => {
+    expect(earnsSessionXp(rows, "a", new Date("2026-10-10T10:00:00"))).toBe(true);
+  });
+  it("does not earn XP when another completed session already landed that day", () => {
+    const sameDay = [...rows, { id: "d", status: "completed", completed_at: "2026-10-11T18:00:00" }];
+    expect(earnsSessionXp(sameDay, "b", new Date("2026-10-11T09:00:00"))).toBe(false);
+    expect(earnsSessionXp(sameDay, "d", new Date("2026-10-11T18:00:00"))).toBe(false);
+  });
+  it("ignores non-completed rows and uses now when the row has no completed_at yet", () => {
+    expect(earnsSessionXp(rows, "c", new Date("2026-10-12T08:00:00"))).toBe(true);
+    expect(earnsSessionXp(rows, "c", new Date("2026-10-10T08:00:00"))).toBe(false);
+  });
+});

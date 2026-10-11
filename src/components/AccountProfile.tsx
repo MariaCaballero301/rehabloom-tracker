@@ -9,19 +9,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 export const PROFILE_SAVED_EVENT = "rehabloom:profile-saved";
 export const PROFILE_EDIT_EVENT = "rehabloom:profile-edit";
-type Account = { user: User; name: string; photoPath: string | null };
+type Account = { user: User; name: string; photoPath: string | null; mentor: boolean };
 const AccountContext = createContext<Account | null>(null);
 
 export function AccountProfileProvider({ user, children }: { user: User; children: ReactNode }) {
-  const [profile, setProfile] = useState<{ name: string; photoPath: string | null }>({ name: "Your profile", photoPath: null });
+  const [profile, setProfile] = useState<{ name: string; photoPath: string | null; mentor: boolean }>({ name: "Your profile", photoPath: null, mentor: false });
   useEffect(() => {
     let active = true;
     let revision = 0;
     const load = async () => {
       const current = ++revision;
       try {
-        const { data, error } = await supabase.from("network_profiles").select("display_name,photo_path").eq("user_id", user.id).maybeSingle();
-        if (active && current === revision && !error) setProfile({ name: data?.display_name.trim() || "Your profile", photoPath: data?.photo_path ?? null });
+        const { data, error } = await supabase.from("network_profiles").select("display_name,photo_path,finished_therapy").eq("user_id", user.id).maybeSingle();
+        if (active && current === revision && !error) setProfile({ name: data?.display_name.trim() || "Your profile", photoPath: data?.photo_path ?? null, mentor: data?.finished_therapy === true });
       } catch { /* Keep account controls available if the optional profile read fails. */ }
     };
     void load();
@@ -38,6 +38,12 @@ export function AccountProfileProvider({ user, children }: { user: User; childre
       void supabase.removeChannel(channel);
     };
   }, [user.id]);
+  // Mentor mode gets its own warm "blossom" palette (see [data-mode="mentor"] in styles.css).
+  useEffect(() => {
+    const root = document.documentElement;
+    if (profile.mentor) root.setAttribute("data-mode", "mentor"); else root.removeAttribute("data-mode");
+    return () => root.removeAttribute("data-mode");
+  }, [profile.mentor]);
   return <AccountContext.Provider value={{ user, ...profile }}>{children}</AccountContext.Provider>;
 }
 
@@ -68,6 +74,7 @@ export function AccountProfile() {
           onClick={(e) => { e.preventDefault(); setPinned(!pinned); setHovered(false); }}>
           <ProfileAvatar userId={account.user.id} name={account.name} path={account.photoPath} />
           <span className="min-w-0 max-w-40 truncate font-semibold text-foreground">{account.name}</span>
+          {account.mentor && <span className="mentor-pill shrink-0 rounded-full px-2 py-0.5 text-xs font-bold">🌸 Mentor</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 max-w-[calc(100vw-2rem)] border-input" aria-label="Your account details"

@@ -36,3 +36,4 @@
 - [x] Move the profile editor off Support to a dedicated Profile page opened by the header's Edit Profile button.
 - [x] Add a watery swim sound when XP fish swim by.
 - [ ] Make the fish swim sound last the whole swim and let sound effects overlap without cutting each other off.
+- [ ] Make the Home/Progress/Support navigation sticky on every page with a faint glossy white underlay once the user scrolls.

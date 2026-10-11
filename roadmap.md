@@ -34,3 +34,4 @@
 - [ ] Make tap/pop/success clearly audible: master 0.6 + compressor, triangle tones, higher pitches, success bypasses anti-spam guard.
 - [ ] Generate Frutiger Aero instrumental background music and loop it in the app; verify all bubble sounds still play.
 - [ ] Move the profile editor off Support to a dedicated Profile page opened by the header's Edit Profile button.
+- [ ] Add a watery swim sound when XP fish swim by.

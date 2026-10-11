@@ -37,3 +37,4 @@
 - [x] Add a watery swim sound when XP fish swim by.
 - [x] Make the fish swim sound last the whole swim and let sound effects overlap without cutting each other off.
 - [x] Make the Home/Progress/Support navigation sticky on every page with a faint glossy white underlay once the user scrolls.
+- [ ] Remove Send by email from invites; make Share work (fallback when unsupported)

@@ -1,7 +1,7 @@
 // Invite family & friends with a private code, redeem someone's code, or add a contact without the app.
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Copy, Mail, Share2, Trash2, UserRoundPlus } from "lucide-react";
+import { Copy, Share2, Trash2, UserRoundPlus } from "lucide-react";
 import { normalizePhone } from "@/lib/alerts";
 import { formatInviteCode, isInviteCodeFormat, normalizeInviteCode } from "@/lib/network";
 import { sendWelcome } from "@/lib/welcome.functions";
@@ -57,15 +57,10 @@ export function InviteCard({
   const message = (code: string) =>
     `Hi! I'm using Rehabloom to keep up with my physical therapy, and I'd love for you to be part of my support circle. Join here: ${linkFor(code)}\n\nOr enter my code in the app: ${formatInviteCode(code)}`;
 
-  const sendEmail = () =>
-    run(async () => {
-      const code = await ensureCode();
-      window.location.href = `mailto:?subject=${encodeURIComponent(SUBJECT)}&body=${encodeURIComponent(message(code))}`;
-    });
-
   const share = () =>
     run(async () => {
       const code = await ensureCode();
+      if (!canShare) return void (await copy(code));
       try {
         await navigator.share({ title: SUBJECT, text: message(code), url: linkFor(code) });
       } catch (e) {
@@ -150,14 +145,9 @@ export function InviteCard({
         ))}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button className="btn-aqua" disabled={busy} onClick={sendEmail}>
-          <Mail className="h-4 w-4" /> Send by email
+        <button className="btn-aqua" disabled={busy} onClick={share}>
+          <Share2 className="h-4 w-4" /> Share
         </button>
-        {canShare && (
-          <button className="btn-soft" disabled={busy} onClick={share}>
-            <Share2 className="h-4 w-4" /> Share
-          </button>
-        )}
         <button className="btn-soft" disabled={busy} onClick={copyNew}>
           <Copy className="h-4 w-4" /> Copy link
         </button>

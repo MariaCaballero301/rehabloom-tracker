@@ -41,3 +41,4 @@
 - [x] Invites: one permanent code per relationship, no delete; single 'Copy code' button (remove Share/Copy link)
 - [x] Mentor mode polish (invite infinity bug, recovery range, Progress/Support hiding, impact tiles, blossom palette)
 - [x] Remove "Send encouragement" for Family & friends; restore Invite family & friends card background/formatting
+- [ ] Remove finished calls from Sessions using a saved participant completion action and refresh on return.

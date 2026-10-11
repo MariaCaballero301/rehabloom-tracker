@@ -183,6 +183,13 @@
       "when": 1791679398280,
       "tag": "0025_permanent_invite_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791680668286,
+      "tag": "0026_complete_rehab_sessions",
+      "breakpoints": true
     }
   ]
 }

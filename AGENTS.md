@@ -37,9 +37,11 @@
 ## Sessions together
  - Mount Sessions as a sibling after the Inbox wrapper and use body panel classes to hide both floating triggers while either panel is open; mobile content hiding must not hide the panel itself.
 - Keep session splitting, join windows and time formatting in the pure src/lib/sessions.ts helpers, and change rehab_sessions only through its SECURITY DEFINER RPCs; Home and the tests then share one set of rules, and clients can only read rows.
+- Finish sessions through participant-only complete_rehab_session and refresh on return; external tabs cannot report hangups reliably.
 
 ## AI summaries
 - Use shared pure period helpers for monthly and Monday–Sunday weekly ranges; persist period metadata in the existing private summary stats JSON to preserve old monthly history without duplicating reports.
+- Import prescriptions via authenticated official Gemini with sharing consent and validated output; review before owner-scoped exercise inserts and never guess schedules.
 
 ## Interaction audio
 - Use sounds.ts for a gesture-gated shared Web Audio context, quiet master gain and anti-spam guard; one delegated root listener chooses tap/pop/success through a pure tested selector, with persistent mute and explicit action overrides so audio never blocks controls.

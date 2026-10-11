@@ -623,6 +623,7 @@ export type Database = {
       can_view_profile_photo: { Args: { p_user_id: string }; Returns: boolean }
       cancel_connection_request: { Args: { p_id: string }; Returns: undefined }
       cancel_rehab_session: { Args: { p_id: string }; Returns: undefined }
+      complete_rehab_session: { Args: { p_id: string }; Returns: undefined }
       create_invite_code: { Args: { p_relationship: string }; Returns: string }
       disconnect_person: { Args: { p_other: string }; Returns: undefined }
       inbox_channels: {

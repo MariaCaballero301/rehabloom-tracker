@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { db, rpc } from "@/components/network/useNetwork";
 import { PlanSessionDialog, type PlanTarget } from "@/components/sessions/PlanSessionDialog";
 import { buildIcs, canJoin, formatWhen, inviteLabel, otherPerson, sessionsBadgeCount, splitSessions, startingSoon, type RehabSession } from "@/lib/sessions";
+import { playSound } from "@/lib/sounds";
 
 export const OPEN_SESSIONS_EVENT = "rehabloom:open-sessions";
 export const PANEL_OPEN_EVENT = "rehabloom:panel-open";
@@ -35,6 +36,11 @@ function downloadIcs(s: RehabSession, me: string) {
 
 export function SessionsBubble({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
+  const previousOpen = useRef(false);
+  useEffect(() => {
+    if (previousOpen.current !== open) playSound("pop");
+    previousOpen.current = open;
+  }, [open]);
   const [people, setPeople] = useState<Person[] | null>(null);
   const [rescheduled, setRescheduled] = useState<Set<string>>(() => new Set());
   const trigger = useRef<HTMLButtonElement>(null);

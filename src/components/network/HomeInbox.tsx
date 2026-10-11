@@ -7,10 +7,16 @@ import { InboxConversation } from "./InboxConversation";
 import { useInbox } from "./useInbox";
 import { ProfileAvatar } from "./ProfileAvatar";
 import { useLocation } from "@tanstack/react-router";
+import { playSound } from "@/lib/sounds";
 
 export function HomeInbox({ userId, children, initiallyOpen = false }: { userId: string; children: ReactNode; initiallyOpen?: boolean }) {
   const inbox = useInbox(userId);
   const [open, setOpen] = useState(initiallyOpen);
+  const previousOpen = useRef(initiallyOpen);
+  useEffect(() => {
+    if (previousOpen.current !== open) playSound("pop");
+    previousOpen.current = open;
+  }, [open]);
   const pathname = useLocation({ select: (location) => location.pathname });
   useEffect(() => { if (pathname === "/inbox") setOpen(true); }, [pathname]);
   const [selected, setSelected] = useState<string | null>(null);

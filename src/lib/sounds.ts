@@ -77,7 +77,7 @@ export function installSounds() {
     }
     if (!control) return;
     if (event.isTrusted) gestureReceived = true;
-    const override = control.closest("[data-sound]")?.getAttribute("data-sound");
+    const override = control.closest("[data-sound]")?.getAttribute("data-sound") ?? null;
     const sound = soundForElement({ disabled: Boolean(control.closest('[disabled], [aria-disabled="true"], [inert]')), override,
       bubble: Boolean(control.closest(BUBBLES)), interactive: control.matches(CONTROLS) });
     if (sound) playSound(sound);

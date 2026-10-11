@@ -18,8 +18,8 @@ export function InviteCard({
   const permanent = invites.filter((i) => isInviteActive(i)).sort((a, b) => (a.id < b.id ? 1 : -1))[0] ?? null;
 
   return (
-    <div className="glass-card p-5">
-      <h3 className="font-semibold text-sky-900">Invite family & friends</h3>
+    <section className="glass p-5 sm:p-6" aria-labelledby="invite-h">
+      <h2 id="invite-h" className="text-xl">Invite family & friends</h2>
       <p className="mt-1 text-xs text-slate-600">
         Share your code with someone you trust — they can redeem it after signing up.
       </p>
@@ -33,7 +33,7 @@ export function InviteCard({
       <PendingInviteRedeemer />
 
       <RedeemCodeForm initialCode={initialCode} onChange={onChange} />
-    </div>
+    </section>
   );
 }
 
@@ -54,7 +54,7 @@ export function RedeemCodeForm({ initialCode = "", onChange, standalone = false 
     } finally { setBusy(false); }
   }
   return (
-      <form onSubmit={onRedeem} className={standalone ? "glass-card p-5" : "mt-5 border-t border-sky-100 pt-4"}>
+      <form onSubmit={onRedeem} className={standalone ? "glass p-5 sm:p-6" : "mt-5 border-t border-sky-100 pt-4"}>
         <label className="text-xs font-semibold text-sky-800" htmlFor="redeem-code">
           Got a code from someone?
         </label>

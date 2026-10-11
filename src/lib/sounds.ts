@@ -27,27 +27,98 @@ export function setSoundEnabled(value: boolean) {
   window.dispatchEvent(new Event(SOUND_SETTING_EVENT));
 }
 
+function ensureMaster(): { audio: AudioContext; output: GainNode } | null {
+  if (!window.AudioContext) return null;
+  context ??= new AudioContext();
+  const audio = context;
+  if (!master) {
+    master = audio.createGain();
+    master.gain.value = 0.6;
+    // Compressor keeps the louder output from clipping.
+    const compressor = audio.createDynamicsCompressor();
+    compressor.threshold.value = -10;
+    compressor.knee.value = 10;
+    compressor.ratio.value = 4;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.1;
+    master.connect(compressor);
+    compressor.connect(audio.destination);
+  }
+  return { audio, output: master };
+}
+
+/**
+ * Continuous watery swish that lasts the whole fish swim and fades out as the
+ * fish leaves the screen. Returns a stop function for early teardown.
+ */
+export function startSwimSound(duration = 3.6): () => void {
+  const noop = () => {};
+  if (!gestureReceived || !enabled) return noop;
+  try {
+    const setup = ensureMaster();
+    if (!setup) return noop;
+    const { audio, output } = setup;
+    let stopped = false;
+    void audio.resume().then(() => {
+      if (stopped || audio.state !== "running" || !enabled) return;
+      const now = audio.currentTime;
+      // Looping soft noise through a bandpass filter = rushing water.
+      const noise = audio.createBufferSource();
+      const buffer = audio.createBuffer(1, audio.sampleRate * 2, audio.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      noise.loop = true;
+      const filter = audio.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = 520;
+      filter.Q.value = 1.1;
+      const gain = audio.createGain();
+      // Slow wobble makes the swish bob like the fish.
+      const lfo = audio.createOscillator();
+      lfo.type = "sine";
+      lfo.frequency.value = 2.3;
+      const lfoGain = audio.createGain();
+      lfoGain.gain.value = 0.07;
+      lfo.connect(lfoGain);
+      lfoGain.connect(gain.gain);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(output);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.16, now + 0.35);
+      gain.gain.setValueAtTime(0.16, now + Math.max(0.4, duration - 0.7));
+      // Fade out exactly as the fish swims off screen.
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      noise.start(now);
+      lfo.start(now);
+      noise.stop(now + duration + 0.05);
+      lfo.stop(now + duration + 0.05);
+      const end = now + duration + 0.06;
+      const stop = () => {
+        if (stopped) return;
+        stopped = true;
+        try { noise.stop(); } catch { /* already stopped */ }
+        try { lfo.stop(); } catch { /* already stopped */ }
+      };
+      noise.onended = () => { noise.disconnect(); filter.disconnect(); gain.disconnect(); lfo.disconnect(); lfoGain.disconnect(); };
+      window.setTimeout(stop, (end - now) * 1000 + 50);
+      stopper = stop;
+    }).catch(() => {});
+    let stopper: () => void = noop;
+    return () => { stopped = true; stopper(); };
+  } catch {
+    return noop;
+  }
+}
+
 export function playSound(sound: Sound) {
   // Success and swim accompany the same click as a tap, so they bypass the anti-spam guard.
   if (!gestureReceived || !enabled || (sound !== "success" && sound !== "swim" && Date.now() - lastPlayed < 100)) return;
   try {
-    if (!window.AudioContext) return;
-    context ??= new AudioContext();
-    const audio = context;
-    if (!master) {
-      master = audio.createGain();
-      master.gain.value = 0.6;
-      // Compressor keeps the louder output from clipping.
-      const compressor = audio.createDynamicsCompressor();
-      compressor.threshold.value = -10;
-      compressor.knee.value = 10;
-      compressor.ratio.value = 4;
-      compressor.attack.value = 0.003;
-      compressor.release.value = 0.1;
-      master.connect(compressor);
-      compressor.connect(audio.destination);
-    }
-    const output = master;
+    const setup = ensureMaster();
+    if (!setup) return;
+    const { audio, output } = setup;
     lastPlayed = Date.now();
     void audio.resume().then(() => {
       if (audio.state !== "running" || !enabled) return;

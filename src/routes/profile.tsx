@@ -5,6 +5,7 @@ import { useSessionUser } from "@/hooks/use-session-user";
 import { AuthCard } from "@/components/rehab/AuthCard";
 import { useNetwork } from "@/components/network/useNetwork";
 import { ProfileCard } from "@/components/network/ProfileCard";
+import { BackInRehabButton } from "@/components/rehab/MentorMode";
 
 export const Route = createFileRoute("/profile")({
   validateSearch: (search: Record<string, unknown>): { edit?: string } => {
@@ -44,7 +45,15 @@ function Profile({ userId, email }: { userId: string; email: string }) {
       {n.loading ? (
         <p className="p-10 text-center text-muted-foreground">Loading…</p>
       ) : (
-        <ProfileCard profile={n.profile} saved={n.hasProfile && !!n.profile.display_name} onSaved={n.reload} openEditRequest={edit} />
+        <>
+          {n.profile.finished_therapy && (
+            <section className="glass mb-5 flex flex-wrap items-center justify-between gap-3 p-4">
+              <p className="text-sm font-semibold">You're in mentor mode 🌸</p>
+              <BackInRehabButton userId={userId} onDone={n.reload} />
+            </section>
+          )}
+          <ProfileCard profile={n.profile} saved={n.hasProfile && !!n.profile.display_name} onSaved={n.reload} openEditRequest={edit} />
+        </>
       )}
     </div>
   );

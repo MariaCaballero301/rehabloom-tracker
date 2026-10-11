@@ -11,6 +11,7 @@ import {
   shouldAlert,
 } from "@/lib/alerts";
 import { sendSms } from "@/lib/notify.server";
+import { finishedTherapyIds, withoutMentors } from "@/lib/mentor-mode";
 
 /**
  * Rows of support_contacts (see migration 0005). Contacts who are Rehabloom users
@@ -65,7 +66,7 @@ export async function runMissedSessionJob(appUrl: string, today = new Date()): P
 
   const [profiles, names] = await Promise.all([
     db.from("support_profiles").select("user_id, phone"),
-    db.from("network_profiles").select("user_id, display_name"),
+    db.from("network_profiles").select("user_id, display_name, finished_therapy"),
   ]);
   const phonesByUser = new Map(
     ((profiles.data ?? []) as { user_id: string; phone: string }[]).map((p) => [
@@ -83,7 +84,9 @@ export async function runMissedSessionJob(appUrl: string, today = new Date()): P
   const exercisesBy = groupBy(ex.data ?? [], "user_id");
   const completionsBy = groupBy(comp.data ?? [], "user_id");
   const checkinsBy = groupBy(chk.data ?? [], "user_id");
-  const contactsBy = groupBy((contacts.data ?? []) as SupportContact[], "user_id");
+  // Mentor mode: people who finished therapy never get missed-session alerts.
+  const finished = finishedTherapyIds((names.data ?? []) as { user_id: string; finished_therapy: boolean }[]);
+  const contactsBy = withoutMentors(groupBy((contacts.data ?? []) as SupportContact[], "user_id"), finished);
 
   const summary: JobSummary = {
     patientsChecked: 0,

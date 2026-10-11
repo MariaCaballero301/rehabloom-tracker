@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { Plant } from "./Plant";
 import { MentorHome } from "./MentorMode";
+import { PlanImportDialog } from "./PlanImportDialog";
 import { AppNav } from "@/components/AppNav";
 import { positiveInteger, weeklySchedule, checkinCount, weeklyAvailability, computeXp, stageFor, stageProgress, dayKey, weekAt, completedRecords, nextExerciseStatus, sortExercises, scheduledCount, cooldownRemainingMs, gapDaysRemaining, formatWait, type ExerciseStatus, type Frequency, DAY_LABELS, XP_PER_EXERCISE, XP_PER_CHECKIN, XP_PER_CHEER, MAX_XP_CHEERS_PER_DAY, cheerCount } from "@/lib/rehab";
 
@@ -281,6 +282,7 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
   onChange: () => void;
 }) {
   const [editing, setEditing] = useState<Partial<Exercise> | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const week = weekAt(0);
   const today = new Date();
 
@@ -407,15 +409,17 @@ function ExerciseManager({ exercises, completions, todayKey, saving, waitNotes, 
 
   return (
     <section id="prescribed" className="glass scroll-mt-4 p-5 lg:col-span-2" aria-labelledby="ex-h">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="ex-h" className="text-xl">Prescribed exercises</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" className="btn-aqua whitespace-normal" onClick={() => setImportOpen(true)}>✨ Import Plan with AI</Button>
           <Button className="btn-aqua btn-leaf" onClick={() => setEditing({ name: "", reps: "", notes: "", frequency: "weekly", weekly_mode: "days", days: [1, 2, 3, 4, 5], occurrences: 1, cooldown_minutes: 0, gap_days: 0 })}>
             <Plus className="h-4 w-4" /> Add
           </Button>
         </div>
       </div>
       <p className="text-xs text-muted-foreground">Enter exercises exactly as your therapist prescribed them.</p>
+      <PlanImportDialog open={importOpen} onOpenChange={setImportOpen} onSaved={onChange} />
 
       {editing && !editing.id && editPanel()}
 

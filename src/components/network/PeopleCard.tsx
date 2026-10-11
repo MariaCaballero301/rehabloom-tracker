@@ -14,7 +14,7 @@ import { PlanSessionDialog, type PlanTarget } from "@/components/sessions/PlanSe
 import type { BuddyStats } from "@/lib/buddy-stats";
 import { Button } from "@/components/ui/button";
 
-function Encourage({ to, name, onDone }: { to: string; name: string; onDone: () => void }) {
+export function Encourage({ to, name, onDone }: { to: string; name: string; onDone: () => void }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 

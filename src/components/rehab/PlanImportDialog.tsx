@@ -110,6 +110,7 @@ export function PlanImportDialog({ open, onOpenChange, onSaved }: { open: boolea
             {row.exercise.frequency && <div className="col-span-2"><span className="text-muted-foreground">Prescribed frequency</span><p className="break-words">{row.exercise.frequency}</p></div>}
             {row.exercise.notes && <div className="col-span-2"><span className="text-muted-foreground">Instructions</span><p className="whitespace-pre-wrap break-words">{row.exercise.notes}</p></div>}
           </div>
+          <SchedulePicker pick={row.pick} clear={row.clear} disabled={saving} onChange={(pick) => { setReviewed(false); setRows(rows.map((r, index) => index === i ? { ...r, pick, schedule: pickedSchedule(pick) } : r)); }} schedule={row.schedule} />
         </li>)}</ul>
         {rows.length > 0 && <>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={reviewed} disabled={saving} onChange={(e) => setReviewed(e.target.checked)} className="mt-1 accent-primary" /><span>I checked the selected exercises and schedule against {demo ? "the fictional demo note" : "my therapist’s instructions"}.</span></label>

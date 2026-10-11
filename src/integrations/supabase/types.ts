@@ -346,6 +346,7 @@ export type Database = {
           created_at: string
           discoverable: boolean
           display_name: string
+          finished_at: string | null
           finished_therapy: boolean
           is_mentor: boolean
           languages: string[]
@@ -362,6 +363,7 @@ export type Database = {
           created_at?: string
           discoverable?: boolean
           display_name?: string
+          finished_at?: string | null
           finished_therapy?: boolean
           is_mentor?: boolean
           languages?: string[]
@@ -378,6 +380,7 @@ export type Database = {
           created_at?: string
           discoverable?: boolean
           display_name?: string
+          finished_at?: string | null
           finished_therapy?: boolean
           is_mentor?: boolean
           languages?: string[]

@@ -8,17 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { dayKey } from "@/lib/rehab";
-import { summaryRange, summaryPeriodLabel, type SummaryPeriod } from "@/lib/summary-period";
+import { summaryRange, summaryPeriodLabel, journeyKey, type SummaryPeriod } from "@/lib/summary-period";
 import { supabase } from "@/integrations/supabase/client";
 import { generateMonthlySummary } from "@/lib/ai-summary.functions";
 
 type Summary = { id: string; month: string; is_demo: boolean; model: string; summary: string; created_at: string; period?: SummaryPeriod; periodDate?: string };
 const reportLabel = (s: Summary) => summaryPeriodLabel(s.period ?? "monthly", s.periodDate ?? s.month);
 
-export function MonthlySummaryCard() {
+export function MonthlySummaryCard({ journey }: { journey?: { from: string; to: string } | undefined } = {}) {
   const now = new Date();
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
-  const [period, setPeriod] = useState<SummaryPeriod>("monthly");
+  const [period, setPeriod] = useState<SummaryPeriod>(journey ? "journey" : "monthly");
   const [week, setWeek] = useState(summaryRange("weekly", dayKey(now)).from);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [list, setList] = useState<Summary[]>([]);
@@ -32,6 +32,8 @@ export function MonthlySummaryCard() {
         const rows: Summary[] = (data ?? []).map((row) => {
           const stats = row.stats && typeof row.stats === "object" && !Array.isArray(row.stats) ? row.stats : {};
           const weekly = stats["reportPeriod"] === "weekly" && typeof stats["periodStart"] === "string";
+          if (stats["reportPeriod"] === "journey" && typeof stats["periodStart"] === "string" && typeof stats["periodEnd"] === "string")
+            return { ...row, period: "journey" as const, periodDate: journeyKey(String(stats["periodStart"]), String(stats["periodEnd"])) };
           return { ...row, period: weekly ? "weekly" : "monthly", periodDate: weekly ? String(stats["periodStart"]) : row.month };
         });
         setList(rows); setCurrent(rows[0] ?? null);
@@ -41,7 +43,7 @@ export function MonthlySummaryCard() {
   async function run(demo: boolean) {
     setBusy(true);
     try {
-      const row = await generate({ data: { month: period === "monthly" ? month : week, period, demo } });
+      const row = await generate({ data: { month: period === "monthly" ? month : period === "journey" && journey ? journeyKey(journey.from, journey.to) : week, period, demo } });
       setCurrent(row);
       setList((l) => [row, ...l]);
     } catch (e) {
@@ -66,13 +68,13 @@ export function MonthlySummaryCard() {
 
   return (
     <section className="aero-report glass mt-5 p-5 sm:p-6" aria-labelledby="ai-h">
-      <h2 id="ai-h" className="flex items-center gap-2 text-xl"><Sparkles className="h-5 w-5 shrink-0 text-primary" /> {period === "monthly" ? "Monthly" : "Weekly"} AI summary</h2>
+      <h2 id="ai-h" className="flex items-center gap-2 text-xl"><Sparkles className="h-5 w-5 shrink-0 text-primary" /> {period === "journey" ? "Recovery story" : period === "monthly" ? "Monthly AI summary" : "Weekly AI summary"}</h2>
       <p className="text-xs text-muted-foreground">Written by Google Gemini from anonymous numbers only (no names or emails). Not medical advice.</p>
       <div className="mt-4 inline-flex gap-2" role="group" aria-label="Summary period">
-        {(["monthly", "weekly"] as const).map((mode) => <Button key={mode} variant="ghost" className="nav-bubble justify-center px-5" data-active={period === mode} aria-pressed={period === mode} disabled={busy} onClick={() => setPeriod(mode)}>{mode === "monthly" ? "Monthly" : "Weekly"}</Button>)}
+        {([...(journey ? ["journey"] : []), "monthly", "weekly"] as SummaryPeriod[]).map((mode) => <Button key={mode} variant="ghost" className="nav-bubble justify-center px-5" data-active={period === mode} aria-pressed={period === mode} disabled={busy} onClick={() => setPeriod(mode)}>{mode === "journey" ? "Recovery story" : mode === "monthly" ? "Monthly" : "Weekly"}</Button>)}
       </div>
       <div className="mt-3 grid gap-3">
-        {period === "monthly" ? <label className="block max-w-xs text-sm font-semibold">Month
+        {period === "journey" && journey ? <p className="text-sm font-semibold">{summaryPeriodLabel("journey", journeyKey(journey.from, journey.to))}</p> : period === "monthly" ? <label className="block max-w-xs text-sm font-semibold">Month
           <input className="field mt-1" type="month" value={month} disabled={busy} onChange={(e) => setMonth(e.target.value)} />
         </label> : <div className="min-w-0 text-sm font-semibold">
           <p className="mb-1">Week · Monday–Sunday</p>
@@ -105,7 +107,7 @@ export function MonthlySummaryCard() {
           <summary className="cursor-pointer font-semibold">Earlier summaries ({list.length})</summary>
           <ul className="mt-2 space-y-1">
             {list.map((s) => (
-               <li key={s.id}><Button variant="link" className="h-auto max-w-full whitespace-normal px-0 text-left" onClick={() => { setCurrent(s); setPeriod(s.period ?? "monthly"); if (s.period === "weekly") setWeek(s.periodDate ?? week); else setMonth(s.month); }}>
+               <li key={s.id}><Button variant="link" className="h-auto max-w-full whitespace-normal px-0 text-left" onClick={() => { setCurrent(s); setPeriod(s.period === "journey" && !journey ? "monthly" : s.period ?? "monthly"); if (s.period === "weekly") setWeek(s.periodDate ?? week); else if (s.period !== "journey") setMonth(s.month); }}>
                  {reportLabel(s)}{s.is_demo ? " (demo)" : ""} · {new Date(s.created_at).toLocaleString()}
                </Button></li>
             ))}

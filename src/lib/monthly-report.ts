@@ -77,6 +77,11 @@ export function demoStats(month: string): MonthStats {
 export function demoPeriodStats(period: SummaryPeriod, date: string): MonthStats {
   const range = summaryRange(period, date);
   const base = demoStats(range.from.slice(0, 7));
+  if (period === "journey") Object.assign(base, {
+    daysInPeriod: 84, scheduledExercises: 252, completedExercises: 214, skippedExercises: 11, completionRatePct: 85,
+    daysWithAllDone: 61, checkinDays: 77, daysWithoutCheckin: 7, restDays: 8, unableDays: 2, avgPain: 3.1, minPain: 0,
+    maxPain: 7, firstHalfAvgPain: 4.3, secondHalfAvgPain: 1.9, avgMotivation: 4.0, sessionsTogetherScheduled: 5, sessionsTogetherStillAwaitingReply: 0,
+  });
   if (period === "weekly") Object.assign(base, {
     daysInPeriod: 7, scheduledExercises: 21, completedExercises: 17, skippedExercises: 2, completionRatePct: 81,
     daysWithAllDone: 4, checkinDays: 6, daysWithoutCheckin: 1, restDays: 1, unableDays: 0,
@@ -88,7 +93,9 @@ export function demoPeriodStats(period: SummaryPeriod, date: string): MonthStats
 export function buildPrompt(s: MonthStats) {
   return [
     "You write a short self-reported progress summary a patient can bring to their physical therapist.",
-    `Summarize the ${s.reportPeriod ?? "monthly"} reporting period only.`,
+    s.reportPeriod === "journey"
+      ? "This is a 'recovery story': summarize the patient's whole therapy journey, from the first day to the day they finished therapy."
+      : `Summarize the ${s.reportPeriod ?? "monthly"} reporting period only.`,
     "Write ONE paragraph of 80-120 words in plain, professional, objective, nonjudgmental English, in second person (\"you\").",
     "Use ONLY the numbers below. Do not invent, round differently, or estimate any statistic.",
     "Do not diagnose, do not interpret causes, and do not recommend any change to exercises or treatment.",

@@ -4,13 +4,14 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import { sessionStatusLabel, type DaySession } from "@/lib/sessions";
+import { isAfterRecovery } from "@/lib/mentor-mode";
 import { DAY_LABELS, dayKey, historyPeriod, monthWeeks, scheduledCount, weekAt, weekRange } from "@/lib/rehab";
 
 type Exercise = Tables<"exercises">;
 type Completion = Tables<"completions">;
 type Checkin = Tables<"checkins">;
 
-export function HistoryCard({ exercises, completions, allCompletions, checkins, joinedAt, sessions = [] }: { exercises: Exercise[]; completions: Completion[]; allCompletions?: Completion[]; checkins: Checkin[]; joinedAt: string; sessions?: DaySession[] }) {
+export function HistoryCard({ exercises, completions, allCompletions, checkins, joinedAt, sessions = [], finishedDay = null }: { finishedDay?: string | null; exercises: Exercise[]; completions: Completion[]; allCompletions?: Completion[]; checkins: Checkin[]; joinedAt: string; sessions?: DaySession[] }) {
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [monthly, setMonthly] = useState(false);
@@ -32,21 +33,22 @@ export function HistoryCard({ exercises, completions, allCompletions, checkins, 
     const key = dayKey(d);
     const beforeJoining = key < dayKey(new Date(joinedAt));
     const future = key > todayKey;
+    const maintenance = isAfterRecovery(key, finishedDay);
     const outsideMonth = monthly && d.getMonth() !== month.getMonth();
     const scheduled = exercises.filter((e) => dayKey(new Date(e.created_at)) <= key).reduce((sum, e) => sum + scheduledCount(e, d), 0);
     const done = completions.filter((c) => c.day === key).length;
     const ci = checkins.find((c) => c.day === key);
-    const label = beforeJoining ? "—" : future ? "—" : ci?.status === "rest" ? "Rest" : ci?.status === "unable" ? "Unable" : scheduled ? `${done}/${scheduled}` : done ? `${done}` : "—";
+    const label = maintenance ? (done && !future ? "🌿" : "—") : beforeJoining ? "—" : future ? "—" : ci?.status === "rest" ? "Rest" : ci?.status === "unable" ? "Unable" : scheduled ? `${done}/${scheduled}` : done ? `${done}` : "—";
     const pct = scheduled ? Math.min(100, Math.round(done / scheduled * 100)) : done ? 100 : 0;
     const daySessions = sessions.filter((s) => s.day === key);
     const sessionNote = daySessions.map((s) => ` · 🤝 ${sessionLine(s)}`).join("");
-    const note = beforeJoining ? "No Data Available" : future ? "Upcoming" : done ? `${done} completed` : "No Action Taken";
+    const note = maintenance ? (done && !future ? `${done} maintenance` : "After recovery") : beforeJoining ? "No Data Available" : future ? "Upcoming" : done ? `${done} completed` : "No Action Taken";
     return (
-      <button type="button" key={key} onClick={() => setSelected(selected === key ? null : key)} aria-expanded={selected === key} aria-controls="day-detail" className={`flex min-w-0 flex-col items-center gap-1 rounded-2xl p-0.5 text-center transition hover:bg-accent/50 ${selected === key ? "bg-accent ring-2 ring-primary" : ""} ${outsideMonth || future || beforeJoining ? "opacity-50" : ""}`} title={`${d.toDateString()}: ${note}${sessionNote}. Tap to see exercises.`}>
+      <button type="button" key={key} onClick={() => setSelected(selected === key ? null : key)} aria-expanded={selected === key} aria-controls="day-detail" className={`flex min-w-0 flex-col items-center gap-1 rounded-2xl p-0.5 text-center transition hover:bg-accent/50 ${selected === key ? "bg-accent ring-2 ring-primary" : ""} ${outsideMonth || future || beforeJoining || (maintenance && !done) ? "opacity-50" : ""}`} title={`${d.toDateString()}: ${note}${sessionNote}. Tap to see exercises.`}>
         {showDayLabel && <span className="text-xs font-semibold text-muted-foreground">{DAY_LABELS[d.getDay()]}</span>}
         <span className={`text-xs ${key === todayKey ? "font-bold text-primary" : "text-muted-foreground"}`}>{d.getDate()}</span>
         <div className={`relative flex w-full items-end overflow-hidden rounded-xl border bg-card ${compact ? "h-10" : "h-20"}`} aria-label={`${d.toDateString()}: ${note}`}>
-          <div className={`w-full ${ci && ci.status !== "normal" ? "bg-secondary" : "bg-success"}`} style={{ height: beforeJoining || future ? "0%" : ci && ci.status !== "normal" ? "100%" : `${pct}%` }} />
+          <div className={`w-full ${ci && ci.status !== "normal" ? "bg-secondary" : "bg-success"}`} style={{ height: maintenance || beforeJoining || future ? "0%" : ci && ci.status !== "normal" ? "100%" : `${pct}%` }} />
         </div>
         <span className="text-[11px] font-bold">{label}{daySessions.length > 0 && <span aria-label="Session together"> 🤝</span>}</span>
       </button>
@@ -74,8 +76,8 @@ export function HistoryCard({ exercises, completions, allCompletions, checkins, 
               const total = scheduledCount(e, d);
               const done = mine.filter((r) => r.status === "complete").length;
               const skipped = mine.some((r) => r.status === "skip");
-              const state = done >= total ? "Done" : skipped ? "Skipped" : key > todayKey ? "Upcoming" : key === todayKey ? "To do" : "Not done";
-              const tone = state === "Done" ? "text-success" : state === "Skipped" ? "text-foreground" : "text-muted-foreground";
+              const state = isAfterRecovery(key, finishedDay) ? (done ? "🌿 Done" : "Optional") : done >= total ? "Done" : skipped ? "Skipped" : key > todayKey ? "Upcoming" : key === todayKey ? "To do" : "Not done";
+              const tone = state === "Done" || state === "🌿 Done" ? "text-success" : state === "Skipped" ? "text-foreground" : "text-muted-foreground";
               return (
                 <li key={e.id} className="flex items-start justify-between gap-2 rounded-xl bg-card px-3 py-2">
                   <span className="min-w-0">

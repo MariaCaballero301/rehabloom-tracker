@@ -70,7 +70,9 @@ export function PeopleCard({
   onChange,
   buddyStats = [],
   statsError = false,
+  hideAlerts = false,
 }: {
+  hideAlerts?: boolean;
   contacts: Contact[];
   supporting: Supported[];
   blocks: Block[];
@@ -102,12 +104,12 @@ export function PeopleCard({
                     {KIND_LABEL[c.kind] ?? c.kind}
                   </span>
                 </p></div>
-                <label className="flex items-center gap-2 text-xs font-semibold">
+                {!hideAlerts && <label className="flex items-center gap-2 text-xs font-semibold">
                   <input type="checkbox" className="h-4 w-4" checked={c.notify_on_missed} onChange={() => toggleNotify(c)} />
                   Alert them if I miss sessions
-                </label>
+                </label>}
               </div>
-              {!c.connected_user_id && !c.phone && c.notify_on_missed && (
+              {!hideAlerts && !c.connected_user_id && !c.phone && c.notify_on_missed && (
                 <p className="mt-1 text-xs text-muted-foreground">No phone number saved, so they can't be texted yet.</p>
               )}
               <div className="mt-2 flex flex-wrap gap-2">
@@ -261,7 +263,7 @@ export function PeopleCard({
                   <div className="mt-2 flex justify-center gap-1.5">
                     <IconAction label="Send encouragement" onClick={() => setOpen(open === c.id ? null : c.id)}><MessageCircleHeart /></IconAction>
                     <IconAction label="Plan a session" onClick={() => { if (c.connected_user_id) setPlan({ id: c.connected_user_id, name: c.name }); }}><CalendarPlus /></IconAction>
-                    <IconAction label={c.notify_on_missed ? "Alerts on: tap to stop alerting them if I miss sessions" : "Alert them if I miss sessions"} pressed={c.notify_on_missed} onClick={() => toggleNotify(c)}><BellRing /></IconAction>
+                    {!hideAlerts && <IconAction label={c.notify_on_missed ? "Alerts on: tap to stop alerting them if I miss sessions" : "Alert them if I miss sessions"} pressed={c.notify_on_missed} onClick={() => toggleNotify(c)}><BellRing /></IconAction>}
                     <IconAction label="Disconnect" onClick={() => remove(c)}><UserMinus /></IconAction>
                     <IconAction label="Block" onClick={() => { if (c.connected_user_id) void block(c.connected_user_id, c.name); }}><Ban /></IconAction>
                   </div>

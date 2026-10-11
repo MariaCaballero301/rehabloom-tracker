@@ -1,7 +1,7 @@
 // Invite family & friends with a private code, redeem someone's code, or add a contact without the app.
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Copy, Share2, Trash2, UserRoundPlus } from "lucide-react";
+import { Copy, UserRoundPlus } from "lucide-react";
 import { normalizePhone } from "@/lib/alerts";
 import { formatInviteCode, isInviteCodeFormat, normalizeInviteCode } from "@/lib/network";
 import { sendWelcome } from "@/lib/welcome.functions";
@@ -20,8 +20,6 @@ export function InviteCard({
   const [relationship, setRelationship] = useState("family");
   const [redeem, setRedeem] = useState(initialCode);
   const [busy, setBusy] = useState(false);
-  const [canShare, setCanShare] = useState(false);
-  useEffect(() => setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function"), []);
   const [manual, setManual] = useState({ name: "", phone: "", kind: "family", notify: true });
 
   // Fire-and-forget: a failed welcome text never blocks adding the contact.
@@ -31,7 +29,6 @@ export function InviteCard({
       .catch((e) => console.error("[welcome]", e));
   }
 
-  const linkFor = (code: string) => `${window.location.origin}/support?code=${code}`;
 
   async function run(fn: () => Promise<void>) {
     setBusy(true);
@@ -44,72 +41,26 @@ export function InviteCard({
     }
   }
 
-  // Reuse an active code for this relationship, or create one.
-  async function ensureCode(): Promise<string> {
-    const existing = invites.find((i) => i.relationship === relationship && new Date(i.expires_at) > new Date());
-    if (existing) return existing.code;
-    const code = await rpc<string>("create_invite_code", { p_relationship: relationship });
-    onChange();
-    return code;
-  }
-
-  const SUBJECT = "Join my rehab support circle on Rehabloom 💚";
-  const message = (code: string) =>
-    `Hi! I'm using Rehabloom to keep up with my physical therapy, and I'd love for you to be part of my support circle. Join here: ${linkFor(code)}\n\nOr enter my code in the app: ${formatInviteCode(code)}`;
-
-  // Have a code ready before the click: browsers only allow sharing directly from a tap,
-  // so waiting on the network first makes the share sheet fail.
-  const [ready, setReady] = useState<Record<string, string>>({});
+  // One permanent code per relationship, created automatically the first time it's needed.
+  const current = invites.find((i) => i.relationship === relationship && new Date(i.expires_at) > new Date());
+  const creating = useRef<Set<string>>(new Set());
   useEffect(() => {
-    const existing = invites.find((i) => i.relationship === relationship && new Date(i.expires_at) > new Date());
-    if (existing) setReady((r) => (r[relationship] === existing.code ? r : { ...r, [relationship]: existing.code }));
-  }, [invites, relationship]);
+    if (current || creating.current.has(relationship)) return;
+    creating.current.add(relationship);
+    rpc<string>("create_invite_code", { p_relationship: relationship })
+      .then(() => onChange())
+      .catch((e) => toast.error((e as Error).message))
+      .finally(() => creating.current.delete(relationship));
+  }, [current, relationship, onChange]);
 
-  async function share() {
-    const code = ready[relationship] ?? (await (async () => {
-      setBusy(true);
-      try { const c = await ensureCode(); setReady((r) => ({ ...r, [relationship]: c })); return c; }
-      catch (e) { toast.error((e as Error).message); return null; }
-      finally { setBusy(false); }
-    })());
-    if (!code) return;
-    if (canShare) {
-      try {
-        await navigator.share({ title: SUBJECT, text: message(code) });
-        return;
-      } catch (e) {
-        if ((e as Error).name === "AbortError") return;
-      }
-    }
-    // Sharing isn't available here (or was blocked): copy the invite so it can be pasted anywhere.
+  async function copyCode(code: string) {
     try {
-      await navigator.clipboard.writeText(message(code));
-      toast.success("Invite copied — paste it into email, iMessage or any app");
+      await navigator.clipboard.writeText(formatInviteCode(code));
+      toast.success("Code copied");
     } catch {
-      toast.info(linkFor(code));
+      toast.info(`Your code: ${formatInviteCode(code)}`);
     }
   }
-
-  const copyNew = () =>
-    run(async () => {
-      await copy(await ensureCode());
-    });
-
-  async function copy(code: string) {
-    try {
-      await navigator.clipboard.writeText(linkFor(code));
-      toast.success("Link copied");
-    } catch {
-      toast.info(linkFor(code));
-    }
-  }
-
-  const revoke = (inv: InviteCode) =>
-    run(async () => {
-      const { error } = await db.from("invite_codes").delete().eq("id", inv.id);
-      if (error) throw new Error(error.message);
-      onChange();
-    });
 
   function submitRedeem(e: FormEvent) {
     e.preventDefault();
@@ -149,8 +100,8 @@ export function InviteCard({
       </h2>
 
       <p className="mt-1 text-sm text-muted-foreground">
-        Share a private code. When they open the link (or type the code) in Rehabloom, they join
-        your support network. Codes work once and expire after 7 days.
+        Share your private code. When someone types it in Rehabloom, they join your support
+        network. Your code stays the same, so you can share it with anyone you trust.
       </p>
       <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Relationship">
         {(["family", "friend"] as const).map((r) => (
@@ -166,43 +117,15 @@ export function InviteCard({
           </button>
         ))}
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button className="btn-aqua" disabled={busy} onClick={() => void share()}>
-          <Share2 className="h-4 w-4" /> Share
-        </button>
-        <button className="btn-soft" disabled={busy} onClick={copyNew}>
-          <Copy className="h-4 w-4" /> Copy link
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border bg-popover p-3 text-sm">
+        <span>
+          <b className="font-mono text-base tracking-widest">{current ? formatInviteCode(current.code) : "…"}</b>{" "}
+          <span className="text-muted-foreground">· your {relationship} code</span>
+        </span>
+        <button className="btn-aqua text-sm" disabled={!current} onClick={() => current && void copyCode(current.code)}>
+          <Copy className="h-4 w-4" /> Copy code
         </button>
       </div>
-      {invites.length > 0 && (
-        <ul className="mt-3 space-y-2">
-          {invites.map((inv) => (
-            <li
-              key={inv.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border bg-popover p-3 text-sm"
-            >
-              <span>
-                <b className="font-mono text-base tracking-widest">{formatInviteCode(inv.code)}</b>{" "}
-                <span className="text-muted-foreground">
-                  · {inv.relationship} · expires {new Date(inv.expires_at).toLocaleDateString()}
-                </span>
-              </span>
-              <span className="flex gap-2">
-                <button className="btn-soft text-sm" onClick={() => copy(inv.code)}>
-                  <Copy className="h-4 w-4" /> Copy link
-                </button>
-                <button
-                  className="btn-soft text-sm"
-                  aria-label={`Delete code ${inv.code}`}
-                  onClick={() => revoke(inv)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
 
       <form onSubmit={submitRedeem} className="mt-5">
         <label className="block text-sm font-semibold">

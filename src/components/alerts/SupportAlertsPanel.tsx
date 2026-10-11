@@ -18,7 +18,7 @@ type Session = {
   status: string;
 };
 
-export function SupportAlertsPanel({ userId }: { userId: string }) {
+export function SupportAlertsPanel({ userId, mentor = false }: { userId: string; mentor?: boolean }) {
   const [sessions, setSessions] = useState<Session[]>([]);
 
   const load = useCallback(async () => {
@@ -60,13 +60,13 @@ export function SupportAlertsPanel({ userId }: { userId: string }) {
       <h2 id="support-alerts-h" className="flex items-center gap-2 text-xl">
         <CalendarHeart className="h-5 w-5" /> Support network
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+      {!mentor && <><p className="mt-1 text-sm text-muted-foreground">
         If you miss your sessions for a couple of days, the people in your support network get a
         message so they can call you or do a session with you.
       </p>
       <button className="btn-soft mt-3 text-sm" onClick={() => void simulate()}>
         <FlaskConical className="h-4 w-4" /> Simulate missed sessions (demo)
-      </button>
+      </button></>}
       <h3 className="mt-3 text-sm font-bold uppercase text-muted-foreground">Session invites</h3>
       {sessions.length === 0 ? (
         <p className="mt-1 text-sm text-muted-foreground">No invites right now.</p>

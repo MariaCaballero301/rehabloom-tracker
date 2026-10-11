@@ -15,7 +15,7 @@ import {
 import { rpc, type MyProfile } from "./useNetwork";
 import { ProfileAvatar } from "./ProfileAvatar";
 
-function RequestButton({
+export function RequestButton({
   person,
   kind,
   onSent,
@@ -77,7 +77,7 @@ function RequestButton({
   );
 }
 
-function Tags({ person }: { person: DirectoryProfile }) {
+export function Tags({ person }: { person: DirectoryProfile }) {
   const tags = [
     areaLabel(person.rehab_area),
     ...person.languages,

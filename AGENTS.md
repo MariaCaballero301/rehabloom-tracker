@@ -49,3 +49,5 @@
 
 ## Mentor mode
 - network_profiles.finished_therapy drives mentor mode; shared pure helpers in src/lib/mentor-mode.ts exclude these people from both the cron job and simulate_missed_sessions so alerts stay consistent.
+- Invite codes are permanent and reusable, one per user per relationship: create_invite_code returns the existing code and redemption never consumes it, so users share a single stable code.
+- Mentor mode adapts Home, Progress (finished_at trigger, maintenance-only days after it) and Support (mentoring card, mentee finder, alert controls hidden) from one profile flag.

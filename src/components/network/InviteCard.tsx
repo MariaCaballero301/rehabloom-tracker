@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CreateInvite, ShareInviteButton, redeemCode } from "./CreateInvite";
-import { PendingInvite } from "./PendingInvite";
+import { PendingInviteRedeemer } from "./PendingInvite";
 import type { InviteCode } from "./useNetwork";
 
 export function InviteCard({
@@ -52,7 +52,7 @@ export function InviteCard({
           <p className="text-xs text-slate-500">Your code never expires — share it anytime.</p>
         </div>
       )}
-      <PendingInvite />
+      <PendingInviteRedeemer />
 
       <form onSubmit={onRedeem} className="mt-5 border-t border-sky-100 pt-4">
         <label className="text-xs font-semibold text-sky-800" htmlFor="redeem-code">

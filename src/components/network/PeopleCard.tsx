@@ -87,7 +87,7 @@ export function PeopleCard({
   const buddyContacts = groups.buddies.contacts;
   const supportingOnly = groups.buddies.supporting;
 
-  function renderGroup(title: string, group: { contacts: Contact[]; supporting: Supported[] }, empty: string) {
+  function renderGroup(title: string, group: { contacts: Contact[]; supporting: Supported[] }, empty: string, showKind = true) {
     return (
       <div>
         <h3 className="mt-5 text-sm font-bold text-muted-foreground">{title}</h3>
@@ -100,9 +100,11 @@ export function PeopleCard({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2"><ProfileAvatar userId={c.connected_user_id} name={c.name} /><p className="min-w-0 break-words font-semibold">
                   {c.name}{" "}
-                  <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-bold">
-                    {KIND_LABEL[c.kind] ?? c.kind}
-                  </span>
+                  {showKind && (
+                    <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-bold">
+                      {KIND_LABEL[c.kind] ?? c.kind}
+                    </span>
+                  )}
                 </p></div>
                 {!hideAlerts && <label className="flex items-center gap-2 text-xs font-semibold">
                   <input type="checkbox" className="h-4 w-4" checked={c.notify_on_missed} onChange={() => toggleNotify(c)} />
@@ -143,7 +145,9 @@ export function PeopleCard({
               <li key={key} className="rounded-2xl border bg-popover p-3 text-sm">
                 <div className="flex min-w-0 items-center gap-2"><ProfileAvatar userId={s.user_id} name={s.name} /><p className="min-w-0 break-words font-semibold">
                   {s.name}{" "}
-                  <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-bold">{supportingLabel(s.kind)}</span>
+                  {showKind && (
+                    <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-bold">{supportingLabel(s.kind)}</span>
+                  )}
                 </p></div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button className="btn-soft text-sm" onClick={() => setOpen(open === key ? null : key)}>
@@ -237,7 +241,7 @@ export function PeopleCard({
         or plan a session together.
       </p>
 
-      {renderGroup("Family & friends", groups.familyFriends, "No family or friends yet")}
+      {renderGroup("Family & friends", groups.familyFriends, "No family or friends yet", false)}
       <BuddyBubble
         empty={buddyContacts.length === 0 && supportingOnly.length === 0}
         total={buddyContacts.length + supportingOnly.length}

@@ -1,203 +1,78 @@
-// Invite family & friends with a private code, redeem someone's code, or add a contact without the app.
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { toast } from "sonner";
-import { Copy, UserRoundPlus } from "lucide-react";
-import { normalizePhone } from "@/lib/alerts";
-import { formatInviteCode, isInviteCodeFormat, normalizeInviteCode } from "@/lib/network";
-import { sendWelcome } from "@/lib/welcome.functions";
-import { welcomeToast } from "@/lib/welcome";
-import { db, rpc, type InviteCode } from "./useNetwork";
+import { useState } from "react";
+import { CreateInvite, ShareInviteButton, redeemCode } from "./CreateInvite";
+import { PendingInviteRedeemer } from "./PendingInvite";
+import type { InviteCode } from "./useNetwork";
 
 export function InviteCard({
   invites,
-  initialCode,
+  initialCode = "",
   onChange,
 }: {
   invites: InviteCode[];
-  initialCode: string;
+  initialCode?: string;
   onChange: () => void;
 }) {
-  const [relationship, setRelationship] = useState("family");
-  const [redeem, setRedeem] = useState(initialCode);
+  const [code, setCode] = useState(initialCode);
+  const [result, setResult] = useState("");
+  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [manual, setManual] = useState({ name: "", phone: "", kind: "family", notify: true });
 
-  // Fire-and-forget: a failed welcome text never blocks adding the contact.
-  function welcome(data: { contactId?: string; recent?: boolean }) {
-    sendWelcome({ data })
-      .then((list) => list.forEach((w) => toast.success(welcomeToast(w.name, w.status))))
-      .catch((e) => console.error("[welcome]", e));
-  }
+  // The permanent code (one per account) — created on first visit, so take
+  // the newest invite; there is at most one now that codes never expire.
+  const permanent = [...invites].sort((a, b) => (a.id < b.id ? 1 : -1))[0] ?? null;
 
-
-  async function run(fn: () => Promise<void>) {
+  async function onRedeem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!code.trim() || busy) return;
     setBusy(true);
+    setError("");
+    setResult("");
     try {
-      await fn();
-    } catch (e) {
-      toast.error((e as Error).message);
+      const name = await redeemCode(code);
+      setResult(name);
+      setCode("");
+      onChange();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "That code didn't work.");
     } finally {
       setBusy(false);
     }
   }
 
-  // One permanent code per relationship, created automatically the first time it's needed.
-  const current = invites.find((i) => i.relationship === relationship && new Date(i.expires_at) > new Date());
-  const creating = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (current || creating.current.has(relationship)) return;
-    creating.current.add(relationship);
-    rpc<string>("create_invite_code", { p_relationship: relationship })
-      .then(() => onChange())
-      .catch((e) => toast.error((e as Error).message))
-      .finally(() => creating.current.delete(relationship));
-  }, [current, relationship, onChange]);
-
-  async function copyCode(code: string) {
-    try {
-      await navigator.clipboard.writeText(formatInviteCode(code));
-      toast.success("Code copied");
-    } catch {
-      toast.info(`Your code: ${formatInviteCode(code)}`);
-    }
-  }
-
-  function submitRedeem(e: FormEvent) {
-    e.preventDefault();
-    const code = normalizeInviteCode(redeem);
-    if (!isInviteCodeFormat(code))
-      return void toast.error("Codes have 8 letters and numbers, like ABCD-EFGH.");
-    void run(async () => {
-      const name = await rpc<string>("redeem_invite_code", { p_code: code });
-      toast.success(`You're now part of ${name}'s support network 💚`);
-      setRedeem("");
-      welcome({ recent: true });
-      onChange();
-    });
-  }
-
-  function submitManual(e: FormEvent) {
-    e.preventDefault();
-    void run(async () => {
-      const { data: row, error } = await db.from("support_contacts").insert({
-        name: manual.name.trim(),
-        phone: normalizePhone(manual.phone),
-        kind: manual.kind,
-        notify_on_missed: manual.notify,
-      }).select("id").single();
-      if (error) throw new Error(error.message);
-      toast.success(`${manual.name.trim()} added`);
-      if (row) welcome({ contactId: row.id });
-      setManual({ name: "", phone: "", kind: "family", notify: true });
-      onChange();
-    });
-  }
-
   return (
-    <section className="glass p-5" aria-labelledby="invite-h">
-      <h2 id="invite-h" className="flex items-center gap-2 text-xl">
-        <UserRoundPlus className="h-5 w-5" /> Invite family & friends
-      </h2>
-
-      <p className="mt-1 text-sm text-muted-foreground">
-        Share your private code. When someone types it in Rehabloom, they join your support
-        network. Your code stays the same, so you can share it with anyone you trust.
+    <div className="glass-card p-5">
+      <h3 className="font-semibold text-sky-900">Invite family & friends</h3>
+      <p className="mt-1 text-xs text-slate-600">
+        Share your code with someone you trust — they can redeem it after signing up.
       </p>
-      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Relationship">
-        {(["family", "friend"] as const).map((r) => (
-          <button
-            key={r}
-            type="button"
-            className="nav-bubble"
-            data-active={relationship === r}
-            aria-pressed={relationship === r}
-            onClick={() => setRelationship(r)}
-          >
-            {r === "family" ? "Family" : "Friend"}
-          </button>
-        ))}
-      </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border bg-popover p-3 text-sm">
-        <span>
-          <b className="font-mono text-base tracking-widest">{current ? formatInviteCode(current.code) : "…"}</b>{" "}
-          <span className="text-muted-foreground">· your {relationship} code</span>
-        </span>
-        <button className="btn-aqua text-sm" disabled={!current} onClick={() => current && void copyCode(current.code)}>
-          <Copy className="h-4 w-4" /> Copy code
-        </button>
-      </div>
+      <CreateInvite code={permanent?.code ?? null} onChange={onChange} />
+      {permanent && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <ShareInviteButton code={permanent.code} />
+          <p className="text-xs text-slate-500">Your code never expires — share it anytime.</p>
+        </div>
+      )}
+      <PendingInviteRedeemer />
 
-      <form onSubmit={submitRedeem} className="mt-5">
-        <label className="block text-sm font-semibold">
+      <form onSubmit={onRedeem} className="mt-5 border-t border-sky-100 pt-4">
+        <label className="text-xs font-semibold text-sky-800" htmlFor="redeem-code">
           Got a code from someone?
-          <div className="mt-1 flex gap-2">
-            <input
-              className="field font-mono uppercase tracking-widest"
-              value={redeem}
-              onChange={(e) => setRedeem(e.target.value)}
-              placeholder="ABCD-EFGH"
-              maxLength={12}
-            />
-            <button className="btn-aqua shrink-0" disabled={busy || !redeem.trim()}>
-              Join
-            </button>
-          </div>
         </label>
-      </form>
-
-      <details className="mt-5">
-        <summary className="cursor-pointer text-sm font-semibold">
-          Add someone who doesn't use the app
-        </summary>
-        <form onSubmit={submitManual} className="mt-3 space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block text-sm font-semibold">
-              Name
-              <input
-                className="field mt-1"
-                required
-                maxLength={60}
-                value={manual.name}
-                onChange={(e) => setManual({ ...manual, name: e.target.value })}
-              />
-            </label>
-            <label className="block text-sm font-semibold">
-              Relationship
-              <select
-                className="field mt-1"
-                value={manual.kind}
-                onChange={(e) => setManual({ ...manual, kind: e.target.value })}
-              >
-                <option value="family">Family</option>
-                <option value="friend">Friend</option>
-              </select>
-            </label>
-          </div>
-          <label className="block text-sm font-semibold">
-            Mobile number (with country code)
-            <input
-              className="field mt-1"
-              type="tel"
-              value={manual.phone}
-              onChange={(e) => setManual({ ...manual, phone: e.target.value })}
-              placeholder="+1 919 555 0100"
-            />
-          </label>
-          <label className="flex items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="mt-0.5 h-4 w-4"
-              checked={manual.notify}
-              onChange={(e) => setManual({ ...manual, notify: e.target.checked })}
-            />
-            Text this person if I miss my sessions for 2 days. Make sure they're happy to receive
-            these messages.
-          </label>
-          <button className="btn-aqua" disabled={busy}>
-            Add contact
+        <div className="mt-1 flex gap-2">
+          <input
+            id="redeem-code"
+            className="input-soft flex-1"
+            placeholder="ABCD-EFGH"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+          />
+          <button className="btn-aqua" type="submit" disabled={busy || !code.trim()}>
+            {busy ? "…" : "Join"}
           </button>
-        </form>
-      </details>
-    </section>
+        </div>
+        {result && <p className="mt-2 text-sm font-semibold text-emerald-700">{result}</p>}
+        {error && <p className="mt-2 text-sm font-semibold text-rose-600">{error}</p>}
+      </form>
+    </div>
   );
 }

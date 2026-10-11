@@ -28,6 +28,7 @@ export function XpFishLayer() {
       const id = ++n;
       const message = String((e as CustomEvent).detail ?? "");
       playSound("success");
+      playSound("swim");
       setSwims((s) => [...s, { id, message, fish: Math.floor(Math.random() * FISH.length), top: 18 + Math.random() * 30 }]);
       window.setTimeout(() => setSwims((s) => s.filter((x) => x.id !== id)), 3800);
     };

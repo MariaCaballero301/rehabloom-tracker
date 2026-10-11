@@ -1,4 +1,4 @@
-export type Sound = "tap" | "pop" | "success";
+export type Sound = "tap" | "pop" | "success" | "swim";
 export type SoundElement = { disabled?: boolean; override?: string | null; bubble?: boolean; interactive?: boolean };
 /** Pure selection, independent of browser state or audio. */
 export function soundForElement(element: SoundElement): Sound | null {
@@ -28,8 +28,8 @@ export function setSoundEnabled(value: boolean) {
 }
 
 export function playSound(sound: Sound) {
-  // Explicit success calls bypass the anti-spam guard so they aren't swallowed by the tap from the same click.
-  if (!gestureReceived || !enabled || (sound !== "success" && Date.now() - lastPlayed < 100)) return;
+  // Success and swim accompany the same click as a tap, so they bypass the anti-spam guard.
+  if (!gestureReceived || !enabled || (sound !== "success" && sound !== "swim" && Date.now() - lastPlayed < 100)) return;
   try {
     if (!window.AudioContext) return;
     context ??= new AudioContext();
@@ -71,6 +71,13 @@ export function playSound(sound: Sound) {
         tone(660, 700, 0, 0.2, 0.55);
         tone(880, 990, 0.13, 0.28, 0.55);
         tone(1320, 1320, 0.13, 0.3, 0.2, "sine");
+      }
+      if (sound === "swim") {
+        // Watery swim-by: a soft low sweep with rising blub-bloop bubbles.
+        tone(180, 420, 0, 0.4, 0.22, "sine");
+        tone(500, 800, 0.05, 0.09, 0.3, "sine");
+        tone(700, 1000, 0.14, 0.09, 0.3, "sine");
+        tone(900, 1300, 0.23, 0.11, 0.3, "sine");
       }
     }).catch(() => {});
   } catch { /* Audio must never prevent an action. */ }

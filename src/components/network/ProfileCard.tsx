@@ -53,7 +53,7 @@ function Switch({
 const EVERY_DAY = AVAILABILITY.map((a) => a.value as string);
 type Full = MyProfile & { rehab_areas?: string[] };
 
-export function ProfileCard({ profile, saved, onSaved, openEditRequest }: { profile: MyProfile; saved: boolean; onSaved: () => void; openEditRequest?: string }) {
+export function ProfileCard({ profile, saved, onSaved, openEditRequest }: { profile: MyProfile; saved: boolean; onSaved: () => void; openEditRequest?: string | undefined }) {
   const profileAreas = (profile as Full).rehab_areas;
   const initialAreas = profileAreas?.length ? profileAreas : profile.rehab_area !== "other" ? [profile.rehab_area] : [];
   const [p, setP] = useState(profile);

@@ -1,62 +1,78 @@
-# Rehabloom Tracker
+# 🌱 Rehabloom
 
-Build a responsive physical therapy accountability web app called Rehabloom. Its purpose is to help people stick to exercise routines prescribed by their physical therapist.
+**Physical therapy works only if you keep doing it. Rehabloom helps you stick with your prescribed exercises, and brings your people in when you start slipping.**
 
-Use a clean, accessible Frutiger Aero-inspired aesthetic with soft blue gradients, glossy translucent cards, green accents, and rounded buttons. Prioritize usability over visual complexity.
+🔗 **Try it:** https://rehabloom.lovable.app · Built at **HackNC 2026**
 
-Create a dashboard with:
+---
 
-1. Today's prescribed exercises, showing exercise name, repetitions, and a checkbox to mark each as completed.
+## The problem
 
-2. Ability to add, edit, remove, and schedule exercises.
+Most physical therapy happens at home, alone, between appointments, and that's where it falls apart. Studies on home exercise programs commonly report that **many patients don't fully follow them**. Nobody notices until the next appointment, when the recovery has already stalled.
 
-3. A simple pain and motivation check-in, with an option to mark unable to complete or rest.
+## What Rehabloom does
 
-4. XP rewards for completed tasks, without rewarding or encouraging increased pain.
+### 🌿 Stay on track
+- **Your plan, your way:** add the exercises your therapist prescribed (sets, reps, daily or weekly schedule, rest between sessions), or **import them from a photo/PDF of your plan** with Google Gemini. You review every exercise before it's saved, and the app never invents a frequency.
+- **Daily check-in:** pain and motivation, plus honest options for *rest day* and *unable to complete*. They're never punished, and pain is never rewarded.
+- **A plant that grows with you:** XP from completed exercises grows a plant through four stages (Seed → Sprout → Young plant → In bloom). XP arrives with a little swimming fish 🐠 and soft sounds (mutable).
+- **Progress page:** weekly and monthly calendar, sessions together marked on their day, and **AI summaries (Gemini)** built only from anonymous numbers.
 
-5. A small digital plant graphic with four predefined growth stages determined by total XP. Use lightweight SVG graphics, not generated images on every interaction.
+### 💚 Your support network
+- **Family & friends** join with a private invite code or link; **buddies** are people doing similar rehab (matched by rehab area, language and availability); **mentors** are people who already finished their therapy.
+- **Missed-session alerts:** if you skip your scheduled exercises for **more than 2 days**, your network gets an in-app alert, with no health details, just "Ana could use a little support 💚". From there they can **send encouragement** or **plan a session together**.
+- **Inbox:** one-to-one messages and encouragement, live.
 
-6. A settings area to enter an accountability partner's email, choose a reminder time, and enable or pause reminders.
+### 🤝 Sessions together
+- Propose a **video call** or an **in-person** session; the other person accepts or declines.
+- **Reschedule** (the other person confirms the new time), **add to calendar (.ics)**, a reminder 15 minutes before, and **"Mark as done"**, which gives both people +15 XP.
 
-7. A seven-day completion history.
+### 🌸 Mentor mode
+When you finish your therapy, the app changes with you. Alerts stop, your plant stays in bloom, Progress tells your **recovery story** and your **mentor impact**, and Support becomes the place to help others. If you need rehab again, there's a button to go back.
 
-Use Lovable Cloud to save user accounts, exercises, progress, and preferences securely. Keep each user's information private.
+---
 
-Initially, make notification sending a simulation: display a sample email and a Test Reminder button. Do not send real emails or integrate external APIs yet.
+## How it's built
 
-Do not generate medical treatment plans or change prescribed exercise instructions. This is an adherence tool, not a medical advice tool.
+| Layer | Tech |
+|---|---|
+| Frontend | React 19, TanStack Start + Router, Tailwind CSS, shadcn/ui, Frutiger Aero-inspired glass UI |
+| Backend | Lovable Cloud (Supabase): Postgres, Auth, Realtime, Storage, server functions |
+| Security | Row-Level Security on every table; all relationship actions (connect, invite, block, sessions) go through `SECURITY DEFINER` functions that check `auth.uid()` |
+| Scheduling | Daily job (`/api/cron/missed-sessions`) that detects missed-session streaks and notifies the network |
+| AI | Google Gemini: plan import + monthly/weekly/recovery summaries (anonymous numbers only, API key kept server-side) |
+| Audio | Web Audio API, synthesized in the browser (no audio files) |
+| Tests | Vitest (unit + UI) and SQL scenario tests on an embedded Postgres |
 
-Make the core experience fully interactive and usable on mobile and desktop. Implement the essential functionality before adding decorative features.
+### Privacy & safety by design
+- **Not a medical tool:** Rehabloom never changes or invents prescribed exercises.
+- Alerts never include health details, only that someone could use support.
+- People control who joins their network, and can disconnect or block at any time (blocked users can't see or contact them).
+- Profile photos live in private storage and are only visible to connected people.
 
-This project was built with [Lovable](https://lovable.dev).
+---
 
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/8f51e723-4321-4f15-9801-8a280732d9a9).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+## Run it locally
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+git clone https://github.com/MariaCaballero301/rehabloom-tracker.git
+cd rehabloom-tracker
+npm install
+npm run dev      # start the app
+npm test         # run the tests
 ```
 
-## Google Gemini API (Monthly AI summary)
+The app expects a Lovable Cloud / Supabase project (env vars in `.env`). Optional secrets: `GEMINI_API_KEY` for AI features, and `TWILIO_*` for real SMS. Without Twilio, SMS is simulated and in-app alerts are used.
 
-- **Where:** Progress page → "Monthly AI summary" → **Generate AI Summary**.
-- **Model:** `gemini-3.5-flash-lite` (free tier), called directly via Google's REST API
-  (`generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent`).
-- **Code:** `src/lib/ai-summary.functions.ts` (server-only call; key read from the `GEMINI_API_KEY` secret),
-  `src/lib/monthly-report.ts` (statistics + prompt), `src/components/rehab/MonthlySummaryCard.tsx` (UI).
-- **Privacy:** all numbers are computed in the app first; only anonymous counts and averages are sent — no names, emails or diagnoses.
-- **History:** every summary is saved per user (`ai_summaries`) with the model version Gemini reported.
-- **Demo:** "Try with demo data" sends a clearly fictional month and labels the result "DEMO".
-- The API key is stored as a secret and never appears in the code.
+## What's next
+- Therapist view: share a progress report with your physical therapist.
+- Real SMS / push notifications for supporters who don't use the app.
+- A shared live "session room" with reactions while exercising together.
+
+## Team
+Built with 💙 at HackNC by:
+- Jaiden Oey ([@jaidenoey](https://github.com/jaidenoey))
+- María Caballero ([@MariaCaballero301](https://github.com/MariaCaballero301))
+- *(add teammates here)*
+
+*Rehabloom supports adherence to your therapist's plan. It does not give medical advice. If pain increases, stop and contact your physical therapist.*

@@ -7,7 +7,7 @@ import { summaryRange } from "@/lib/summary-period";
 
 export const generateMonthlySummary = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ month: z.string(), period: z.enum(["monthly", "weekly"]).default("monthly"), demo: z.boolean() }).parse(d))
+  .inputValidator((d) => z.object({ month: z.string(), period: z.enum(["monthly", "weekly", "journey"]).default("monthly"), demo: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     const key = process.env["GEMINI_API_KEY"];
     if (!key) throw new Error("The Gemini API key hasn't been added yet.");
@@ -46,5 +46,5 @@ export const generateMonthlySummary = createServerFn({ method: "POST" })
        .insert({ user_id: context.userId, month: from.slice(0, 7), is_demo: data.demo, model, summary, stats })
       .select("id, month, is_demo, model, summary, created_at").single();
     if (error) throw new Error(error.message);
-    return { ...row, period: data.period, periodDate: data.period === "weekly" ? from : from.slice(0, 7), responseId: json.responseId ?? null };
+    return { ...row, period: data.period, periodDate: data.period === "weekly" ? from : data.period === "journey" ? data.month : from.slice(0, 7), responseId: json.responseId ?? null };
   });

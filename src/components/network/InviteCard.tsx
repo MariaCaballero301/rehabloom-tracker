@@ -13,32 +13,9 @@ export function InviteCard({
   initialCode?: string;
   onChange: () => void;
 }) {
-  const [code, setCode] = useState(initialCode);
-  const [result, setResult] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-
   // The permanent code (one per account) — created on first visit, so take
   // the newest invite; there is at most one now that codes never expire.
   const permanent = invites.filter((i) => isInviteActive(i)).sort((a, b) => (a.id < b.id ? 1 : -1))[0] ?? null;
-
-  async function onRedeem(e: React.FormEvent) {
-    e.preventDefault();
-    if (!code.trim() || busy) return;
-    setBusy(true);
-    setError("");
-    setResult("");
-    try {
-      const name = await redeemCode(code);
-      setResult(name);
-      setCode("");
-      onChange();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "That code didn't work.");
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <div className="glass-card p-5">
@@ -55,7 +32,29 @@ export function InviteCard({
       )}
       <PendingInviteRedeemer />
 
-      <form onSubmit={onRedeem} className="mt-5 border-t border-sky-100 pt-4">
+      <RedeemCodeForm initialCode={initialCode} onChange={onChange} />
+    </div>
+  );
+}
+
+export function RedeemCodeForm({ initialCode = "", onChange, standalone = false }: { initialCode?: string; onChange: () => void; standalone?: boolean }) {
+  const [code, setCode] = useState(initialCode);
+  const [result, setResult] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function onRedeem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!code.trim() || busy) return;
+    setBusy(true); setError(""); setResult("");
+    try {
+      const name = await redeemCode(code);
+      setResult(name); setCode(""); onChange();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "That code didn't work.");
+    } finally { setBusy(false); }
+  }
+  return (
+      <form onSubmit={onRedeem} className={standalone ? "glass-card p-5" : "mt-5 border-t border-sky-100 pt-4"}>
         <label className="text-xs font-semibold text-sky-800" htmlFor="redeem-code">
           Got a code from someone?
         </label>
@@ -74,6 +73,5 @@ export function InviteCard({
         {result && <p className="mt-2 text-sm font-semibold text-emerald-700">{result}</p>}
         {error && <p className="mt-2 text-sm font-semibold text-rose-600">{error}</p>}
       </form>
-    </div>
   );
 }

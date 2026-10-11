@@ -1,3 +1,4 @@
+import { isInviteActive } from "@/lib/network";
 // Loads everything the "Your people" page needs and exposes a reload function.
 import { useCallback, useEffect, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -114,7 +115,7 @@ export function useNetwork(userId: string) {
       requests: (requests.data ?? []) as ConnectionRequest[],
       encouragements: (encouragements.data ?? []) as Encouragement[],
       directory: (directory.data ?? []) as DirectoryProfile[],
-      invites: (invites.data ?? []) as InviteCode[],
+      invites: ((invites.data ?? []) as InviteCode[]).filter((i) => isInviteActive(i)),
       blocks: (blocks.data ?? []) as Block[],
       buddyStats: (stats.data ?? []) as BuddyStats[],
       statsError: Boolean(stats.error),

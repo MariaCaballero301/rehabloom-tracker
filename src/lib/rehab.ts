@@ -16,8 +16,17 @@ export function cheerCount(sent: { created_at: string }[]) {
   return [...perDay.values()].reduce((a, b) => a + b, 0);
 }
 
-export function computeXp(completionCount: number, checkinCount: number, cheers = 0) {
-  return completionCount * XP_PER_EXERCISE + checkinCount * XP_PER_CHECKIN + cheers * XP_PER_CHEER;
+export const XP_PER_SESSION = 15;
+
+/** Completed sessions together that earn XP: at most one per local day (by completion time). */
+export function sessionXpCount(rows: { status: string; completed_at?: string | null }[]) {
+  const days = new Set<string>();
+  for (const r of rows) if (r.status === "completed" && r.completed_at) days.add(dayKey(new Date(r.completed_at)));
+  return days.size;
+}
+
+export function computeXp(completionCount: number, checkinCount: number, cheers = 0, sessions = 0) {
+  return completionCount * XP_PER_EXERCISE + checkinCount * XP_PER_CHECKIN + cheers * XP_PER_CHEER + sessions * XP_PER_SESSION;
 }
 
 export const STAGES = [

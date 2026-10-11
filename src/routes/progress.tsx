@@ -52,7 +52,7 @@ function Progress({ userId, email, joinedAt }: { userId: string; email: string; 
     ]).then(([r, s, p, sup, enc]) => {
       const prof = p.data as { finished_therapy?: boolean; finished_at?: string | null } | null;
       setFinishedAt(prof?.finished_therapy && prof.finished_at ? prof.finished_at : null);
-      const done = ((r.data ?? []) as RehabSession[]).filter((x) => x.status === "completed" || (x.status === "accepted" && new Date(x.starts_at) < new Date())).length;
+      const done = ((r.data ?? []) as RehabSession[]).filter((x) => x.status === "completed").length;
       setImpact({ supported: ((sup.data ?? []) as unknown[]).length, sent: enc.count ?? 0, together: done });
       const rows = ((r.data ?? []) as RehabSession[]).map((x) => ({
         id: x.id, day: dayKey(new Date(x.starts_at)), startsAt: x.starts_at, mode: x.mode, status: x.status,

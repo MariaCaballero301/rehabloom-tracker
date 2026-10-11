@@ -46,3 +46,6 @@
 
 ## Preview recovery
 - Detect mixed Vite React/renderer optimization versions in development and use the shared guarded reload; a stale renderer cannot safely execute hooks from a newer React module.
+
+## Mentor mode
+- network_profiles.finished_therapy drives mentor mode; shared pure helpers in src/lib/mentor-mode.ts exclude these people from both the cron job and simulate_missed_sessions so alerts stay consistent.

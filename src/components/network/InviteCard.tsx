@@ -1,7 +1,7 @@
 // Invite family & friends with a private code, redeem someone's code, or add a contact without the app.
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Copy, Mail, Share2, Trash2, UserRoundPlus } from "lucide-react";
+import { Copy, Share2, Trash2, UserRoundPlus } from "lucide-react";
 import { normalizePhone } from "@/lib/alerts";
 import { formatInviteCode, isInviteCodeFormat, normalizeInviteCode } from "@/lib/network";
 import { sendWelcome } from "@/lib/welcome.functions";
@@ -57,21 +57,38 @@ export function InviteCard({
   const message = (code: string) =>
     `Hi! I'm using Rehabloom to keep up with my physical therapy, and I'd love for you to be part of my support circle. Join here: ${linkFor(code)}\n\nOr enter my code in the app: ${formatInviteCode(code)}`;
 
-  const sendEmail = () =>
-    run(async () => {
-      const code = await ensureCode();
-      window.location.href = `mailto:?subject=${encodeURIComponent(SUBJECT)}&body=${encodeURIComponent(message(code))}`;
-    });
+  // Have a code ready before the click: browsers only allow sharing directly from a tap,
+  // so waiting on the network first makes the share sheet fail.
+  const [ready, setReady] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const existing = invites.find((i) => i.relationship === relationship && new Date(i.expires_at) > new Date());
+    if (existing) setReady((r) => (r[relationship] === existing.code ? r : { ...r, [relationship]: existing.code }));
+  }, [invites, relationship]);
 
-  const share = () =>
-    run(async () => {
-      const code = await ensureCode();
+  async function share() {
+    const code = ready[relationship] ?? (await (async () => {
+      setBusy(true);
+      try { const c = await ensureCode(); setReady((r) => ({ ...r, [relationship]: c })); return c; }
+      catch (e) { toast.error((e as Error).message); return null; }
+      finally { setBusy(false); }
+    })());
+    if (!code) return;
+    if (canShare) {
       try {
-        await navigator.share({ title: SUBJECT, text: message(code), url: linkFor(code) });
+        await navigator.share({ title: SUBJECT, text: message(code) });
+        return;
       } catch (e) {
-        if ((e as Error).name !== "AbortError") throw e;
+        if ((e as Error).name === "AbortError") return;
       }
-    });
+    }
+    // Sharing isn't available here (or was blocked): copy the invite so it can be pasted anywhere.
+    try {
+      await navigator.clipboard.writeText(message(code));
+      toast.success("Invite copied — paste it into email, iMessage or any app");
+    } catch {
+      toast.info(linkFor(code));
+    }
+  }
 
   const copyNew = () =>
     run(async () => {
@@ -150,14 +167,9 @@ export function InviteCard({
         ))}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button className="btn-aqua" disabled={busy} onClick={sendEmail}>
-          <Mail className="h-4 w-4" /> Send by email
+        <button className="btn-aqua" disabled={busy} onClick={() => void share()}>
+          <Share2 className="h-4 w-4" /> Share
         </button>
-        {canShare && (
-          <button className="btn-soft" disabled={busy} onClick={share}>
-            <Share2 className="h-4 w-4" /> Share
-          </button>
-        )}
         <button className="btn-soft" disabled={busy} onClick={copyNew}>
           <Copy className="h-4 w-4" /> Copy link
         </button>

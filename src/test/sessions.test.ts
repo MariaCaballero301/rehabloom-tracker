@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canFinishSession, canJoin, formatWhen, otherPerson, splitSessions, toStartsAt, type RehabSession } from "@/lib/sessions";
+import { canComplete, needsConfirmation, canJoin, formatWhen, otherPerson, splitSessions, toStartsAt, type RehabSession } from "@/lib/sessions";
 
 const now = new Date(2026, 9, 10, 12, 0); // Sat Oct 10 2026, noon local
 const at = (h: number, m = 0, dayOffset = 0) => new Date(2026, 9, 10 + dayOffset, h, m).toISOString();
@@ -31,12 +31,25 @@ describe("splitSessions", () => {
   });
 });
 
-describe("canFinishSession", () => {
-  it("allows an accepted call to finish at its start, but not before or in another status", () => {
-    expect(canFinishSession(s({ starts_at: at(12) }), now)).toBe(true);
-    expect(canFinishSession(s({ starts_at: at(12, 1) }), now)).toBe(false);
-    expect(canFinishSession(s({ starts_at: at(11), status: "proposed" }), now)).toBe(false);
-    expect(canFinishSession(s({ starts_at: at(11), status: "completed" }), now)).toBe(false);
+describe("canComplete", () => {
+  it("allows marking an accepted session done from 15 minutes before it starts", () => {
+    expect(canComplete(s({ starts_at: at(12, 15) }), now)).toBe(true);
+    expect(canComplete(s({ starts_at: at(12, 16) }), now)).toBe(false);
+    expect(canComplete(s({ starts_at: at(11), status: "proposed" }), now)).toBe(false);
+    expect(canComplete(s({ starts_at: at(11), status: "completed" }), now)).toBe(false);
+  });
+});
+
+describe("unconfirmed sessions", () => {
+  it("keeps accepted sessions up to 48 hours after start and asks if they happened after 2 hours", () => {
+    const day = 24 * 60 * 60 * 1000;
+    const old = s({ id: "old", starts_at: new Date(now.getTime() - 47 * 60 * 60 * 1000).toISOString() });
+    const gone = s({ id: "gone", starts_at: new Date(now.getTime() - 2 * day - 1000).toISOString() });
+    const done = s({ id: "done", starts_at: at(11), status: "completed" });
+    const ids = splitSessions([old, gone, done], old.guest_id, now).upcoming.map((x) => x.id);
+    expect(ids).toEqual(["old"]);
+    expect(needsConfirmation(old, now)).toBe(true);
+    expect(needsConfirmation(s({ starts_at: at(11) }), now)).toBe(false);
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeXp, stageFor, completedRecords, currentWeek, dayKey, nextExerciseStatus } from "@/lib/rehab";
+import { sessionXpCount, computeXp, stageFor, completedRecords, currentWeek, dayKey, nextExerciseStatus } from "@/lib/rehab";
 
 describe("rehab rules", () => {
   it("awards 10 XP per exercise and 5 per check-in", () => {
@@ -118,5 +118,18 @@ describe("cheer XP", () => {
   it("caps XP cheers at 5 per day", () => {
     const day = Array.from({ length: 8 }, () => ({ created_at: "2026-10-10T12:00:00" }));
     expect(cheerCount([...day, { created_at: "2026-10-11T12:00:00" }])).toBe(6);
+  });
+});
+
+describe("session together XP", () => {
+  it("gives 15 XP per completed session, at most one per day", () => {
+    const n = sessionXpCount([
+      { status: "completed", completed_at: "2026-10-10T10:00:00" },
+      { status: "completed", completed_at: "2026-10-10T15:00:00" },
+      { status: "completed", completed_at: "2026-10-11T10:00:00" },
+      { status: "accepted", completed_at: null },
+    ]);
+    expect(n).toBe(2);
+    expect(computeXp(0, 0, 0, n)).toBe(30);
   });
 });

@@ -42,3 +42,4 @@
 - [x] Mentor mode polish (invite infinity bug, recovery range, Progress/Support hiding, impact tiles, blossom palette)
 - [x] Remove "Send encouragement" for Family & friends; restore Invite family & friends card background/formatting
 - [ ] Remove finished calls from Sessions using a saved participant completion action and refresh on return.
+- [ ] Add Home multi-file/text Gemini plan importer with a fictional demo note, extraction preview and confirmed exercise saving.

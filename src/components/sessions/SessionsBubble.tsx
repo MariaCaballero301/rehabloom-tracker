@@ -1,6 +1,7 @@
 // Floating Sessions bubble (above Inbox) + side panel: support alerts, session invites, upcoming
 // sessions together and invites waiting for a reply. Mounted once in the root layout.
 import { useCallback, useEffect, useRef, useState } from "react";
+import { NavSlot } from "@/components/NavSlot";
 import { toast } from "sonner";
 import { CalendarClock, CalendarPlus2, CalendarHeart, CalendarPlus, Check, HeartHandshake, MessageCircleHeart, Video, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -336,10 +337,10 @@ export function SessionsBubble({ userId }: { userId: string }) {
       )}
         </div>
       </aside>}
-      {!open && <Button ref={trigger} variant="ghost" className={`bubble inbox-trigger sessions-trigger rounded-full p-0 text-primary ${count > 0 ? "inbox-attention" : ""}`} aria-label={count ? `Open Sessions, ${count} waiting` : "Open Sessions"} title="Sessions" aria-expanded={open} aria-controls="sessions-panel" onClick={() => setOpen(true)}>
+      {!open && <NavSlot id="nav-slot-sessions"><Button ref={trigger} variant="ghost" className={`bubble inbox-trigger sessions-trigger rounded-full p-0 text-primary ${count > 0 ? "inbox-attention" : ""}`} aria-label={count ? `Open Sessions, ${count} waiting` : "Open Sessions"} title="Sessions" aria-expanded={open} aria-controls="sessions-panel" onClick={() => setOpen(true)}>
         <CalendarHeart className="size-7" />
         {count > 0 && <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-popover bg-destructive px-1 text-xs font-bold text-destructive-foreground">{count > 99 ? "99+" : count}</span>}
-      </Button>}
+      </Button></NavSlot>}
       <PlanSessionDialog target={plan} onClose={() => setPlan(null)} onSent={() => void load()} />
     </>
   );

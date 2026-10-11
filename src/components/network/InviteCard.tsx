@@ -1,7 +1,7 @@
 // Invite family & friends with a private code, redeem someone's code, or add a contact without the app.
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Copy, KeyRound, Trash2, UserRoundPlus } from "lucide-react";
+import { Copy, Mail, Share2, Trash2, UserRoundPlus } from "lucide-react";
 import { normalizePhone } from "@/lib/alerts";
 import { formatInviteCode, isInviteCodeFormat, normalizeInviteCode } from "@/lib/network";
 import { sendWelcome } from "@/lib/welcome.functions";
@@ -20,6 +20,8 @@ export function InviteCard({
   const [relationship, setRelationship] = useState("family");
   const [redeem, setRedeem] = useState(initialCode);
   const [busy, setBusy] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function"), []);
   const [manual, setManual] = useState({ name: "", phone: "", kind: "family", notify: true });
 
   // Fire-and-forget: a failed welcome text never blocks adding the contact.
@@ -42,16 +44,38 @@ export function InviteCard({
     }
   }
 
-  const create = () =>
+  // Reuse an active code for this relationship, or create one.
+  async function ensureCode(): Promise<string> {
+    const existing = invites.find((i) => i.relationship === relationship && new Date(i.expires_at) > new Date());
+    if (existing) return existing.code;
+    const code = await rpc<string>("create_invite_code", { p_relationship: relationship });
+    onChange();
+    return code;
+  }
+
+  const SUBJECT = "Join my rehab support circle on Rehabloom 💚";
+  const message = (code: string) =>
+    `Hi! I'm using Rehabloom to keep up with my physical therapy, and I'd love for you to be part of my support circle. Join here: ${linkFor(code)}\n\nOr enter my code in the app: ${formatInviteCode(code)}`;
+
+  const sendEmail = () =>
     run(async () => {
-      const code = await rpc<string>("create_invite_code", { p_relationship: relationship });
+      const code = await ensureCode();
+      window.location.href = `mailto:?subject=${encodeURIComponent(SUBJECT)}&body=${encodeURIComponent(message(code))}`;
+    });
+
+  const share = () =>
+    run(async () => {
+      const code = await ensureCode();
       try {
-        await navigator.clipboard.writeText(linkFor(code));
-        toast.success(`Code ${formatInviteCode(code)} created — link copied!`);
-      } catch {
-        toast.success(`Code ${formatInviteCode(code)} created`);
+        await navigator.share({ title: SUBJECT, text: message(code), url: linkFor(code) });
+      } catch (e) {
+        if ((e as Error).name !== "AbortError") throw e;
       }
-      onChange();
+    });
+
+  const copyNew = () =>
+    run(async () => {
+      await copy(await ensureCode());
     });
 
   async function copy(code: string) {
@@ -111,18 +135,31 @@ export function InviteCard({
         Share a private code. When they open the link (or type the code) in Rehabloom, they join
         your support network. Codes work once and expire after 7 days.
       </p>
+      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Relationship">
+        {(["family", "friend"] as const).map((r) => (
+          <button
+            key={r}
+            type="button"
+            className="nav-bubble"
+            data-active={relationship === r}
+            aria-pressed={relationship === r}
+            onClick={() => setRelationship(r)}
+          >
+            {r === "family" ? "Family" : "Friend"}
+          </button>
+        ))}
+      </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <select
-          className="field w-auto"
-          value={relationship}
-          onChange={(e) => setRelationship(e.target.value)}
-          aria-label="Relationship"
-        >
-          <option value="family">Family</option>
-          <option value="friend">Friend</option>
-        </select>
-        <button className="btn-aqua" disabled={busy} onClick={create}>
-          <KeyRound className="h-4 w-4" /> Create invite code
+        <button className="btn-aqua" disabled={busy} onClick={sendEmail}>
+          <Mail className="h-4 w-4" /> Send by email
+        </button>
+        {canShare && (
+          <button className="btn-soft" disabled={busy} onClick={share}>
+            <Share2 className="h-4 w-4" /> Share
+          </button>
+        )}
+        <button className="btn-soft" disabled={busy} onClick={copyNew}>
+          <Copy className="h-4 w-4" /> Copy link
         </button>
       </div>
       {invites.length > 0 && (

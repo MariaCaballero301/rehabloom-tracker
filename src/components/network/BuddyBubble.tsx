@@ -21,7 +21,7 @@ export function BuddyBubble({
   const shown = total > 0 ? (((page % total) + total) % total) + 1 : 0;
   return (
     <div className="mt-7">
-      <h3 className="mb-4 text-center text-2xl font-bold">Rehab buddies</h3>
+      <h3 className="mb-4 text-center text-2xl font-bold">Buddies</h3>
       <div className="buddy-bubble buddy-size-one">
         <div className="buddy-bubble-shell" aria-hidden="true">
           <span className="buddy-shine buddy-shine-a" />

@@ -1,0 +1,12 @@
+import { describe, expect, it } from "vitest";
+import { soundForElement } from "@/lib/sounds";
+
+describe("Interaction sound selection", () => {
+  it("uses a tap for ordinary interactive controls", () => { expect(soundForElement({ interactive: true })).toBe("tap"); });
+  it("uses pop for bubble controls instead of tap", () => { expect(soundForElement({ interactive: true, bubble: true })).toBe("pop"); });
+  it("uses only success when overridden", () => { expect(soundForElement({ interactive: true, bubble: true, override: "success" })).toBe("success"); });
+  it("allows ordinary controls to request pop", () => { expect(soundForElement({ interactive: true, override: "pop" })).toBe("pop"); });
+  it("never sounds for disabled elements even with overrides", () => { expect(soundForElement({ disabled: true, override: "success", bubble: true })).toBeNull(); });
+  it("respects explicit silence", () => { expect(soundForElement({ interactive: true, bubble: true, override: "none" })).toBeNull(); });
+  it("ignores noninteractive content", () => { expect(soundForElement({})).toBeNull(); });
+});

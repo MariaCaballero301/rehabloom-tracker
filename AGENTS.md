@@ -15,6 +15,7 @@
 - Keep calendar history in its own component, using authenticated account creation time for pre-account empty states and calendar weeks covering the full month.
 
 ## Profile photos
+- Mount one account-profile provider in the signed-in root shell and reuse its identity in AppNav; owner-scoped reads and save/focus refresh keep every page consistent without revealing account details to others.
 - Keep profile photos in private Cloud Storage under the owner's UUID folder and save only their path on network_profiles; signed URLs and authorized photo-only RPCs preserve existing network visibility and blocking rules.
 - Stage photo edits until Save profile, clean replaced uploads after saving, and keep optional photo failures from preventing profile edits.
 
@@ -41,7 +42,7 @@
 - Use shared pure period helpers for monthly and Monday–Sunday weekly ranges; persist period metadata in the existing private summary stats JSON to preserve old monthly history without duplicating reports.
 
 ## Interaction audio
-- Install one root-level click listener with lazy Web Audio synthesis for active glossy controls; audio failures must never block actions or play during background updates.
+- Use sounds.ts for a gesture-gated shared Web Audio context, quiet master gain and anti-spam guard; one delegated root listener chooses tap/pop/success through a pure tested selector, with persistent mute and explicit action overrides so audio never blocks controls.
 
 ## Preview recovery
 - Detect mixed Vite React/renderer optimization versions in development and use the shared guarded reload; a stale renderer cannot safely execute hooks from a newer React module.

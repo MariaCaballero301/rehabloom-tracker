@@ -19,8 +19,9 @@ import { SupportPopups } from "@/components/alerts/SupportPopups";
 import { HomeInbox } from "@/components/network/HomeInbox";
 import { SessionsBubble } from "@/components/sessions/SessionsBubble";
 import { useSessionUser } from "@/hooks/use-session-user";
-import { installBubbleSounds } from "@/lib/bubble-sound";
+import { installSounds } from "@/lib/sounds";
 import { hasMixedReactVersions } from "@/lib/stale-react";
+import { AccountProfileProvider } from "@/components/AccountProfile";
 
 function NotFoundComponent() {
   return (
@@ -137,7 +138,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { user } = useSessionUser();
 
-  useEffect(() => installBubbleSounds(), []);
+  useEffect(() => installSounds(), []);
 
   useEffect(() => {
     if (!import.meta.env.DEV || typeof PerformanceObserver === "undefined") return;
@@ -167,7 +168,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      {user ? <><HomeInbox key={user.id} userId={user.id}><Outlet /></HomeInbox><SessionsBubble key={`sessions-${user.id}`} userId={user.id} /></> : <Outlet />}
+      {user ? <AccountProfileProvider key={user.id} user={user}><HomeInbox key={user.id} userId={user.id}><Outlet /></HomeInbox><SessionsBubble key={`sessions-${user.id}`} userId={user.id} /></AccountProfileProvider> : <Outlet />}
       <Toaster position="top-center" richColors />
       <XpFishLayer />
       <SupportPopups />

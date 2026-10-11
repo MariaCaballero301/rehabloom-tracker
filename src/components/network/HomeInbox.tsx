@@ -7,10 +7,16 @@ import { InboxConversation } from "./InboxConversation";
 import { useInbox } from "./useInbox";
 import { ProfileAvatar } from "./ProfileAvatar";
 import { useLocation } from "@tanstack/react-router";
+import { playSound } from "@/lib/sounds";
 
 export function HomeInbox({ userId, children, initiallyOpen = false }: { userId: string; children: ReactNode; initiallyOpen?: boolean }) {
   const inbox = useInbox(userId);
   const [open, setOpen] = useState(initiallyOpen);
+  const previousOpen = useRef(initiallyOpen);
+  useEffect(() => {
+    if (previousOpen.current !== open) playSound("pop");
+    previousOpen.current = open;
+  }, [open]);
   const pathname = useLocation({ select: (location) => location.pathname });
   useEffect(() => { if (pathname === "/inbox") setOpen(true); }, [pathname]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -54,7 +60,7 @@ export function HomeInbox({ userId, children, initiallyOpen = false }: { userId:
       {open && <aside id="home-inbox" className="inbox-sidebar" aria-label="Inbox">
         <header className="flex shrink-0 items-center justify-between gap-2 px-4 py-4">
           <h1 className="flex items-center gap-2 text-xl"><Inbox className="h-5 w-5" /> Inbox</h1>
-          <Button ref={close} variant="ghost" size="icon" className="btn-soft rounded-full" aria-label="Close Inbox" title="Close Inbox" onClick={() => { setOpen(false); trigger.current?.focus(); }}><X /></Button>
+          <Button data-sound="pop" ref={close} variant="ghost" size="icon" className="btn-soft rounded-full" aria-label="Close Inbox" title="Close Inbox" onClick={() => { setOpen(false); trigger.current?.focus(); }}><X /></Button>
         </header>
         {(person || requests) ? <div className="shrink-0 px-3 pb-2"><Button variant="ghost" className="text-sm" onClick={() => { setSelected(null); setRequests(false); }}><ArrowLeft /> All conversations</Button></div> : null}
         {requests ? <div className="min-h-0 flex-1 overflow-y-auto p-3">

@@ -11,7 +11,9 @@ import { MonthlySummaryCard } from "@/components/rehab/MonthlySummaryCard";
 import { WeeklyReportCard } from "@/components/rehab/WeeklyReportCard";
 import { db } from "@/components/network/useNetwork";
 import type { DaySession, RehabSession } from "@/lib/sessions";
-import { journeyTotals } from "@/lib/mentor-mode";
+import { plural, recoveryRange } from "@/lib/mentor-mode";
+import { Link } from "@tanstack/react-router";
+import { ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/progress")({
   head: () => ({
@@ -73,40 +75,48 @@ function Progress({ userId, email, joinedAt }: { userId: string; email: string; 
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6">
       <AppNav email={email} />
-      {data && finishedAt && <RecoveryCard finishedAt={finishedAt} completions={data.co} checkins={data.ci} impact={impact} />}
-      {data ? (
-        <HistoryCard finishedDay={finishedAt ? dayKey(new Date(finishedAt)) : null} exercises={data.ex} completions={completedRecords(data.co)} allCompletions={data.co} checkins={data.ci} joinedAt={joinedAt} sessions={sessions} />
-      ) : null}
-      {data && <MonthlySummaryCard key={finishedAt ?? "rehab"} journey={finishedAt ? { from: journeyTotals(data.co, data.ci, dayKey(new Date(finishedAt))).firstDay, to: dayKey(new Date(finishedAt)) } : undefined} />}
-      {data ? <WeeklyReportCard exercises={data.ex} completions={completedRecords(data.co)} checkins={data.ci} name={name} /> : (
+      {data && finishedAt && <RecoveryCard finishedAt={finishedAt} impact={impact} />}
+      {data && !finishedAt && (
+        <HistoryCard finishedDay={null} exercises={data.ex} completions={completedRecords(data.co)} allCompletions={data.co} checkins={data.ci} joinedAt={joinedAt} sessions={sessions} />
+      )}
+      {data && <MonthlySummaryCard key={finishedAt ?? "rehab"} journey={finishedAt ? recoveryRange(dayKey(new Date(joinedAt)), data.co, dayKey(new Date(finishedAt))) : undefined} />}
+      {data && finishedAt && (
+        <details className="glass mt-5 p-4 sm:p-5">
+          <summary className="btn-soft cursor-pointer list-none text-sm"><ChevronDown className="h-4 w-4" /> See my recovery calendar</summary>
+          <div className="pointer-events-none mt-4" aria-readonly="true">
+            <HistoryCard finishedDay={dayKey(new Date(finishedAt))} exercises={data.ex} completions={completedRecords(data.co)} allCompletions={data.co} checkins={data.ci} joinedAt={joinedAt} sessions={sessions} />
+          </div>
+        </details>
+      )}
+      {data && finishedAt ? null : data ? <WeeklyReportCard exercises={data.ex} completions={completedRecords(data.co)} checkins={data.ci} name={name} /> : (
         <p className="p-10 text-center text-muted-foreground">Loading…</p>
       )}
     </div>
   );
 }
 
-function RecoveryCard({ finishedAt, completions, checkins, impact }: {
-  finishedAt: string; completions: Tables<"completions">[]; checkins: Tables<"checkins">[];
-  impact: { supported: number; sent: number; together: number };
-}) {
-  const t = journeyTotals(completions, checkins, dayKey(new Date(finishedAt)));
-  const stat = (n: number, label: string) => (
-    <div className="rounded-2xl bg-card/70 px-3 py-2 text-center"><p className="text-2xl font-extrabold tabular-nums text-success">{n}</p><p className="text-xs text-muted-foreground">{label}</p></div>
-  );
+function RecoveryCard({ finishedAt, impact }: { finishedAt: string; impact: { supported: number; sent: number; together: number } }) {
+  const tile = (text: string) => {
+    const [n, ...rest] = text.split(" ");
+    return <div className="rounded-2xl bg-card/70 px-3 py-2 text-center"><p className="text-2xl font-extrabold tabular-nums text-primary">{n}</p><p className="text-xs text-muted-foreground">{rest.join(" ")}</p></div>;
+  };
+  const none = impact.supported + impact.sent + impact.together === 0;
   return (
     <section className="glass mb-5 p-5 sm:p-6" aria-labelledby="recovery-h">
       <h2 id="recovery-h" className="text-xl">Recovery completed 🌸 on {new Date(finishedAt).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}</h2>
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        {stat(t.daysActive, "days active")}
-        {stat(t.exercisesCompleted, "exercises completed")}
-        {stat(t.bestStreak, "best streak (days)")}
-      </div>
       <h3 className="mt-4 text-sm font-bold uppercase text-muted-foreground">Mentor impact</h3>
-      <div className="mt-2 grid grid-cols-3 gap-2">
-        {stat(impact.supported, "people supported")}
-        {stat(impact.sent, "encouragements sent")}
-        {stat(impact.together, "sessions together")}
-      </div>
+      {none ? (
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <p className="text-sm">Your mentoring journey starts here — say hi to someone on Support 🌸</p>
+          <Link to="/support" className="btn-aqua text-sm">Go to Support</Link>
+        </div>
+      ) : (
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {tile(plural(impact.supported, "person supported", "people supported"))}
+          {tile(plural(impact.sent, "encouragement sent", "encouragements sent"))}
+          {tile(plural(impact.together, "session together", "sessions together"))}
+        </div>
+      )}
     </section>
   );
 }

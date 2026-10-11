@@ -28,7 +28,7 @@ export function BuddyBubble({
           <span className="buddy-shine buddy-shine-b" />
         </div>
         <div className="buddy-bubble-content" aria-live="polite">
-          {empty ? <p className="text-center text-muted-foreground">No rehab buddies yet.</p> : children}
+          {empty ? <p className="text-center text-muted-foreground">No buddies yet</p> : children}
         </div>
         {total > 1 && (
           <>

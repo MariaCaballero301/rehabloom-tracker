@@ -176,6 +176,13 @@
       "when": 1791679233520,
       "tag": "0024_network_profiles_finished_at",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791679398280,
+      "tag": "0025_permanent_invite_codes",
+      "breakpoints": true
     }
   ]
 }

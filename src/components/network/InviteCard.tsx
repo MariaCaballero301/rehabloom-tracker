@@ -61,7 +61,7 @@ export function RedeemCodeForm({ initialCode = "", onChange, standalone = false 
         <div className="mt-1 flex gap-2">
           <input
             id="redeem-code"
-            className="input-soft flex-1"
+            className="field flex-1"
             placeholder="ABCD-EFGH"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}

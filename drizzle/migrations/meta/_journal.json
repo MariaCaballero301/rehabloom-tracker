@@ -162,6 +162,13 @@
       "when": 1791678036436,
       "tag": "0022_redeem_invite_updates_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791678867190,
+      "tag": "0023_mentor_mode_skip_alerts",
+      "breakpoints": true
     }
   ]
 }

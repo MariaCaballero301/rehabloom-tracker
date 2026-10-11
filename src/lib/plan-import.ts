@@ -20,7 +20,7 @@ export function inferImportSchedule(frequency: string): ImportSchedule | null {
   if (!text) return null;
   const tokens = text.replace(/\b(?:every|each|on|and)\b/g, " ").split(/[\s,/&+-]+/).filter(Boolean);
   if (tokens.length && tokens.every((t) => t in DAY_WORDS)) {
-    const days = [...new Set(tokens.map((t) => DAY_WORDS[t]))].sort((a, b) => a - b);
+    const days = [...new Set(tokens.map((t) => DAY_WORDS[t] ?? 0))].sort((a, b) => a - b);
     return days.length === 7 ? { frequency: "daily", occurrences: 1, days: [0, 1, 2, 3, 4, 5, 6] } : { frequency: "weekly", occurrences: 1, days };
   }
   const per = "(?:daily|a day|per day|each day|every day)";

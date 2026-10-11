@@ -11,6 +11,7 @@ import { InboxCard } from "@/components/network/InboxCard";
 import { PeopleCard } from "@/components/network/PeopleCard";
 import { DiscoverCard } from "@/components/network/DiscoverCard";
 import { InviteCard } from "@/components/network/InviteCard";
+import { MentoringCard, MenteeFinder } from "@/components/network/MentorSupport";
 
 export const Route = createFileRoute("/support")({
   validateSearch: (search: Record<string, unknown>): { code?: string } => {
@@ -61,6 +62,7 @@ function SupportPage() {
 
 function People({ userId, email, initialCode }: { userId: string; email: string; initialCode: string }) {
   const n = useNetwork(userId);
+  const mentor = n.profile.finished_therapy === true;
 
   // Don't suggest people we're already connected with or have a pending request with.
   const excluded = useMemo(() => {
@@ -82,9 +84,10 @@ function People({ userId, email, initialCode }: { userId: string; email: string;
         <p className="p-10 text-center text-muted-foreground">Loading…</p>
       ) : (
         <div className="space-y-4">
+          {mentor && <MentoringCard key={n.profile.mentor_bio} userId={userId} profile={n.profile} requests={n.requests} onChange={n.reload} />}
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-4">
-              <SupportAlertsPanel userId={userId} />
+              <SupportAlertsPanel userId={userId} mentor={mentor} />
               <InboxCard
                 key={n.encouragements.map((e) => e.id).join()}
                 userId={userId}
@@ -94,10 +97,12 @@ function People({ userId, email, initialCode }: { userId: string; email: string;
               />
             </div>
             <div className="space-y-4">
-              <DiscoverCard profile={n.profile} directory={n.directory} excluded={excluded} onChange={n.reload} />
+              {mentor
+                ? <MenteeFinder profile={n.profile} directory={n.directory} excluded={excluded} onChange={n.reload} />
+                : <DiscoverCard profile={n.profile} directory={n.directory} excluded={excluded} onChange={n.reload} />}
             </div>
           </div>
-          <PeopleCard contacts={n.contacts} supporting={n.supporting} blocks={n.blocks} buddyStats={n.buddyStats} statsError={n.statsError} onChange={n.reload} />
+          <PeopleCard contacts={n.contacts} supporting={n.supporting} blocks={n.blocks} buddyStats={n.buddyStats} statsError={n.statsError} hideAlerts={mentor} onChange={n.reload} />
           <InviteCard invites={n.invites} initialCode={initialCode} onChange={n.reload} />
         </div>
       )}

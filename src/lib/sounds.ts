@@ -8,6 +8,13 @@ export function soundForElement(element: SoundElement): Sound | null {
   return element.interactive ? "tap" : null;
 }
 
+/** Pure overlap policy: only an exact repeat of the same sound is dropped, so
+ * different sounds can play on top of one another instead of silencing each other. */
+export function shouldPlaySound(sound: Sound, now: number, lastPlayed: Map<Sound, number>, windowMs = 60): boolean {
+  const previous = lastPlayed.get(sound);
+  return previous === undefined || now - previous >= windowMs;
+}
+
 const KEY = "rehabloom:sound-enabled";
 export const SOUND_SETTING_EVENT = "rehabloom:sound-setting";
 const BUBBLES = ".bubble, .inbox-trigger, .sessions-trigger, .nav-bubble, .buddy-icon-btn, .buddy-cycle-btn";
@@ -146,10 +153,7 @@ export function startSwimSound(duration = 3.6): () => void {
 
 export function playSound(sound: Sound) {
   if (!gestureReceived || !enabled) return;
-  // Suppress only an exact repeat of the same sound (double-fired clicks), so
-  // different sounds can overlap instead of silencing one another.
-  const previous = lastPlayedFor.get(sound);
-  if (previous !== undefined && Date.now() - previous < 60) return;
+  if (!shouldPlaySound(sound, Date.now(), lastPlayedFor)) return;
   lastPlayedFor.set(sound, Date.now());
   try {
     const setup = ensureMaster();

@@ -1,6 +1,7 @@
 // /support — the whole support network on one page: alerts, find support, people, invites.
 import { createFileRoute, Outlet, useChildMatches } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { savePendingInvite } from "@/components/network/PendingInvite";
 import { AppNav } from "@/components/AppNav";
 import { SupportAlertsPanel } from "@/components/alerts/SupportAlertsPanel";
 import { useSessionUser } from "@/hooks/use-session-user";
@@ -38,6 +39,9 @@ function PeoplePage() {
 function SupportPage() {
   const { user, ready } = useSessionUser();
   const { code } = Route.useSearch();
+  useEffect(() => {
+    if (ready && !user && code) savePendingInvite(code);
+  }, [ready, user, code]);
 
   if (!ready) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
   if (!user) {

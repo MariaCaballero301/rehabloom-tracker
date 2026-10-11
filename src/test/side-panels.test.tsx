@@ -31,7 +31,7 @@ describe("exclusive side panels", () => {
     render(<><HomeInbox userId="owner"><p>Home</p></HomeInbox><SessionsBubble userId="owner" /><SupportPopups /></>);
     fireEvent.click(screen.getByRole("button", { name: "Open Inbox" }));
     expect(screen.getByRole("complementary", { name: "Inbox" })).toBeInTheDocument();
-    await waitFor(() => expect(mocks.callbacks).toHaveLength(6));
+    await waitFor(() => expect(mocks.callbacks).toHaveLength(7));
     act(() => mocks.callbacks[3]?.({ new: { patient_name: "Buddy" } }));
     const options = mocks.toast.mock.calls[0]?.[1] as { action: { label: string; onClick: () => void } };
     expect(options.action.label).toBe("Open");

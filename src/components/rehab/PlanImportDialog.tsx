@@ -1,15 +1,15 @@
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, FileUp, Loader2, Trash2 } from "lucide-react";
+import { Check, FileUp, Loader2, Trash2, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeTherapyPlan } from "@/lib/plan-import.functions";
-import { DEMO_PT_NOTE, MAX_PLAN_BYTES, PLAN_MIMES, importedExercisePayload, inferImportSchedule, pickedSchedule, scheduleLabel, confirmDisabledReason, isReadyToAdd, type ImportedExercise, type ImportSchedule } from "@/lib/plan-import";
+import { DEMO_PT_NOTE, MAX_PLAN_BYTES, PLAN_MIMES, importedExercisePayload, inferImportSchedule, pickedSchedule, scheduleLabel, sharedImportSchedule, confirmDisabledReason, isReadyToAdd, type ImportedExercise, type ImportSchedule } from "@/lib/plan-import";
 
 type Pick = { frequency?: "daily" | "weekly"; occurrences?: number; days: number[] };
-type Row = { exercise: ImportedExercise; schedule: ImportSchedule | null; selected: boolean; pick: Pick; clear: boolean };
+type Row = { exercise: ImportedExercise; schedule: ImportSchedule | null; selected: boolean; pick: Pick; clear: boolean; editingSchedule: boolean };
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function readFile(file: File): Promise<string> {
@@ -28,13 +28,14 @@ export function PlanImportDialog({ open, onOpenChange, onSaved }: { open: boolea
   const [files, setFiles] = useState<File[]>([]);
   const [demo, setDemo] = useState(false);
   const [consent, setConsent] = useState(false);
-  const [reviewed, setReviewed] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [analyzed, setAnalyzed] = useState(false);
-  function invalidate() { setRows([]); setAnalyzed(false); setReviewed(false); setError(""); }
+  const sharedSchedule = sharedImportSchedule(rows.map((row) => row.schedule));
+  const disabledReason = confirmDisabledReason(rows.map((row) => ({ ...row, name: row.exercise.name })));
+  function invalidate() { setRows([]); setAnalyzed(false); setError(""); }
   function addFiles(incoming: File[]) {
     const next = [...files, ...incoming];
     if (next.length > 10 || next.reduce((sum, file) => sum + file.size, 0) > MAX_PLAN_BYTES) return setError("Choose up to 10 documents, totaling 20 MB or less.");
@@ -50,19 +51,18 @@ export function PlanImportDialog({ open, onOpenChange, onSaved }: { open: boolea
       setRows(result.exercises.map((exercise) => {
         const schedule = inferImportSchedule(exercise.frequency);
         const pick: Pick = schedule ? (schedule.frequency === "daily" ? { frequency: "daily", occurrences: schedule.occurrences, days: [] } : { frequency: "weekly", days: schedule.days }) : { days: [] };
-        return { exercise, schedule, selected: true, pick, clear: !!schedule };
+        return { exercise, schedule, selected: true, pick, clear: !!schedule, editingSchedule: false };
       }));
       setAnalyzed(true);
     } catch (e) { setError(e instanceof Error ? e.message : "The plan couldn't be analyzed. Nothing was saved."); }
     finally { setBusy(false); }
   }
   function edit(i: number, patch: Partial<ImportedExercise>) {
-    setReviewed(false);
     setRows((all) => all.map((r, index) => index === i ? { ...r, exercise: { ...r.exercise, ...patch } } : r));
   }
   async function save() {
     const selected = rows.filter((row) => row.selected);
-    if (saving || !reviewed || !selected.length || selected.some((row) => !isReadyToAdd({ name: row.exercise.name, schedule: row.schedule }))) return;
+    if (saving || disabledReason) return;
     setSaving(true); setError("");
     try {
       const payload = selected.map((row) => {
@@ -80,7 +80,7 @@ export function PlanImportDialog({ open, onOpenChange, onSaved }: { open: boolea
   return <Dialog open={open} onOpenChange={(value) => { if (!busy && !saving) onOpenChange(value); }}>
     <DialogContent className="glass max-h-[85dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto p-5 sm:p-6">
       <DialogHeader><DialogTitle className="pr-6 text-xl">🤖 Gemini Therapy Plan Agent</DialogTitle><DialogDescription>Import your therapist’s existing instructions. Review every detail before saving; this is not medical advice.</DialogDescription></DialogHeader>
-      <fieldset disabled={busy || saving} className="min-w-0 space-y-3">
+      {!analyzed && <fieldset disabled={busy || saving} className="min-w-0 space-y-3">
         <div className="flex flex-wrap gap-2">
           <Button className="btn-soft" variant="outline" onClick={() => picker.current?.click()}><FileUp className="h-4 w-4" /> Add documents</Button>
           <Button className="btn-soft whitespace-normal" variant="outline" onClick={() => { invalidate(); setFiles([]); setText(DEMO_PT_NOTE); setDemo(true); }}>⚡ Use Demo PT Note</Button>
@@ -92,30 +92,34 @@ export function PlanImportDialog({ open, onOpenChange, onSaved }: { open: boolea
         {demo && <p className="rounded-lg bg-warning/20 p-2 text-sm font-semibold">Fictional demo PT note — not a real prescription.</p>}
         <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1 accent-primary" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>I agree to send these documents and notes to Google Gemini. Remove names and personal details first. Documents are not stored in Rehabloom.</span></label>
         <Button className="btn-aqua w-full" disabled={!consent || (!files.length && !text.trim())} onClick={() => void run()}>Analyze with Gemini</Button>
-      </fieldset>
+      </fieldset>}
       {busy && <p role="status" className="flex items-center justify-center gap-2 text-sm text-primary"><Loader2 className="h-4 w-4 animate-spin" /> Reading your plan…</p>}
       {error && <p role="alert" className="break-words rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
       {analyzed && <div className="space-y-3">
-        <h3 className="font-bold">Review extracted exercises</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-bold">Review extracted exercises</h3><Button variant="ghost" className="btn-soft" disabled={saving} onClick={invalidate}>Back to documents</Button></div>
+        {sharedSchedule && <p className="flex items-center gap-2 border-b border-input pb-3 font-bold text-primary"><CalendarDays className="h-5 w-5 shrink-0" />Schedule: {sharedSchedule.frequency === "daily" ? `Daily (${sharedSchedule.occurrences}x per day)` : scheduleLabel(sharedSchedule)}</p>}
         {!rows.length && <p className="text-sm text-muted-foreground">No prescribed exercises were found. Try clearer documents or notes.</p>}
         <ul className="space-y-3">{rows.map((row, i) => <li key={i} className="rounded-lg border bg-card/80 p-4 shadow-sm">
-          <div className="flex items-center gap-2">
-            <input type="checkbox" aria-label={`Include ${row.exercise.name || "exercise"}`} checked={row.selected} disabled={saving} onChange={(e) => { setReviewed(false); setRows(rows.map((r, index) => index === i ? { ...r, selected: e.target.checked } : r)); }} className="accent-primary" />
+          <div className="flex flex-wrap items-center gap-2">
+            <input type="checkbox" aria-label={`Include ${row.exercise.name || "exercise"}`} checked={row.selected} disabled={saving} onChange={(e) => { setRows(rows.map((r, index) => index === i ? { ...r, selected: e.target.checked } : r)); }} className="accent-primary" />
             <input className="field min-w-0 flex-1 font-bold" aria-label="Exercise name" maxLength={200} value={row.exercise.name} disabled={saving} onChange={(e) => edit(i, { name: e.target.value })} />
             {isReadyToAdd({ name: row.exercise.name, schedule: row.schedule }) && <span className="shrink-0 rounded-full bg-success/20 px-2.5 py-1 text-xs font-bold text-success">✓ Ready to Add</span>}
           </div>
-          <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-            <label className="text-muted-foreground">Sets<input className="field mt-1 text-foreground" maxLength={200} value={row.exercise.sets} placeholder="From your plan" disabled={saving} onChange={(e) => edit(i, { sets: e.target.value })} /></label>
-            <label className="text-muted-foreground">Reps<input className="field mt-1 text-foreground" maxLength={200} value={row.exercise.reps} placeholder="From your plan" disabled={saving} onChange={(e) => edit(i, { reps: e.target.value })} /></label>
-            {row.exercise.frequency && <div className="col-span-2"><span className="text-muted-foreground">Prescribed frequency</span><p className="break-words">{row.exercise.frequency}</p></div>}
-            {row.exercise.notes && <div className="col-span-2"><span className="text-muted-foreground">Instructions</span><p className="whitespace-pre-wrap break-words">{row.exercise.notes}</p></div>}
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+            <label className="flex items-center gap-2 text-muted-foreground">Sets<input className="field w-24 text-foreground" aria-label={`Sets for ${row.exercise.name}`} maxLength={200} value={row.exercise.sets} placeholder="Not stated" disabled={saving} onChange={(e) => edit(i, { sets: e.target.value })} /></label>
+            <label className="flex items-center gap-2 text-muted-foreground">Reps<input className="field w-24 text-foreground" aria-label={`Reps for ${row.exercise.name}`} maxLength={200} value={row.exercise.reps} placeholder="Not stated" disabled={saving} onChange={(e) => edit(i, { reps: e.target.value })} /></label>
           </div>
-          <SchedulePicker pick={row.pick} clear={row.clear} disabled={saving} onChange={(pick) => { setReviewed(false); setRows(rows.map((r, index) => index === i ? { ...r, pick, schedule: pickedSchedule(pick) } : r)); }} schedule={row.schedule} />
+          {row.exercise.notes && <div className="mt-3 text-sm"><span className="font-semibold text-muted-foreground">Instructions</span><p className="mt-1 whitespace-pre-wrap break-words">{row.exercise.notes}</p></div>}
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            {!sharedSchedule && row.schedule && <p className="text-sm font-semibold text-primary">Schedule: {scheduleLabel(row.schedule)}{!row.clear && " (set by you)"}</p>}
+            {row.clear && <Button variant="ghost" size="sm" className="ml-auto text-primary" disabled={saving} aria-expanded={row.editingSchedule} aria-label={`Edit schedule for ${row.exercise.name}`} onClick={() => setRows((all) => all.map((r, index) => index === i ? { ...r, editingSchedule: !r.editingSchedule } : r))}><CalendarDays className="h-4 w-4" />{row.editingSchedule ? "Close Schedule" : "Edit Schedule"}</Button>}
+          </div>
+          {(!row.clear || row.editingSchedule) && <SchedulePicker pick={row.pick} clear={row.clear} disabled={saving} onChange={(pick) => { setRows((all) => all.map((r, index) => index === i ? { ...r, clear: false, editingSchedule: true, pick, schedule: pickedSchedule(pick), exercise: { ...r.exercise, frequency: pickedSchedule(pick) ? scheduleLabel(pickedSchedule(pick) as ImportSchedule) : "" } } : r)); }} schedule={row.schedule} />}
         </li>)}</ul>
         {rows.length > 0 && <>
-          <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={reviewed} disabled={saving} onChange={(e) => setReviewed(e.target.checked)} className="mt-1 accent-primary" /><span>I checked the selected exercises and schedule against {demo ? "the fictional demo note" : "my therapist’s instructions"}.</span></label>
-          <Button className="btn-aqua w-full whitespace-normal" disabled={saving || !!confirmDisabledReason(rows.map((r) => ({ ...r, name: r.exercise.name })), reviewed)} onClick={() => void save()}><Check className="h-4 w-4" />{saving ? "Adding…" : "Confirm & Add to Schedule"}</Button>
-          {!saving && confirmDisabledReason(rows.map((r) => ({ ...r, name: r.exercise.name })), reviewed) && <p className="text-center text-sm text-muted-foreground">{confirmDisabledReason(rows.map((r) => ({ ...r, name: r.exercise.name })), reviewed)}</p>}
+          <p className="text-sm text-muted-foreground">By confirming, I’ve checked these exercises and their schedule against {demo ? "the fictional demo note" : "my therapist’s instructions"}.</p>
+          <Button className="btn-aqua w-full whitespace-normal" disabled={saving || !!disabledReason} onClick={() => void save()}><Check className="h-4 w-4" />{saving ? "Adding…" : "Confirm & Add to Schedule"}</Button>
+          {!saving && disabledReason && <p className="text-center text-sm text-muted-foreground">{disabledReason}</p>}
         </>}
       </div>}
     </DialogContent>
@@ -127,7 +131,7 @@ function SchedulePicker({ pick, schedule, clear, disabled, onChange }: { pick: P
   return <div className={`mt-3 space-y-2 rounded-lg border ${clear ? "" : "border-dashed"} p-3`}>
     {!clear && <p className="text-sm text-muted-foreground">The schedule needs clarification. Check this with your therapist’s instructions.</p>}
     <fieldset disabled={disabled} className="space-y-2">
-      <legend className="text-sm font-semibold">{clear ? "How often (from your plan)" : "Set how often"}</legend>
+      <legend className="text-sm font-semibold">{clear ? "Edit Schedule" : "Set how often"}</legend>
       <div className="flex flex-wrap gap-2">
         {(["daily", "weekly"] as const).map((f) => <Button key={f} type="button" variant="outline" aria-pressed={pick.frequency === f} className={chip(pick.frequency === f)} onClick={() => onChange({ frequency: f, days: [] })}>{f === "daily" ? "Daily" : "Specific weekdays"}</Button>)}
       </div>

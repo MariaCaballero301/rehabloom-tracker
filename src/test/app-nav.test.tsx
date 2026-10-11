@@ -1,5 +1,6 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi, type ReactNode } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ReactNode } from "react";
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { auth: { signOut: vi.fn() } } }));
 vi.mock("@/components/AccountProfile", () => ({ AccountProfile: () => null }));

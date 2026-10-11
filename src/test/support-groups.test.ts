@@ -1,15 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { supportGroups } from "@/lib/support-groups";
+import { supportGroups, supportingLabel } from "@/lib/support-groups";
 
 describe("Your people grouping", () => {
-  it("keeps only contacts without accounts in Family & friends", () => {
-    const result = supportGroups([{ connected_user_id: null }, { connected_user_id: "maria" }], []);
-    expect(result.familyFriends).toEqual([{ connected_user_id: null }]);
-    expect(result.buddyContacts).toEqual([{ connected_user_id: "maria" }]);
+  it("groups family and friends together, with or without an account", () => {
+    const g = supportGroups(
+      [
+        { connected_user_id: null, kind: "family" },
+        { connected_user_id: "ana", kind: "friend" },
+        { connected_user_id: "maria", kind: "buddy" },
+        { connected_user_id: "leo", kind: "mentor" },
+      ],
+      [],
+    );
+    expect(g.familyFriends.contacts.map((c) => c.connected_user_id)).toEqual([null, "ana"]);
+    expect(g.buddies.contacts.map((c) => c.connected_user_id)).toEqual(["maria"]);
+    expect(g.mentors.contacts.map((c) => c.connected_user_id)).toEqual(["leo"]);
   });
-  it("shows each buddy account once across both support directions", () => {
-    const result = supportGroups([{ connected_user_id: "maria" }, { connected_user_id: "maria" }], [{ user_id: "maria" }, { user_id: "alex" }, { user_id: "alex" }]);
-    expect(result.buddyContacts).toEqual([{ connected_user_id: "maria" }]);
-    expect(result.supportingOnly).toEqual([{ user_id: "alex" }]);
+  it("places people I support in the group matching their kind", () => {
+    const g = supportGroups([], [
+      { user_id: "a", kind: "family" },
+      { user_id: "b", kind: "buddy" },
+      { user_id: "c", kind: "mentor" },
+    ]);
+    expect(g.familyFriends.supporting.map((s) => s.user_id)).toEqual(["a"]);
+    expect(g.buddies.supporting.map((s) => s.user_id)).toEqual(["b"]);
+    expect(g.mentors.supporting.map((s) => s.user_id)).toEqual(["c"]);
+  });
+  it("shows a buddy account once across both support directions", () => {
+    const g = supportGroups(
+      [{ connected_user_id: "maria", kind: "buddy" }, { connected_user_id: "maria", kind: "buddy" }],
+      [{ user_id: "maria", kind: "buddy" }, { user_id: "alex", kind: "buddy" }, { user_id: "alex", kind: "buddy" }],
+    );
+    expect(g.buddies.contacts).toHaveLength(1);
+    expect(g.buddies.supporting.map((s) => s.user_id)).toEqual(["alex"]);
+  });
+  it("labels my role for people I support", () => {
+    expect(supportingLabel("mentor")).toBe("You're their mentor");
+    expect(supportingLabel("family")).toBe("You're in their family circle");
+    expect(supportingLabel("friend")).toBe("You're in their friend circle");
   });
 });

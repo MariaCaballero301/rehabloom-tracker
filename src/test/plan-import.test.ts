@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { importedExercisePayload, inferImportSchedule } from "@/lib/plan-import";
+import { importedExercisePayload, inferImportSchedule, sharedImportSchedule } from "@/lib/plan-import";
 import { confirmDisabledReason, pickedSchedule } from "@/lib/plan-import";
 import { scheduledCount } from "@/lib/rehab";
 
@@ -46,6 +46,21 @@ describe("confirmDisabledReason", () => {
 
 import { isReadyToAdd } from "@/lib/plan-import";
 describe("clear schedules from documents", () => {
+  it("shares three daily targets across five exercises without erasing exceptions", () => {
+    const daily = inferImportSchedule("3 times each day");
+    expect(sharedImportSchedule(Array.from({ length: 5 }, () => daily))?.occurrences).toBe(3);
+    expect(sharedImportSchedule([daily, inferImportSchedule("twice daily")])).toBeNull();
+    expect(sharedImportSchedule([daily, null])).toBeNull();
+    expect(sharedImportSchedule([])).toBeNull();
+  });
+  it("allows direct confirmation of selected exercises with explicit schedules", () => {
+    expect(confirmDisabledReason(Array.from({ length: 5 }, () => ({ selected: true, name: "Quad Setting", schedule: inferImportSchedule("3 times each day") })))).toBeNull();
+  });
+  it("never fills an unspecified hold duration or omitted repetitions", () => {
+    const payload = importedExercisePayload({ name: "Quad Setting", sets: "", reps: "", frequency: "3 times each day", notes: "Hold for _____ seconds." }, { frequency: "daily", occurrences: 3, days: [] });
+    expect(payload.reps).toBe("");
+    expect(payload.notes).toBe("Prescribed frequency: 3 times each day\nHold for _____ seconds.");
+  });
   it("maps 3 times each day, daily and Mon/Wed/Fri", () => {
     expect(inferImportSchedule("3 times each day")).toMatchObject({ frequency: "daily", occurrences: 3 });
     expect(inferImportSchedule("Daily")).toMatchObject({ frequency: "daily", occurrences: 1 });

@@ -12,6 +12,15 @@ export const extractedPlanSchema = z.array(extractedExerciseSchema).max(50);
 export type ImportedExercise = z.infer<typeof extractedExerciseSchema>;
 export type ImportSchedule = { frequency: "daily" | "weekly"; occurrences: number; days: number[] };
 
+/** Share a header only when all explicit schedules match, without erasing exceptions. */
+export function sharedImportSchedule(schedules: (ImportSchedule | null)[]): ImportSchedule | null {
+  const first = schedules[0];
+  if (!first) return null;
+  return schedules.every((schedule) => schedule?.frequency === first.frequency
+    && schedule.occurrences === first.occurrences
+    && [...schedule.days].sort().join(",") === [...first.days].sort().join(",")) ? first : null;
+}
+
 const DAY_WORDS: Record<string, number> = { sun: 0, sunday: 0, mon: 1, monday: 1, tue: 2, tues: 2, tuesday: 2, wed: 3, wednesday: 3, thu: 4, thur: 4, thurs: 4, thursday: 4, fri: 5, friday: 5, sat: 6, saturday: 6 };
 
 /** Map only explicit schedules: N times daily (1–3) or a plain list of weekdays. Anything else must be reviewed. */
@@ -68,7 +77,7 @@ export function pickedSchedule(pick: { frequency?: "daily" | "weekly"; occurrenc
 }
 
 /** Why "Confirm & Add to Schedule" is disabled, or null when it can be used. */
-export function confirmDisabledReason(rows: { selected: boolean; schedule: ImportSchedule | null; name?: string }[], reviewed: boolean) {
+export function confirmDisabledReason(rows: { selected: boolean; schedule: ImportSchedule | null; name?: string }[], reviewed = true) {
   const selected = rows.filter((r) => r.selected);
   if (!selected.length) return "Select at least one exercise.";
   if (selected.some((r) => r.name !== undefined && !r.name.trim())) return "Give every selected exercise a name.";

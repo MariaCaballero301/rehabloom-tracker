@@ -50,3 +50,4 @@
 
 - [x] Plan importer: concise names, editable cards, auto schedule, Ready to Add
 - [x] Session celebration: fish always (+15 XP or Done together), missed-celebration fallback via localStorage + test
+- [ ] Clean plan review with shared schedule, compact cards and direct confirmation; preserve unspecified quantities.

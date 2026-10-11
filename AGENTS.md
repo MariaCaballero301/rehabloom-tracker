@@ -42,6 +42,7 @@
 ## AI summaries
 - Use shared pure period helpers for monthly and Monday–Sunday weekly ranges; persist period metadata in the existing private summary stats JSON to preserve old monthly history without duplicating reports.
 - Import prescriptions via authenticated official Gemini with sharing consent and validated output; review before owner-scoped exercise inserts and never guess schedules.
+- Share matching explicit import schedules; Confirm records review without a second checkbox, preserving exceptions and missing quantities.
 
 ## Interaction audio
 - Use sounds.ts for a gesture-gated shared Web Audio context, quiet master gain and anti-spam guard; one delegated root listener chooses tap/pop/success through a pure tested selector, with persistent mute and explicit action overrides so audio never blocks controls.

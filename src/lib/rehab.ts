@@ -25,6 +25,18 @@ export function sessionXpCount(rows: { status: string; completed_at?: string | n
   return days.size;
 }
 
+/** Whether completing sessionId earns XP: false when another completed session of mine already landed on the same local day. */
+export function earnsSessionXp(
+  rows: { id: string; status: string; completed_at?: string | null }[],
+  sessionId: string,
+  now: Date = new Date(),
+) {
+  const mine = rows.find((r) => r.id === sessionId);
+  const when = mine?.completed_at ? new Date(mine.completed_at) : now;
+  const day = dayKey(when);
+  return !rows.some((r) => r.id !== sessionId && r.status === "completed" && r.completed_at && dayKey(new Date(r.completed_at)) === day);
+}
+
 export function computeXp(completionCount: number, checkinCount: number, cheers = 0, sessions = 0) {
   return completionCount * XP_PER_EXERCISE + checkinCount * XP_PER_CHECKIN + cheers * XP_PER_CHEER + sessions * XP_PER_SESSION;
 }

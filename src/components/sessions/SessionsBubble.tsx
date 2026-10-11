@@ -191,8 +191,14 @@ export function SessionsBubble({ userId }: { userId: string }) {
     try {
       await rpc("complete_rehab_session", { p_id: s.id });
       setSessions((prev) => prev.filter((row) => row.id !== s.id));
-      toast.success("Session done together 🎉 +15 XP");
-      celebrateXp("+15 XP");
+      const { data: mine } = await supabase.from("rehab_sessions").select("id, status, completed_at").eq("status", "completed");
+      if (earnsSessionXp(mine ?? [], s.id, new Date())) {
+        toast.success("Session done together 🎉 +15 XP");
+        celebrateXp("+15 XP");
+      } else {
+        toast.success("Session done together 🎉 (today’s session XP already earned)");
+      }
+      window.dispatchEvent(new Event("rehabloom:xp-changed"));
       window.dispatchEvent(new Event("rehabloom:message-sent"));
       await load();
     } catch (e) {
